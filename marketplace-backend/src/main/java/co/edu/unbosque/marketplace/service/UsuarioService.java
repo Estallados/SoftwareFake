@@ -1,12 +1,12 @@
 
 package co.edu.unbosque.marketplace.service;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +36,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
     @Autowired
     private ModelMapper modelMapper;
 
-    private static final Random RND = new Random();
+    private static final SecureRandom RND = new SecureRandom();
 
     @Override
     public int create(UsuarioDTO data) {
@@ -48,7 +48,6 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             }
 
             Usuario usuario = modelMapper.map(data, Usuario.class);
-
             usuario.setNombre(AESUtil.encrypt(data.getNombre()));
             usuario.setCorreo(AESUtil.encrypt(data.getCorreo()));
             usuario.setContrasenia(
@@ -64,21 +63,22 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             usuarioRepo.save(usuario);
 
             String cuerpo = String.format(
-                    "Hola %s,\n\n" +
-                    "¡Bienvenido al Marketplace de Alojamientos de Inversiones LR!\n\n" +
-                    "Nos alegra que formes parte de nuestra plataforma, donde podrás descubrir, comparar y reservar alojamientos, o publicar tus propiedades como anfitrión.\n\n" +
-                    "Gracias por confiar en nosotros.\n\n" +
-                    "Saludos,\n" +
-                    "Equipo Marketplace Inversiones LR",
+                    "Hola %s,\n\n"
+                    + "¡Bienvenido al Marketplace de Alojamientos de Inversiones LR!\n\n"
+                    + "Nos alegra que formes parte de nuestra plataforma, "
+                    + "donde podrás descubrir, comparar y reservar alojamientos, "
+                    + "o publicar tus propiedades como anfitrión.\n\n"
+                    + "Gracias por confiar en nosotros.\n\n"
+                    + "Saludos,\n"
+                    + "Equipo Marketplace Inversiones LR",
                     data.getNombre());
 
             correoUtil.enviarCorreo(
                     data.getCorreo(),
-                    "Código de verificación",
+                    "Bienvenido al Marketplace de Inversiones LR",
                     cuerpo);
 
             return 0;
-
         } catch (Exception e) {
             return 2;
         }
@@ -109,7 +109,6 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     private UsuarioDTO convertirDTO(Usuario usuario) {
         UsuarioDTO dto = modelMapper.map(usuario, UsuarioDTO.class);
-
         dto.setIdUsuario(usuario.getIdUsuario());
         dto.setNombre(AESUtil.decrypt(usuario.getNombre()));
         dto.setCorreo(AESUtil.decrypt(usuario.getCorreo()));
@@ -117,7 +116,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
         return dto;
     }
-    
+
     @Override
     public int deleteById(Long id) {
         if (!usuarioRepo.existsById(id)) {
@@ -190,7 +189,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     public String generarCodigo(int longitud) {
         String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder codigo = new StringBuilder();
+        StringBuilder codigo = new StringBuilder(longitud);
 
         for (int i = 0; i < longitud; i++) {
             int index = RND.nextInt(caracteres.length());
@@ -211,7 +210,6 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             }
 
             String correoEncriptado = AESUtil.encrypt(correo);
-
             Optional<Usuario> usuarioFound =
                     usuarioRepo.findByCorreo(correoEncriptado);
 
@@ -252,5 +250,4 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
         return usuarioRepo.findByCorreo(
                 AESUtil.encrypt(correo)).orElse(null);
     }
-
 }

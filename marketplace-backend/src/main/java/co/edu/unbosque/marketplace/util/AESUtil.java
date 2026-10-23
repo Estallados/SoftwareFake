@@ -1,177 +1,155 @@
+
 package co.edu.unbosque.marketplace.util;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import static org.apache.commons.codec.binary.Base64.decodeBase64;
-import static org.apache.commons.codec.binary.Base64.encodeBase64;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.Objects;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Clase utilitaria para el cifrado y descifrado de datos utilizando el algoritmo AES.
- * Proporciona métodos para encriptar y desencriptar cadenas de texto.
+ * Utilidad para cifrar y descifrar textos y archivos mediante AES-GCM.
  */
-public class AESUtil {
+public final class AESUtil {
 
-    /** Algoritmo de encriptación utilizado. */
-    private final static String ALGORITMO = "AES";
+    private static final String ALGORITMO = "AES";
+    private static final String TIPO_CIFRADO = "AES/GCM/NoPadding";
+    private static final int TAMANO_IV = 12;
+    private static final int TAMANO_TAG = 128;
+    private static final int TAMANO_MINIMO = TAMANO_IV + 16;
 
-    /** Tipo de cifrado utilizado: AES/CBC/PKCS5Padding. */
-    private final static String TIPOCIFRADO = "AES/CBC/PKCS5Padding";
+    private static final SecureRandom RANDOM = new SecureRandom();
 
-    /** Llave secreta utilizada para la encriptación. */
-    private static final String KEY = "llavede16carater";
-
-    /** Vector de inicialización utilizado para la encriptación. */
-    private static final String IV = "programacioncomp";
-
-    /**
-     * Encripta un texto plano usando la llave y el vector de inicialización proporcionados.
-     *
-     * @param llave Llave secreta para la encriptación.
-     * @param iv Vector de inicialización.
-     * @param texto Texto plano a encriptar.
-     * @return Texto encriptado en formato Base64.
-     */
-    public static String encrypt(String llave, String iv, String texto) {
-        Cipher cipher = null;
-        try {
-            cipher = Cipher.getInstance(TIPOCIFRADO);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-            e.printStackTrace();
-        }
-        SecretKeySpec secretKeySpec = new SecretKeySpec(llave.getBytes(), ALGORITMO);
-        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv.getBytes());
-        try {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
-        } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        }
-        byte[] encrypted = null;
-        try {
-            encrypted = cipher.doFinal(texto.getBytes());
-        } catch (IllegalBlockSizeException | BadPaddingException e) {
-            e.printStackTrace();
-        }
-        return new String(encodeBase64(encrypted));
-    }
-    /** Contructor */
-    public AESUtil() {
-		// TODO Auto-generated constructor stub
-	}
-    
-    /**
-     * Desencripta un texto encriptado usando la llave y el vector de inicialización proporcionados.
-     *
-     * @param llave Llave secreta para la desencriptación.
-     * @param iv Vector de inicialización.
-     * @param encrypted Texto encriptado en formato Base64.
-     * @return Texto plano desencriptado.
-     */
-    public static String decrypt(String llave, String iv, String encrypted) {
-        Cipher cipher = null;
-        try {
-            cipher = Cipher.getInstance(TIPOCIFRADO);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-            e.printStackTrace();
-        }
-        SecretKeySpec secretKeySpec = new SecretKeySpec(llave.getBytes(), ALGORITMO);
-        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv.getBytes());
-        try {
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
-        } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        }
-        byte[] enc = decodeBase64(encrypted);
-        byte[] decrypted = null;
-        try {
-            decrypted = cipher.doFinal(enc);
-        } catch (IllegalBlockSizeException | BadPaddingException e) {
-            e.printStackTrace();
-        }
-        return new String(decrypted);
+    private AESUtil() {
+        throw new IllegalStateException("Clase utilitaria");
     }
 
-    /**
-     * Encripta el contenido de un archivo y guarda el resultado en otro archivo.
-     *
-     * @param inputPath Ruta del archivo de entrada.
-     * @param outputPath Ruta del archivo de salida donde se guardará el contenido encriptado.
-     * @throws Exception Si ocurre un error durante la lectura, encriptación o escritura del archivo.
-     */
-    public static void encryptFile(String inputPath, String outputPath) throws Exception {
-        byte[] fileBytes = Files.readAllBytes(Paths.get(inputPath));
-        Cipher cipher = Cipher.getInstance(ALGORITMO);
-        SecretKeySpec keySpec = new SecretKeySpec(KEY.getBytes(), "AES");
-        IvParameterSpec ivSpec = new IvParameterSpec(IV.getBytes());
-        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
-        byte[] encryptedBytes = cipher.doFinal(fileBytes);
-        Files.write(Paths.get(outputPath), encryptedBytes);
-        System.out.println("✅ Archivo encriptado: " + outputPath);
+    private static SecretKeySpec obtenerClave() {
+        String valor = System.getenv("AES_SECRET_KEY");
+
+        if (valor == null || valor.isBlank()) {
+            throw new IllegalStateException(
+                    "No se ha configurado AES_SECRET_KEY");
+        }
+
+        byte[] clave;
+
+        try {
+            clave = Base64.getDecoder().decode(valor);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "AES_SECRET_KEY debe estar codificada en Base64", e);
+        }
+
+        if (clave.length != 16 && clave.length != 24
+                && clave.length != 32) {
+            throw new IllegalStateException(
+                    "La clave AES debe tener 16, 24 o 32 bytes");
+        }
+
+        return new SecretKeySpec(clave, ALGORITMO);
     }
 
-    /**
-     * Desencripta el contenido de un archivo y guarda el resultado en otro archivo.
-     *
-     * @param inputPath Ruta del archivo de entrada encriptado.
-     * @param outputPath Ruta del archivo de salida donde se guardará el contenido desencriptado.
-     * @throws Exception Si ocurre un error durante la lectura, desencriptación o escritura del archivo.
-     */
-    public static void decryptFile(String inputPath, String outputPath) throws Exception {
-        byte[] encryptedBytes = Files.readAllBytes(Paths.get(inputPath));
-        Cipher cipher = Cipher.getInstance(ALGORITMO);
-        SecretKeySpec keySpec = new SecretKeySpec(KEY.getBytes(), "AES");
-        IvParameterSpec ivSpec = new IvParameterSpec(IV.getBytes());
-        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-        byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
-        Files.write(Paths.get(outputPath), decryptedBytes);
-        System.out.println("✅ Archivo desencriptado: " + outputPath);
+    private static byte[] generarIV() {
+        byte[] iv = new byte[TAMANO_IV];
+        RANDOM.nextBytes(iv);
+        return iv;
     }
 
-    /**
-     * Desencripta un texto encriptado usando la llave y el vector de inicialización por defecto.
-     *
-     * @param encrypted Texto encriptado en formato Base64.
-     * @return Texto plano desencriptado.
-     */
+    private static Cipher crearCipher(int modo, byte[] iv)
+            throws GeneralSecurityException {
+
+        Cipher cipher = Cipher.getInstance(TIPO_CIFRADO);
+        GCMParameterSpec parametros = new GCMParameterSpec(TAMANO_TAG, iv);
+        cipher.init(modo, obtenerClave(), parametros);
+        return cipher;
+    }
+
+    private static byte[] cifrarBytes(byte[] datos)
+            throws GeneralSecurityException {
+
+        byte[] iv = generarIV();
+        Cipher cipher = crearCipher(Cipher.ENCRYPT_MODE, iv);
+        byte[] cifrado = cipher.doFinal(datos);
+
+        return ByteBuffer.allocate(iv.length + cifrado.length)
+                .put(iv)
+                .put(cifrado)
+                .array();
+    }
+
+    private static byte[] descifrarBytes(byte[] datos)
+            throws GeneralSecurityException {
+
+        if (datos.length < TAMANO_MINIMO) {
+            throw new IllegalArgumentException(
+                    "Los datos cifrados no tienen un formato válido");
+        }
+
+        ByteBuffer buffer = ByteBuffer.wrap(datos);
+        byte[] iv = new byte[TAMANO_IV];
+        buffer.get(iv);
+
+        byte[] cifrado = new byte[buffer.remaining()];
+        buffer.get(cifrado);
+
+        Cipher cipher = crearCipher(Cipher.DECRYPT_MODE, iv);
+        return cipher.doFinal(cifrado);
+    }
+
+    public static String encrypt(String texto) {
+        Objects.requireNonNull(texto, "El texto no puede ser null");
+
+        try {
+            byte[] datos = texto.getBytes(StandardCharsets.UTF_8);
+            return Base64.getEncoder()
+                    .encodeToString(cifrarBytes(datos));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Error al cifrar el texto", e);
+        }
+    }
+
     public static String decrypt(String encrypted) {
-        String iv = "programacioncomp";
-        String key = "llavede16carater";
-        return decrypt(key, iv, encrypted);
+        Objects.requireNonNull(
+                encrypted, "El texto cifrado no puede ser null");
+
+        try {
+            byte[] datos = Base64.getDecoder().decode(encrypted);
+            byte[] descifrados = descifrarBytes(datos);
+
+            return new String(descifrados, StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "No fue posible descifrar el texto", e);
+        }
     }
 
-    /**
-     * Encripta un texto plano usando la llave y el vector de inicialización por defecto.
-     *
-     * @param plainText Texto plano a encriptar.
-     * @return Texto encriptado en formato Base64.
-     */
-    public static String encrypt(String plainText) {
-        String iv = "programacioncomp";
-        String key = "llavede16carater";
-        return encrypt(key, iv, plainText);
+    public static void encryptFile(String inputPath, String outputPath)
+            throws IOException, GeneralSecurityException {
+
+        Path entrada = Paths.get(inputPath);
+        Path salida = Paths.get(outputPath);
+        byte[] datos = Files.readAllBytes(entrada);
+
+        Files.write(salida, cifrarBytes(datos));
     }
 
-    /**
-     * Método principal para probar la funcionalidad de encriptación y desencriptación.
-     *
-     * @param args Argumentos de la línea de comandos (no utilizados).
-     */
-    public static void main(String[] args) {
-        String text = "asd";
+    public static void decryptFile(String inputPath, String outputPath)
+            throws IOException, GeneralSecurityException {
 
-        String iv = "holamundohfhfhtf";
-        String key = "holamundohfhfhtf";
-        System.out.println(iv.getBytes().length);
+        Path entrada = Paths.get(inputPath);
+        Path salida = Paths.get(outputPath);
+        byte[] datos = Files.readAllBytes(entrada);
 
-        String encoded = encrypt(key, iv, text);
-        System.out.println(decrypt(key, iv, encoded));
+        Files.write(salida, descifrarBytes(datos));
     }
 }
