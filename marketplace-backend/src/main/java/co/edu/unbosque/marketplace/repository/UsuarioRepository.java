@@ -1,4 +1,4 @@
-package co.edu.unbosque.marketplace.service;
+package co.edu.unbosque.marketplace.repository;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
