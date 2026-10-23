@@ -2,7 +2,6 @@ package co.edu.unbosque.marketplace.exception;
 
 import java.util.InputMismatchException;
 
-
 /**
  * Clase ExceptionCheker. Proporciona métodos para validar contraseñas según
  * diferentes criterios.
@@ -18,13 +17,11 @@ public class ExceptionCheker {
 	 * @throws SymbolException    Si no contiene al menos un símbolo especial.
 	 * @throws SmallException     Si no contiene al menos una letra minúscula.
 	 */
-	public static void checkerPasword(String a)
-			throws  CharacterException, NumberException, SymbolException {
-		
+	public static void checkerPasword(String a) throws CharacterException, NumberException, SymbolException {
+
 		checkerCharacter(a);
 		checkerNumber(a);
 		checkerSymbol(a);
-		
 
 	}
 
@@ -59,17 +56,15 @@ public class ExceptionCheker {
 		}
 	}
 
-
-	
 	/**
 	 * Verifica que la contraseña contenga al menos un número.
 	 * 
 	 * @param a La contraseña a validar.
 	 * @throws NumberException Si no contiene números.
 	 */
-	public static void checkerNumber(String a) throws NumberException {
 
-		if (!a.matches(".*\\d.*")) {
+	public static void checkerNumber(String a) throws NumberException {
+		if (!java.util.regex.Pattern.compile("\\d").matcher(a).find()) {
 			throw new NumberException();
 		}
 	}
@@ -82,13 +77,10 @@ public class ExceptionCheker {
 	 */
 
 	public static void checkerSymbol(String a) throws SymbolException {
-
-		if (!a.matches(".*[^A-Za-z0-9].*")) {
+		if (!java.util.regex.Pattern.compile("[^A-Za-z0-9]").matcher(a).find()) {
 			throw new SymbolException();
 		}
 	}
-
-	
 
 	/**
 	 * Verifica que el valor no sea neagtico
@@ -114,9 +106,6 @@ public class ExceptionCheker {
 			throw new TextException();
 		}
 	}
-
-	
-
 
 	/**
 	 * Verifica que lo ingresado sea solo numeros
