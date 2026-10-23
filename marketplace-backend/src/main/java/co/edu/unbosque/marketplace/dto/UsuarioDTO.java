@@ -10,7 +10,8 @@ public class UsuarioDTO {
     private String telefono;
     private Role rol;
     private EstadoUsuario estado;
-
+    private String contrasenia;
+    
     public UsuarioDTO() {
     }
 
@@ -55,4 +56,13 @@ public class UsuarioDTO {
     public void setEstado(EstadoUsuario estado) {
         this.estado = estado;
     }
+
+	public String getContrasenia() {
+		return contrasenia;
+	}
+
+	public void setContrasenia(String contrasenia) {
+		this.contrasenia = contrasenia;
+	}
+    
 }
