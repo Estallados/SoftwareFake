@@ -1,19 +1,30 @@
 package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 
-/** Entidad que representa notificacion en el marketplace. */
+/**
+ * Entidad que representa notificacion (dentro de la plataforma) en el
+ * marketplace.
+ *
+ * @see "RF-003"
+ */
 @Entity
-@Table(name = "notificacion")
+@Table(name = "notificacion", indexes = @Index(name = "idx_notificacion_usuario", columnList = "id_usuario"))
 public class Notificacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idNotificacion;
+    /** Evento que la originó, por ejemplo RESERVA_CONFIRMADA. */
+    private String tipo;
+    @Column(length = 1000)
     private String mensaje;
     private LocalDateTime fecha;
     private Boolean leida;
@@ -27,6 +38,13 @@ public class Notificacion {
     }
     public void setIdNotificacion(Long idNotificacion) {
         this.idNotificacion = idNotificacion;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 
     public String getMensaje() {

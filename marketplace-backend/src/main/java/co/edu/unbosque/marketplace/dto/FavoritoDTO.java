@@ -2,11 +2,17 @@ package co.edu.unbosque.marketplace.dto;
 
 import java.time.LocalDateTime;
 
+/**
+ * Alojamiento guardado en favoritos.
+ *
+ * @see "RF-007"
+ */
 public class FavoritoDTO {
     private Long idFavorito;
     private LocalDateTime fechaAgregado;
     private Long idUsuario;
     private Long idAlojamiento;
+    private AlojamientoDTO alojamiento;
 
     public FavoritoDTO() {
     }
@@ -37,5 +43,12 @@ public class FavoritoDTO {
     }
     public void setIdAlojamiento(Long idAlojamiento) {
         this.idAlojamiento = idAlojamiento;
+    }
+
+    public AlojamientoDTO getAlojamiento() {
+        return alojamiento;
+    }
+    public void setAlojamiento(AlojamientoDTO alojamiento) {
+        this.alojamiento = alojamiento;
     }
 }

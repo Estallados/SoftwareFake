@@ -2,26 +2,34 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-
-/** Entidad que representa pago en el marketplace. */
+/**
+ * Entidad que representa pago (simulado, modo prueba) en el marketplace.
+ *
+ * @see "RF-028"
+ */
 @Entity
 @Table(name = "pago")
 public class Pago {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPago;
+    /** Referencia que entrega el proveedor (id del PaymentIntent en Stripe). */
     private String referencia;
+    /** STRIPE_TEST o SIMULADO. */
+    private String proveedor;
     private BigDecimal valor;
     @Enumerated(EnumType.STRING)
     private EstadoPago estado;
+    private String detalle;
     private LocalDateTime fecha;
     private Long idReserva;
 
@@ -42,6 +50,13 @@ public class Pago {
         this.referencia = referencia;
     }
 
+    public String getProveedor() {
+        return proveedor;
+    }
+    public void setProveedor(String proveedor) {
+        this.proveedor = proveedor;
+    }
+
     public BigDecimal getValor() {
         return valor;
     }
@@ -54,6 +69,13 @@ public class Pago {
     }
     public void setEstado(EstadoPago estado) {
         this.estado = estado;
+    }
+
+    public String getDetalle() {
+        return detalle;
+    }
+    public void setDetalle(String detalle) {
+        this.detalle = detalle;
     }
 
     public LocalDateTime getFecha() {

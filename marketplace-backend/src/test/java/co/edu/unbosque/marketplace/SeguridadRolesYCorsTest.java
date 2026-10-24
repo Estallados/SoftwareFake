@@ -71,7 +71,7 @@ class SeguridadRolesYCorsTest {
 	}
 
 	@Test
-	void soloAdminPuedeListarUsuarios() throws Exception {
+	void soloAdminPuedeListarUsuarios_CA131() throws Exception {
 		String tokenAdmin = token("admin@marketplace.local", "Admin#Prueba1");
 		String tokenHuesped = registrarHuesped("huesped.roles@correo.com");
 

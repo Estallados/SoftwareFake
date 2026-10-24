@@ -35,8 +35,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * ROLE_ADMIN. En {@code hasRole(...)} y {@code @PreAuthorize} se escriben sin el
  * prefijo, por ejemplo {@code hasRole('ANFITRION')}.
  * <p>
- * Las rutas {@code /alojamientos/**} corresponden al controlador de
- * alojamientos que todavía no existe; quedan definidas para cuando se cree.
+ * Las reglas por rol finas están en cada controller con {@code @PreAuthorize};
+ * aquí se definen las rutas públicas y {@code /admin/**}.
  * </p>
  */
 @Configuration
@@ -52,7 +52,7 @@ public class SecurityConfig {
 	private final List<String> origenesPermitidos;
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService,
-			@Value("${app.cors.allowed-origins}") List<String> origenesPermitidos) {
+			@Value("${app.cors.allowed-origins:http://localhost:4200}") List<String> origenesPermitidos) {
 		this.jwtAuthFilter = jwtAuthFilter;
 		this.userDetailsService = userDetailsService;
 		this.origenesPermitidos = origenesPermitidos;
@@ -67,11 +67,15 @@ public class SecurityConfig {
 						// Spring reenvía los errores (400, 500...) a /error; si se protege,
 						// cualquier error en una ruta pública se convierte en un 401 engañoso
 						.requestMatchers("/error").permitAll()
+						// Endpoint de salud para monitoreo y reinicio automático (RNF-001..003)
+						.requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
 						.requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.GET, "/alojamientos/mios").hasRole("ANFITRION")
-						// búsqueda, detalle, disponibilidad y reseñas son públicos
-						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/{id}",
-								"/alojamientos/{id}/disponibilidad", "/alojamientos/{id}/resenas")
+						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;
+						// el detalle de una publicación no ACTIVA lo filtra PublicacionService
+						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/politicas",
+								"/alojamientos/{id}", "/alojamientos/{id}/disponibilidad",
+								"/alojamientos/{id}/disponibilidad/consultar", "/alojamientos/{id}/resenas")
 						.permitAll().anyRequest().authenticated())
 				.exceptionHandling(ex -> ex
 						.authenticationEntryPoint((req, res, e) -> writeError(res, HttpServletResponse.SC_UNAUTHORIZED,

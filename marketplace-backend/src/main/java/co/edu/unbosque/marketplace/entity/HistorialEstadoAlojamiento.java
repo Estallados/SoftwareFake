@@ -1,0 +1,97 @@
+package co.edu.unbosque.marketplace.entity;
+
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.Immutable;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+
+/**
+ * Entidad que guarda cada cambio de estado de un alojamiento. Es de solo
+ * inserción, así se conservan los eventos anteriores.
+ *
+ * @see "RF-027, RNF-026, CA-153"
+ */
+@Entity
+@Immutable
+@Table(name = "historialEstadoAlojamiento", indexes = @Index(name = "idx_historial_alojamiento",
+        columnList = "id_alojamiento"))
+public class HistorialEstadoAlojamiento {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long idHistorial;
+    @Column(nullable = false, updatable = false)
+    private Long idAlojamiento;
+    @Enumerated(EnumType.STRING)
+    @Column(updatable = false)
+    private EstadoAlojamiento estadoAnterior;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, updatable = false)
+    private EstadoAlojamiento estadoNuevo;
+    @Column(length = 1000, updatable = false)
+    private String motivo;
+    @Column(updatable = false)
+    private Long idUsuario;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime fecha;
+
+    public HistorialEstadoAlojamiento() {
+    }
+
+    public Long getIdHistorial() {
+        return idHistorial;
+    }
+    public void setIdHistorial(Long idHistorial) {
+        this.idHistorial = idHistorial;
+    }
+
+    public Long getIdAlojamiento() {
+        return idAlojamiento;
+    }
+    public void setIdAlojamiento(Long idAlojamiento) {
+        this.idAlojamiento = idAlojamiento;
+    }
+
+    public EstadoAlojamiento getEstadoAnterior() {
+        return estadoAnterior;
+    }
+    public void setEstadoAnterior(EstadoAlojamiento estadoAnterior) {
+        this.estadoAnterior = estadoAnterior;
+    }
+
+    public EstadoAlojamiento getEstadoNuevo() {
+        return estadoNuevo;
+    }
+    public void setEstadoNuevo(EstadoAlojamiento estadoNuevo) {
+        this.estadoNuevo = estadoNuevo;
+    }
+
+    public String getMotivo() {
+        return motivo;
+    }
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
+    }
+
+    public Long getIdUsuario() {
+        return idUsuario;
+    }
+    public void setIdUsuario(Long idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+    public void setFecha(LocalDateTime fecha) {
+        this.fecha = fecha;
+    }
+}

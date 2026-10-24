@@ -1,12 +1,19 @@
 package co.edu.unbosque.marketplace.dto;
 
+import java.time.LocalDateTime;
 import co.edu.unbosque.marketplace.entity.EstadoResena;
 
+/**
+ * Reseña de una estancia. De entrada se usan idReserva, calificacion y comentario.
+ *
+ * @see "RF-004"
+ */
 public class ResenaDTO {
     private Long idResena;
     private Integer calificacion;
     private String comentario;
     private EstadoResena estado;
+    private LocalDateTime fecha;
     private Long idUsuario;
     private Long idReserva;
     private Long idAlojamiento;
@@ -40,6 +47,13 @@ public class ResenaDTO {
     }
     public void setEstado(EstadoResena estado) {
         this.estado = estado;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+    public void setFecha(LocalDateTime fecha) {
+        this.fecha = fecha;
     }
 
     public Long getIdUsuario() {

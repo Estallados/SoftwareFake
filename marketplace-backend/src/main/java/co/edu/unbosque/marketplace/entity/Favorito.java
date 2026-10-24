@@ -1,15 +1,23 @@
 package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
-/** Entidad que representa favorito en el marketplace. */
+/**
+ * Entidad que representa favorito en el marketplace. Un alojamiento aparece una
+ * sola vez en los favoritos de cada usuario.
+ *
+ * @see "RF-007, CA-172"
+ */
 @Entity
-@Table(name = "favorito")
+@Table(name = "favorito", uniqueConstraints = @UniqueConstraint(name = "uk_favorito_usuario_alojamiento",
+        columnNames = { "id_usuario", "id_alojamiento" }))
 public class Favorito {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

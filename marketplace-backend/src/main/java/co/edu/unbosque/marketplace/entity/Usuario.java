@@ -38,6 +38,12 @@ public class Usuario implements UserDetails{
     @Enumerated(EnumType.STRING)
     private EstadoUsuario estado;
     private String contrasenia;
+    /** Motivo que dio el administrador al restringir la cuenta (RF-014). */
+    @Column(length = 1000)
+    private String motivoRestriccion;
+    /** Secreto TOTP cifrado con AES; null si nunca se activó el segundo factor (RNF-033). */
+    private String secretoTotp;
+    private Boolean totpHabilitado;
 
     public Usuario() {
     }
@@ -113,6 +119,27 @@ public class Usuario implements UserDetails{
 	public void setContrasenia(String contrasenia) {
 		this.contrasenia = contrasenia;
 	}
+
+    public String getMotivoRestriccion() {
+        return motivoRestriccion;
+    }
+    public void setMotivoRestriccion(String motivoRestriccion) {
+        this.motivoRestriccion = motivoRestriccion;
+    }
+
+    public String getSecretoTotp() {
+        return secretoTotp;
+    }
+    public void setSecretoTotp(String secretoTotp) {
+        this.secretoTotp = secretoTotp;
+    }
+
+    public Boolean getTotpHabilitado() {
+        return totpHabilitado;
+    }
+    public void setTotpHabilitado(Boolean totpHabilitado) {
+        this.totpHabilitado = totpHabilitado;
+    }
 
     @Override
     public boolean isEnabled() {

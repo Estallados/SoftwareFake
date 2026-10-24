@@ -8,9 +8,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
+import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
+import co.edu.unbosque.marketplace.exception.ExceptionCheker;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
+import co.edu.unbosque.marketplace.service.AuditoriaService;
 import co.edu.unbosque.marketplace.service.UsuarioService;
 import co.edu.unbosque.marketplace.util.AESUtil;
 
@@ -29,6 +32,7 @@ public class AdminInicializador implements CommandLineRunner {
 
 	private final UsuarioRepository usuarioRepo;
 	private final PasswordEncoder passwordEncoder;
+	private final AuditoriaService auditoriaService;
 
 	@Value("${app.admin.email}")
 	private String correo;
@@ -39,9 +43,11 @@ public class AdminInicializador implements CommandLineRunner {
 	@Value("${app.admin.full-name:Administrador}")
 	private String nombre;
 
-	public AdminInicializador(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder) {
+	public AdminInicializador(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder,
+			AuditoriaService auditoriaService) {
 		this.usuarioRepo = usuarioRepo;
 		this.passwordEncoder = passwordEncoder;
+		this.auditoriaService = auditoriaService;
 	}
 
 	@Override
@@ -51,6 +57,11 @@ public class AdminInicializador implements CommandLineRunner {
 		}
 		if (contrasenia == null || contrasenia.isBlank()) {
 			LOG.warn("No existe ningún administrador y ADMIN_PASSWORD no está definida: no se creó el admin inicial.");
+			return;
+		}
+		if (!ExceptionCheker.contraseniaValida(contrasenia)) {
+			LOG.warn("ADMIN_PASSWORD no cumple las reglas de contraseña (8+ caracteres, mayúscula, minúscula, "
+					+ "número y símbolo): no se creó el admin inicial.");
 			return;
 		}
 
@@ -69,8 +80,10 @@ public class AdminInicializador implements CommandLineRunner {
 		admin.setContrasenia(passwordEncoder.encode(contrasenia));
 		admin.setRol(Role.ADMIN);
 		admin.setEstado(EstadoUsuario.ACTIVO);
-		usuarioRepo.save(admin);
+		admin = usuarioRepo.save(admin);
 
+		auditoriaService.registrar(null, AuditoriaService.CREACION_ADMINISTRADOR, AuditoriaService.ENTIDAD_USUARIO,
+				admin.getIdUsuario(), ResultadoAuditoria.EXITOSO, "Administrador inicial creado al arrancar");
 		LOG.info("Administrador inicial creado: {}", correoNormalizado);
 	}
 }

@@ -1,19 +1,27 @@
 package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-/** Entidad que representa mensaje en el marketplace. */
+/**
+ * Entidad que representa mensaje de una conversación: remitente
+ * ({@code idUsuario}), contenido y fecha de envío.
+ *
+ * @see "RF-029, CA-168"
+ */
 @Entity
 @Table(name = "mensaje")
 public class Mensaje {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idMensaje;
+    @Column(length = 2000)
     private String contenido;
     private LocalDateTime fechaEnvio;
     private Long idConversacion;

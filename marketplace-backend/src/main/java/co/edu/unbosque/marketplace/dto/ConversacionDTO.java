@@ -1,15 +1,21 @@
 package co.edu.unbosque.marketplace.dto;
 
 import java.time.LocalDateTime;
-
 import co.edu.unbosque.marketplace.entity.EstadoConversacion;
 
+/**
+ * Conversación entre huésped (idUsuario) y anfitrión. De entrada se usa idAlojamiento y opcionalmente un primer mensaje.
+ *
+ * @see "RF-029"
+ */
 public class ConversacionDTO {
     private Long idConversacion;
     private LocalDateTime fechaCreacion;
     private EstadoConversacion estado;
     private Long idUsuario;
+    private Long idAnfitrion;
     private Long idAlojamiento;
+    private String mensaje;
 
     public ConversacionDTO() {
     }
@@ -42,10 +48,24 @@ public class ConversacionDTO {
         this.idUsuario = idUsuario;
     }
 
+    public Long getIdAnfitrion() {
+        return idAnfitrion;
+    }
+    public void setIdAnfitrion(Long idAnfitrion) {
+        this.idAnfitrion = idAnfitrion;
+    }
+
     public Long getIdAlojamiento() {
         return idAlojamiento;
     }
     public void setIdAlojamiento(Long idAlojamiento) {
         this.idAlojamiento = idAlojamiento;
+    }
+
+    public String getMensaje() {
+        return mensaje;
+    }
+    public void setMensaje(String mensaje) {
+        this.mensaje = mensaje;
     }
 }

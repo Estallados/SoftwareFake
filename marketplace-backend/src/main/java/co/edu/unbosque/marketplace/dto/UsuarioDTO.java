@@ -11,7 +11,9 @@ public class UsuarioDTO {
     private Role rol;
     private EstadoUsuario estado;
     private String contrasenia;
-    
+    private String motivoRestriccion;
+    private Boolean totpHabilitado;
+
     public UsuarioDTO() {
     }
 
@@ -64,5 +66,19 @@ public class UsuarioDTO {
 	public void setContrasenia(String contrasenia) {
 		this.contrasenia = contrasenia;
 	}
+
+    public String getMotivoRestriccion() {
+        return motivoRestriccion;
+    }
+    public void setMotivoRestriccion(String motivoRestriccion) {
+        this.motivoRestriccion = motivoRestriccion;
+    }
+
+    public Boolean getTotpHabilitado() {
+        return totpHabilitado;
+    }
+    public void setTotpHabilitado(Boolean totpHabilitado) {
+        this.totpHabilitado = totpHabilitado;
+    }
     
 }

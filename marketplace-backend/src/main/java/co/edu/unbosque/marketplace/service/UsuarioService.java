@@ -4,28 +4,44 @@ package co.edu.unbosque.marketplace.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import co.edu.unbosque.marketplace.dto.PaginaDTO;
 import co.edu.unbosque.marketplace.dto.UsuarioDTO;
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
+import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
+import co.edu.unbosque.marketplace.exception.CapitalException;
 import co.edu.unbosque.marketplace.exception.CharacterException;
 import co.edu.unbosque.marketplace.exception.ExceptionCheker;
 import co.edu.unbosque.marketplace.exception.MailException;
 import co.edu.unbosque.marketplace.exception.NumberException;
+import co.edu.unbosque.marketplace.exception.SmallException;
 import co.edu.unbosque.marketplace.exception.SymbolException;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.CorreoUtil;
+import co.edu.unbosque.marketplace.util.Resultado;
 
+/**
+ * Reglas de negocio de usuarios: registro, creación de administradores,
+ * perfil y desactivación de la cuenta propia. Cada operación queda en la
+ * auditoría.
+ *
+ * @see "RF-001"
+ * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
+ */
 @Service
 public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
@@ -39,8 +55,16 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     private static final Logger LOG = LoggerFactory.getLogger(UsuarioService.class);
 
+    private static final Pattern PATRON_TELEFONO = Pattern.compile("^\\+?\\d{7,15}$");
+
     @Autowired
     private UsuarioRepository usuarioRepo;
+
+    @Autowired
+    private AuditoriaService auditoriaService;
+
+    @Autowired
+    private NotificacionService notificacionService;
 
     @Autowired
     private CorreoUtil correoUtil;
@@ -67,15 +91,51 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
     /**
      * Registra un usuario nuevo. La cuenta queda ACTIVA de inmediato. Solo se
      * permiten los roles HUESPED (por defecto) y ANFITRION; nunca ADMIN.
+     * <p>
+     * DECISIÓN (contradice el literal de RF-001): el registro público no crea
+     * administradores. El primer ADMIN lo crea {@code AdminInicializador} al
+     * arrancar y los siguientes los crea otro administrador con
+     * {@link #crearAdministrador(UsuarioDTO, Long)}.
+     * </p>
      *
      * @return {@link #CREADO}, {@link #CORREO_DUPLICADO}, {@link #DATOS_INVALIDOS},
      *         {@link #CONTRASENIA_DEBIL}, {@link #ROL_NO_PERMITIDO} o
      *         {@link #ERROR_INTERNO}
+     * @see "RF-001"
      */
     @Override
     public int create(UsuarioDTO data) {
+        Role rol = data == null || data.getRol() == null ? Role.HUESPED : data.getRol();
+        if (rol == Role.ADMIN) {
+            auditoriaService.registrar(null, AuditoriaService.REGISTRO_USUARIO, AuditoriaService.ENTIDAD_USUARIO,
+                    null, ResultadoAuditoria.RECHAZADO, "Intento de registro público como ADMIN");
+            return ROL_NO_PERMITIDO;
+        }
+        return registrar(data, rol, null, AuditoriaService.REGISTRO_USUARIO);
+    }
+
+    /**
+     * Crea otro administrador. Solo lo puede invocar un ADMIN (lo controla
+     * {@code UsuarioController} con {@code @PreAuthorize}).
+     *
+     * @param data    Datos del nuevo administrador; el rol enviado se ignora.
+     * @param idActor Administrador que hace la creación (sale del token JWT).
+     * @return los mismos códigos de {@link #create(UsuarioDTO)}, excepto
+     *         {@link #ROL_NO_PERMITIDO}.
+     * @see "RF-001"
+     */
+    public int crearAdministrador(UsuarioDTO data, Long idActor) {
+        return registrar(data, Role.ADMIN, idActor, AuditoriaService.CREACION_ADMINISTRADOR);
+    }
+
+    /**
+     * Validaciones y guardado comunes a {@link #create(UsuarioDTO)} y
+     * {@link #crearAdministrador(UsuarioDTO, Long)}.
+     */
+    private int registrar(UsuarioDTO data, Role rol, Long idActor, String accion) {
         if (data == null || esVacio(data.getNombre()) || esVacio(data.getCorreo())
-                || esVacio(data.getContrasenia())) {
+                || esVacio(data.getContrasenia()) || !telefonoValido(data.getTelefono())) {
+            auditarRechazo(idActor, accion, "Datos incompletos o inválidos");
             return DATOS_INVALIDOS;
         }
 
@@ -84,29 +144,28 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
         try {
             ExceptionCheker.checkerMail(correo);
         } catch (MailException e) {
+            auditarRechazo(idActor, accion, "Correo con formato inválido");
             return DATOS_INVALIDOS;
         }
 
         try {
             ExceptionCheker.checkerPasword(data.getContrasenia());
-        } catch (CharacterException | NumberException | SymbolException e) {
+        } catch (CharacterException | CapitalException | SmallException | NumberException | SymbolException e) {
+            auditarRechazo(idActor, accion, "Contraseña débil");
             return CONTRASENIA_DEBIL;
         }
 
-        Role rol = data.getRol() == null ? Role.HUESPED : data.getRol();
-        if (rol == Role.ADMIN) {
-            return ROL_NO_PERMITIDO;
-        }
-
+        Usuario usuario;
         try {
             String correoHash = AESUtil.hash(correo);
             if (usuarioRepo.existsByCorreoHash(correoHash)) {
+                auditarRechazo(idActor, accion, "Correo ya registrado");
                 return CORREO_DUPLICADO;
             }
 
             // Se arma la entidad campo por campo (sin ModelMapper) para que el
             // cliente no pueda fijar id, estado ni otros campos internos.
-            Usuario usuario = new Usuario();
+            usuario = new Usuario();
             usuario.setNombre(AESUtil.encrypt(data.getNombre().trim()));
             usuario.setCorreo(AESUtil.encrypt(correo));
             usuario.setCorreoHash(correoHash);
@@ -115,14 +174,21 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             usuario.setRol(rol);
             usuario.setEstado(EstadoUsuario.ACTIVO);
 
-            usuarioRepo.save(usuario);
+            usuario = usuarioRepo.save(usuario);
         } catch (DataIntegrityViolationException e) {
             // Dos registros simultáneos con el mismo correo: lo frena el índice único
+            auditarRechazo(idActor, accion, "Correo ya registrado");
             return CORREO_DUPLICADO;
         } catch (Exception e) {
             LOG.error("Error al registrar el usuario", e);
+            auditoriaService.registrar(idActor, accion, AuditoriaService.ENTIDAD_USUARIO, null,
+                    ResultadoAuditoria.ERROR, e.getClass().getSimpleName());
             return ERROR_INTERNO;
         }
+
+        auditoriaService.registrar(idActor == null ? usuario.getIdUsuario() : idActor, accion,
+                AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO,
+                "Rol " + rol);
 
         String cuerpo = String.format(
                 "Hola %s,\n\n"
@@ -294,6 +360,8 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	        usuario.setEstado(EstadoUsuario.INACTIVO);
 	        usuarioRepo.save(usuario);
 
+	        auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.CUENTA_DESACTIVADA,
+	                AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO, null);
 	        return 0;
 
 	    } catch (Exception e) {
@@ -301,6 +369,132 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 			return 3;
 		}
 	}
+
+    /**
+     * Actualiza el perfil propio. Solo se pueden cambiar el nombre y el
+     * teléfono; correo, rol, estado y contraseña no se tocan por esta vía.
+     * Los campos que lleguen en null se dejan como están.
+     *
+     * @param correo   Correo del usuario autenticado (sale del token JWT).
+     * @param nombre   Nombre nuevo; si se envía no puede estar vacío.
+     * @param telefono Teléfono nuevo: 7 a 15 dígitos, opcionalmente con +.
+     * @return 0 actualizado; 1 usuario no encontrado; 2 datos inválidos o
+     *         ningún campo para actualizar.
+     * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
+     */
+    public int actualizarPerfil(String correo, String nombre, String telefono) {
+        if ((nombre == null && telefono == null) || (nombre != null && nombre.isBlank())
+                || (telefono != null && !telefonoValido(telefono))) {
+            return 2;
+        }
+
+        Optional<Usuario> usuarioOpt = esVacio(correo) ? Optional.empty()
+                : usuarioRepo.findByCorreoHash(hashCorreo(correo));
+        if (usuarioOpt.isEmpty()) {
+            return 1;
+        }
+
+        Usuario usuario = usuarioOpt.get();
+        StringBuilder cambios = new StringBuilder();
+        if (nombre != null) {
+            usuario.setNombre(AESUtil.encrypt(nombre.trim()));
+            cambios.append("nombre ");
+        }
+        if (telefono != null) {
+            usuario.setTelefono(telefono.isBlank() ? null : telefono.trim());
+            cambios.append("telefono");
+        }
+        usuarioRepo.save(usuario);
+
+        auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.PERFIL_ACTUALIZADO,
+                AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO,
+                "Campos: " + cambios.toString().trim());
+        return 0;
+    }
+
+    /**
+     * Usuarios de forma paginada (vista del administrador).
+     *
+     * @see "RF-014"
+     */
+    public PaginaDTO<UsuarioDTO> listarPaginado(Pageable pagina) {
+        return PaginaDTO.de(usuarioRepo.findAll(pagina), this::convertirDTO);
+    }
+
+    /**
+     * Restringe una cuenta con un motivo (administrador). Una cuenta
+     * restringida no puede iniciar sesión, sus tokens dejan de funcionar y no
+     * puede reactivarse sola. No se puede restringir a un administrador.
+     *
+     * @return 0 con el usuario; 1 no existe; 2 falta el motivo; 3 es administrador.
+     * @see "RF-014, CA-058, CA-059, CA-060"
+     */
+    @Transactional
+    public Resultado<UsuarioDTO> restringir(Long idUsuario, String motivo, Long idAdmin) {
+        if (esVacio(motivo)) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo de la restricción es obligatorio.");
+        }
+        Optional<Usuario> usuario = usuarioRepo.findById(idUsuario);
+        if (usuario.isEmpty()) {
+            return Resultado.error(Resultado.NO_ENCONTRADO, "Usuario no encontrado.");
+        }
+        if (usuario.get().getRol() == Role.ADMIN) {
+            auditoriaService.registrar(idAdmin, AuditoriaService.USUARIO_RESTRINGIDO, AuditoriaService.ENTIDAD_USUARIO,
+                    idUsuario, ResultadoAuditoria.RECHAZADO, "No se puede restringir a un administrador");
+            return Resultado.error(Resultado.SIN_PERMISO, "No se puede restringir a un administrador.");
+        }
+        usuario.get().setEstado(EstadoUsuario.RESTRINGIDO);
+        usuario.get().setMotivoRestriccion(motivo.trim());
+        Usuario guardado = usuarioRepo.save(usuario.get());
+
+        notificacionService.enviar(idUsuario, NotificacionService.CUENTA_RESTRINGIDA,
+                "Tu cuenta fue restringida por un administrador. Motivo: " + motivo.trim());
+        auditoriaService.registrar(idAdmin, AuditoriaService.USUARIO_RESTRINGIDO, AuditoriaService.ENTIDAD_USUARIO,
+                idUsuario, ResultadoAuditoria.EXITOSO, motivo.trim());
+        return Resultado.exito(convertirDTO(guardado));
+    }
+
+    /**
+     * Libera una cuenta restringida (administrador). Queda ACTIVA.
+     *
+     * @return 0 con el usuario; 1 no existe; 2 falta el motivo; 4 no estaba restringida.
+     * @see "RF-014"
+     */
+    @Transactional
+    public Resultado<UsuarioDTO> liberar(Long idUsuario, String motivo, Long idAdmin) {
+        if (esVacio(motivo)) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo para liberar la cuenta es obligatorio.");
+        }
+        Optional<Usuario> usuario = usuarioRepo.findById(idUsuario);
+        if (usuario.isEmpty()) {
+            return Resultado.error(Resultado.NO_ENCONTRADO, "Usuario no encontrado.");
+        }
+        if (usuario.get().getEstado() != EstadoUsuario.RESTRINGIDO) {
+            return Resultado.error(Resultado.ESTADO_INVALIDO, "La cuenta no está restringida.");
+        }
+        usuario.get().setEstado(EstadoUsuario.ACTIVO);
+        usuario.get().setMotivoRestriccion(null);
+        Usuario guardado = usuarioRepo.save(usuario.get());
+
+        notificacionService.enviar(idUsuario, NotificacionService.CUENTA_LIBERADA,
+                "Tu cuenta fue habilitada de nuevo por un administrador.");
+        auditoriaService.registrar(idAdmin, AuditoriaService.USUARIO_LIBERADO, AuditoriaService.ENTIDAD_USUARIO,
+                idUsuario, ResultadoAuditoria.EXITOSO, motivo.trim());
+        return Resultado.exito(convertirDTO(guardado));
+    }
+
+    /**
+     * El teléfono es opcional; si se envía debe tener de 7 a 15 dígitos,
+     * opcionalmente precedidos de +. Vacío equivale a no enviarlo.
+     */
+    private static boolean telefonoValido(String telefono) {
+        return esVacio(telefono) || PATRON_TELEFONO.matcher(telefono.trim()).matches();
+    }
+
+    private void auditarRechazo(Long idActor, String accion, String motivo) {
+        auditoriaService.registrar(idActor, accion, AuditoriaService.ENTIDAD_USUARIO, null,
+                ResultadoAuditoria.RECHAZADO, motivo);
+    }
 
     private static boolean esVacio(String texto) {
         return texto == null || texto.isBlank();

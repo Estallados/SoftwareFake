@@ -17,12 +17,58 @@ public class ExceptionCheker {
 	 * @throws SymbolException    Si no contiene al menos un símbolo especial.
 	 * @throws SmallException     Si no contiene al menos una letra minúscula.
 	 */
-	public static void checkerPasword(String a) throws CharacterException, NumberException, SymbolException {
+	public static void checkerPasword(String a)
+			throws CharacterException, CapitalException, SmallException, NumberException, SymbolException {
 
 		checkerCharacter(a);
+		checkerCapital(a);
+		checkerSmall(a);
 		checkerNumber(a);
 		checkerSymbol(a);
 
+	}
+
+	/**
+	 * Indica si la contraseña cumple todas las reglas de
+	 * {@link #checkerPasword(String)} (RNF-008), sin lanzar excepción.
+	 *
+	 * @param a La contraseña a validar.
+	 * @return {@code true} si es válida.
+	 */
+	public static boolean contraseniaValida(String a) {
+		if (a == null) {
+			return false;
+		}
+		try {
+			checkerPasword(a);
+			return true;
+		} catch (CharacterException | CapitalException | SmallException | NumberException | SymbolException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Verifica que la contraseña contenga al menos una letra mayúscula.
+	 *
+	 * @param a La contraseña a validar.
+	 * @throws CapitalException Si no contiene letras mayúsculas.
+	 */
+	public static void checkerCapital(String a) throws CapitalException {
+		if (a.chars().noneMatch(Character::isUpperCase)) {
+			throw new CapitalException();
+		}
+	}
+
+	/**
+	 * Verifica que la contraseña contenga al menos una letra minúscula.
+	 *
+	 * @param a La contraseña a validar.
+	 * @throws SmallException Si no contiene letras minúsculas.
+	 */
+	public static void checkerSmall(String a) throws SmallException {
+		if (a.chars().noneMatch(Character::isLowerCase)) {
+			throw new SmallException();
+		}
 	}
 
 	public static void checkerMail(String a) throws InputMismatchException, MailException {

@@ -2,6 +2,11 @@ package co.edu.unbosque.marketplace.dto;
 
 import java.time.LocalDateTime;
 
+/**
+ * Mensaje de una conversación.
+ *
+ * @see "RF-029, CA-168"
+ */
 public class MensajeDTO {
     private Long idMensaje;
     private String contenido;

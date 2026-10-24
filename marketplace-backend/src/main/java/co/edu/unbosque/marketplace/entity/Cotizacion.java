@@ -2,13 +2,22 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-/** Entidad que representa cotizacion en el marketplace. */
+/**
+ * Entidad que representa cotizacion en el marketplace. Guarda cada componente
+ * del precio y los porcentajes vigentes al momento de cotizar; una reserva
+ * solo puede crearse desde una cotización vigente y sin usar.
+ *
+ * @see "RF-021, RF-023, RNF-031"
+ */
 @Entity
 @Table(name = "cotizacion")
 public class Cotizacion {
@@ -17,11 +26,25 @@ public class Cotizacion {
     private Long idCotizacion;
     private LocalDate fechaEntrada;
     private LocalDate fechaSalida;
+    private Integer huespedes;
+    private Integer noches;
+    private BigDecimal precioNoche;
+    private BigDecimal precioBase;
+    private BigDecimal descuento;
+    private BigDecimal porcentajeLimpieza;
+    private BigDecimal valorLimpieza;
+    private BigDecimal porcentajeServicio;
+    private BigDecimal valorServicio;
+    private BigDecimal valorAdicionales;
     private BigDecimal total;
+    /** Servicios adicionales elegidos, en JSON con nombre y costo congelados. */
+    @Column(columnDefinition = "TEXT")
     private String desglose;
     private Long idUsuario;
     private Long idAlojamiento;
     private Long idReserva;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaExpiracion;
 
     public Cotizacion() {
     }
@@ -45,6 +68,76 @@ public class Cotizacion {
     }
     public void setFechaSalida(LocalDate fechaSalida) {
         this.fechaSalida = fechaSalida;
+    }
+
+    public Integer getHuespedes() {
+        return huespedes;
+    }
+    public void setHuespedes(Integer huespedes) {
+        this.huespedes = huespedes;
+    }
+
+    public Integer getNoches() {
+        return noches;
+    }
+    public void setNoches(Integer noches) {
+        this.noches = noches;
+    }
+
+    public BigDecimal getPrecioNoche() {
+        return precioNoche;
+    }
+    public void setPrecioNoche(BigDecimal precioNoche) {
+        this.precioNoche = precioNoche;
+    }
+
+    public BigDecimal getPrecioBase() {
+        return precioBase;
+    }
+    public void setPrecioBase(BigDecimal precioBase) {
+        this.precioBase = precioBase;
+    }
+
+    public BigDecimal getDescuento() {
+        return descuento;
+    }
+    public void setDescuento(BigDecimal descuento) {
+        this.descuento = descuento;
+    }
+
+    public BigDecimal getPorcentajeLimpieza() {
+        return porcentajeLimpieza;
+    }
+    public void setPorcentajeLimpieza(BigDecimal porcentajeLimpieza) {
+        this.porcentajeLimpieza = porcentajeLimpieza;
+    }
+
+    public BigDecimal getValorLimpieza() {
+        return valorLimpieza;
+    }
+    public void setValorLimpieza(BigDecimal valorLimpieza) {
+        this.valorLimpieza = valorLimpieza;
+    }
+
+    public BigDecimal getPorcentajeServicio() {
+        return porcentajeServicio;
+    }
+    public void setPorcentajeServicio(BigDecimal porcentajeServicio) {
+        this.porcentajeServicio = porcentajeServicio;
+    }
+
+    public BigDecimal getValorServicio() {
+        return valorServicio;
+    }
+    public void setValorServicio(BigDecimal valorServicio) {
+        this.valorServicio = valorServicio;
+    }
+
+    public BigDecimal getValorAdicionales() {
+        return valorAdicionales;
+    }
+    public void setValorAdicionales(BigDecimal valorAdicionales) {
+        this.valorAdicionales = valorAdicionales;
     }
 
     public BigDecimal getTotal() {
@@ -80,5 +173,19 @@ public class Cotizacion {
     }
     public void setIdReserva(Long idReserva) {
         this.idReserva = idReserva;
+    }
+
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaExpiracion() {
+        return fechaExpiracion;
+    }
+    public void setFechaExpiracion(LocalDateTime fechaExpiracion) {
+        this.fechaExpiracion = fechaExpiracion;
     }
 }

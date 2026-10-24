@@ -1,16 +1,21 @@
 package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-
-/** Entidad que representa conversacion en el marketplace. */
+/**
+ * Entidad que representa conversacion entre un huésped ({@code idUsuario}) y el
+ * anfitrión ({@code idAnfitrion}) de un alojamiento.
+ *
+ * @see "RF-029"
+ */
 @Entity
 @Table(name = "conversacion")
 public class Conversacion {
@@ -21,6 +26,7 @@ public class Conversacion {
     @Enumerated(EnumType.STRING)
     private EstadoConversacion estado;
     private Long idUsuario;
+    private Long idAnfitrion;
     private Long idAlojamiento;
 
     public Conversacion() {
@@ -52,6 +58,13 @@ public class Conversacion {
     }
     public void setIdUsuario(Long idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    public Long getIdAnfitrion() {
+        return idAnfitrion;
+    }
+    public void setIdAnfitrion(Long idAnfitrion) {
+        this.idAnfitrion = idAnfitrion;
     }
 
     public Long getIdAlojamiento() {

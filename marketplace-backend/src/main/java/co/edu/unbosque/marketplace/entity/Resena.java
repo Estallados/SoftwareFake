@@ -1,26 +1,37 @@
 package co.edu.unbosque.marketplace.entity;
 
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 
-
-/** Entidad que representa resena en el marketplace. */
+/**
+ * Entidad que representa resena en el marketplace. Hay como máximo una por
+ * reserva. Ocultarla (moderación) no la borra.
+ *
+ * @see "RF-004, RF-016"
+ */
 @Entity
-@Table(name = "resena")
+@Table(name = "resena", indexes = @Index(name = "idx_resena_alojamiento", columnList = "id_alojamiento"))
 public class Resena {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idResena;
     private Integer calificacion;
+    @Column(length = 2000)
     private String comentario;
     @Enumerated(EnumType.STRING)
     private EstadoResena estado;
+    private LocalDateTime fecha;
     private Long idUsuario;
+    @Column(unique = true)
     private Long idReserva;
     private Long idAlojamiento;
 
@@ -53,6 +64,13 @@ public class Resena {
     }
     public void setEstado(EstadoResena estado) {
         this.estado = estado;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+    public void setFecha(LocalDateTime fecha) {
+        this.fecha = fecha;
     }
 
     public Long getIdUsuario() {

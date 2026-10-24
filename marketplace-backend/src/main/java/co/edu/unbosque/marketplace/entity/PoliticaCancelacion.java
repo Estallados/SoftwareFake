@@ -1,21 +1,37 @@
 package co.edu.unbosque.marketplace.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-/** Entidad que representa politicacancelacion en el marketplace. */
+/**
+ * Entidad que representa politicacancelacion en el marketplace. Define la
+ * devolución según los días de anticipación con que se cancela:
+ * <ul>
+ * <li>100 % si faltan al menos {@code diasReembolsoTotal} días;</li>
+ * <li>{@code porcentajeParcial} % si faltan al menos {@code diasReembolsoParcial} días;</li>
+ * <li>0 % en otro caso.</li>
+ * </ul>
+ * Un valor null en los días significa que ese tramo no existe.
+ *
+ * @see "RF-002"
+ */
 @Entity
 @Table(name = "politicaCancelacion")
 public class PoliticaCancelacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPolitica;
+    @Column(unique = true, nullable = false)
     private String nombre;
+    @Column(length = 1000)
     private String condiciones;
-    private Long idAlojamiento;
+    private Integer diasReembolsoTotal;
+    private Integer diasReembolsoParcial;
+    private Integer porcentajeParcial;
 
     public PoliticaCancelacion() {
     }
@@ -41,10 +57,24 @@ public class PoliticaCancelacion {
         this.condiciones = condiciones;
     }
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
+    public Integer getDiasReembolsoTotal() {
+        return diasReembolsoTotal;
     }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
+    public void setDiasReembolsoTotal(Integer diasReembolsoTotal) {
+        this.diasReembolsoTotal = diasReembolsoTotal;
+    }
+
+    public Integer getDiasReembolsoParcial() {
+        return diasReembolsoParcial;
+    }
+    public void setDiasReembolsoParcial(Integer diasReembolsoParcial) {
+        this.diasReembolsoParcial = diasReembolsoParcial;
+    }
+
+    public Integer getPorcentajeParcial() {
+        return porcentajeParcial;
+    }
+    public void setPorcentajeParcial(Integer porcentajeParcial) {
+        this.porcentajeParcial = porcentajeParcial;
     }
 }

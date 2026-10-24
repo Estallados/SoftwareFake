@@ -66,7 +66,7 @@ class AuthFlowTest {
 	}
 
 	@Test
-	void registroDevuelveTokenQueSirveParaEndpointsProtegidos() throws Exception {
+	void registroCreaLaCuentaConSuRolYDevuelveToken_CA030_CA032_CA033_CA042() throws Exception {
 		String respuesta = mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content(registro("Ana Pérez", "  Ana@Correo.com ", "Segura#2026", null)))
 				.andExpect(status().isCreated())
@@ -91,7 +91,7 @@ class AuthFlowTest {
 	}
 
 	@Test
-	void loginFuncionaConCorreoEnOtroFormato() throws Exception {
+	void loginPermiteElAccesoIdentificaElRolYRechazaCredencialesMalas_CA034_CA035_CA036() throws Exception {
 		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content(registro("Luis", "luis@correo.com", "Segura#2026", "ANFITRION")))
 				.andExpect(status().isCreated())
@@ -131,7 +131,7 @@ class AuthFlowTest {
 	}
 
 	@Test
-	void rechazaDatosInvalidos() throws Exception {
+	void rechazaDatosFaltantesOInvalidos_CA031_CA135() throws Exception {
 		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content(registro("Ana", "ana@correo.com", "debil", null)))
 				.andExpect(status().isBadRequest());
@@ -170,7 +170,7 @@ class AuthFlowTest {
 	}
 
 	@Test
-	void sinTokenOTokenInvalidoResponde401() throws Exception {
+	void sinSesionNoSePuedeAccederAFuncionesRestringidas_CA037_CA044_CA134() throws Exception {
 		mvc.perform(get("/usuarios/perfil")).andExpect(status().isUnauthorized());
 		mvc.perform(get("/usuarios/perfil").header("Authorization", "Bearer token.falso.123"))
 				.andExpect(status().isUnauthorized());
