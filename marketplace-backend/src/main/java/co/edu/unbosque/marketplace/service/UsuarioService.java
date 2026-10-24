@@ -25,7 +25,7 @@ import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.CorreoUtil;
 
 @Service
-public class UsuarioService implements CRUDOperation<UsuarioDTO>, UserDetailsService  {
+public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     private final Map<String, String> codigosEnMemoria = new HashMap<>();
 
@@ -265,7 +265,6 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO>, UserDetailsSer
                 .orElse(null);
     }
 
-	@Override
 	public Usuario loadUserByUsername(String correo)
 	        throws UsernameNotFoundException {
 
