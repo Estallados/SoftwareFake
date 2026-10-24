@@ -1,5 +1,13 @@
 package co.edu.unbosque.marketplace.entity;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import co.edu.unbosque.marketplace.util.AESUtil;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
@@ -12,8 +20,10 @@ import jakarta.persistence.EnumType;
 /** Entidad que representa usuario en el marketplace. */
 @Entity
 @Table(name = "usuario")
-public class Usuario {
-    @Id
+public class Usuario implements UserDetails{
+	
+    private static final long serialVersionUID = 1L;
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
     private String nombre;
@@ -26,6 +36,21 @@ public class Usuario {
     private String contrasenia;
 
     public Usuario() {
+    }
+    
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return estado != EstadoUsuario.RESTRINGIDO;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
     }
 
     public Long getIdUsuario() {
@@ -77,6 +102,28 @@ public class Usuario {
 	public void setContrasenia(String contrasenia) {
 		this.contrasenia = contrasenia;
 	}
+
+    @Override
+    public boolean isEnabled() {
+        return estado == EstadoUsuario.ACTIVO;
+    }
     
+    @Override
+    public String getPassword() {
+        return contrasenia;
+    }
+
+    @Override
+    public String getUsername() {
+        return AESUtil.decrypt(correo);
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(
+            new SimpleGrantedAuthority("ROLE_" + rol.name())
+        );
+    }
+
     
 }

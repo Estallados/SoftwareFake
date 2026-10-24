@@ -1,17 +1,5 @@
 package co.edu.unbosque.marketplace.controller;
 
-import co.edu.unbosque.marketplace.dto.DashboardDTO;
-import co.edu.unbosque.marketplace.dto.ListingDTO;
-import co.edu.unbosque.marketplace.dto.ReasonRequest;
-import co.edu.unbosque.marketplace.dto.ReviewDTO;
-import co.edu.unbosque.marketplace.dto.UserDTO;
-import co.edu.unbosque.marketplace.entity.AuditEvent;
-import co.edu.unbosque.marketplace.entity.ListingStatus;
-import co.edu.unbosque.marketplace.service.AuditService;
-import co.edu.unbosque.marketplace.service.DashboardService;
-import co.edu.unbosque.marketplace.service.ListingService;
-import co.edu.unbosque.marketplace.service.ReviewService;
-import co.edu.unbosque.marketplace.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.security.Principal;
 import org.springframework.data.domain.Page;

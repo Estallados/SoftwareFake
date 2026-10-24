@@ -10,17 +10,22 @@ import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import co.edu.unbosque.marketplace.dto.UsuarioDTO;
+import co.edu.unbosque.marketplace.entity.EstadoUsuario;
+import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.CorreoUtil;
 
 @Service
-public class UsuarioService implements CRUDOperation<UsuarioDTO> {
+public class UsuarioService implements CRUDOperation<UsuarioDTO>, UserDetailsService  {
 
     private final Map<String, String> codigosEnMemoria = new HashMap<>();
 
@@ -106,6 +111,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
         return convertirDTO(usuario.get());
     }
+
 
     private UsuarioDTO convertirDTO(Usuario usuario) {
         UsuarioDTO dto = modelMapper.map(usuario, UsuarioDTO.class);
@@ -246,8 +252,68 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
                 AESUtil.encrypt(username)).isPresent();
     }
 
-    public Usuario obtenerUsuarioPorCorreo(String correo) {
-        return usuarioRepo.findByCorreo(
-                AESUtil.encrypt(correo)).orElse(null);
+    public UsuarioDTO obtenerUsuarioPorCorreo(String correo) {
+        if (correo == null || correo.isBlank()) {
+            return null;
+        }
+
+        String correoEncriptado = AESUtil.encrypt(
+                correo.trim().toLowerCase());
+
+        return usuarioRepo.findByCorreo(correoEncriptado)
+                .map(this::convertirDTO)
+                .orElse(null);
     }
+
+	@Override
+	public Usuario loadUserByUsername(String correo)
+	        throws UsernameNotFoundException {
+
+	    if (correo == null || correo.isBlank()) {
+	        throw new UsernameNotFoundException("Correo no válido.");
+	    }
+
+	    String correoEncriptado = AESUtil.encrypt(
+	            correo.trim().toLowerCase());
+
+	    return usuarioRepo.findByCorreo(correoEncriptado)
+	            .orElseThrow(() ->
+	                    new UsernameNotFoundException("Usuario no encontrado."));
+	}
+	
+	public int desactivarCuenta(String correo) {
+	    try {
+	        if (correo == null || correo.isBlank()) {
+	            return 1;
+	        }
+
+	        String correoEncriptado = AESUtil.encrypt(
+	                correo.trim().toLowerCase());
+
+	        Optional<Usuario> usuarioOpt =
+	                usuarioRepo.findByCorreo(correoEncriptado);
+
+	        if (usuarioOpt.isEmpty()) {
+	            return 1;
+	        }
+
+	        Usuario usuario = usuarioOpt.get();
+
+	        if (usuario.getRol() == Role.ADMIN) {
+	            return 2;
+	        }
+
+	        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
+	            return 2;
+	        }
+
+	        usuario.setEstado(EstadoUsuario.INACTIVO);
+	        usuarioRepo.save(usuario);
+
+	        return 0;
+
+	    } catch (Exception e) {
+			return 3;
+		}
+	}
 }
