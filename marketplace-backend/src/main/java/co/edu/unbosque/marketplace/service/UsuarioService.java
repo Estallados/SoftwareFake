@@ -1,18 +1,15 @@
 
 package co.edu.unbosque.marketplace.service;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +17,11 @@ import co.edu.unbosque.marketplace.dto.UsuarioDTO;
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
+import co.edu.unbosque.marketplace.exception.CharacterException;
+import co.edu.unbosque.marketplace.exception.ExceptionCheker;
+import co.edu.unbosque.marketplace.exception.MailException;
+import co.edu.unbosque.marketplace.exception.NumberException;
+import co.edu.unbosque.marketplace.exception.SymbolException;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.CorreoUtil;
@@ -27,7 +29,15 @@ import co.edu.unbosque.marketplace.util.CorreoUtil;
 @Service
 public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
-    private final Map<String, String> codigosEnMemoria = new HashMap<>();
+    /** Resultados de {@link #create(UsuarioDTO)}. */
+    public static final int CREADO = 0;
+    public static final int CORREO_DUPLICADO = 1;
+    public static final int DATOS_INVALIDOS = 2;
+    public static final int CONTRASENIA_DEBIL = 3;
+    public static final int ROL_NO_PERMITIDO = 4;
+    public static final int ERROR_INTERNO = 5;
+
+    private static final Logger LOG = LoggerFactory.getLogger(UsuarioService.class);
 
     @Autowired
     private UsuarioRepository usuarioRepo;
@@ -41,52 +51,96 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
     @Autowired
     private ModelMapper modelMapper;
 
-    private static final SecureRandom RND = new SecureRandom();
+    /**
+     * Forma única de comparar correos en todo el sistema: sin espacios y en
+     * minúsculas. Se usa al registrar, al iniciar sesión y al buscar.
+     */
+    public static String normalizarCorreo(String correo) {
+        return correo == null ? null : correo.trim().toLowerCase();
+    }
 
+    /** Hash con el que se busca un correo en la base de datos. */
+    public static String hashCorreo(String correo) {
+        return AESUtil.hash(normalizarCorreo(correo));
+    }
+
+    /**
+     * Registra un usuario nuevo. La cuenta queda ACTIVA de inmediato. Solo se
+     * permiten los roles HUESPED (por defecto) y ANFITRION; nunca ADMIN.
+     *
+     * @return {@link #CREADO}, {@link #CORREO_DUPLICADO}, {@link #DATOS_INVALIDOS},
+     *         {@link #CONTRASENIA_DEBIL}, {@link #ROL_NO_PERMITIDO} o
+     *         {@link #ERROR_INTERNO}
+     */
     @Override
     public int create(UsuarioDTO data) {
+        if (data == null || esVacio(data.getNombre()) || esVacio(data.getCorreo())
+                || esVacio(data.getContrasenia())) {
+            return DATOS_INVALIDOS;
+        }
+
+        String correo = normalizarCorreo(data.getCorreo());
+
         try {
-            if (data.getCorreo() == null || data.getCorreo().trim().isEmpty()
-                    || data.getContrasenia() == null
-                    || data.getContrasenia().trim().isEmpty()) {
-                return 2;
+            ExceptionCheker.checkerMail(correo);
+        } catch (MailException e) {
+            return DATOS_INVALIDOS;
+        }
+
+        try {
+            ExceptionCheker.checkerPasword(data.getContrasenia());
+        } catch (CharacterException | NumberException | SymbolException e) {
+            return CONTRASENIA_DEBIL;
+        }
+
+        Role rol = data.getRol() == null ? Role.HUESPED : data.getRol();
+        if (rol == Role.ADMIN) {
+            return ROL_NO_PERMITIDO;
+        }
+
+        try {
+            String correoHash = AESUtil.hash(correo);
+            if (usuarioRepo.existsByCorreoHash(correoHash)) {
+                return CORREO_DUPLICADO;
             }
 
-            Usuario usuario = modelMapper.map(data, Usuario.class);
-            usuario.setNombre(AESUtil.encrypt(data.getNombre()));
-            usuario.setCorreo(AESUtil.encrypt(data.getCorreo()));
-            usuario.setContrasenia(
-                    passwordEncoder.encode(data.getContrasenia()));
-
-            if (findUsernameAlreadyTaken(usuario)) {
-                return 1;
-            }
-
-            String codigo = generarCodigo(6);
-            codigosEnMemoria.put(data.getCorreo(), codigo);
+            // Se arma la entidad campo por campo (sin ModelMapper) para que el
+            // cliente no pueda fijar id, estado ni otros campos internos.
+            Usuario usuario = new Usuario();
+            usuario.setNombre(AESUtil.encrypt(data.getNombre().trim()));
+            usuario.setCorreo(AESUtil.encrypt(correo));
+            usuario.setCorreoHash(correoHash);
+            usuario.setTelefono(esVacio(data.getTelefono()) ? null : data.getTelefono().trim());
+            usuario.setContrasenia(passwordEncoder.encode(data.getContrasenia()));
+            usuario.setRol(rol);
+            usuario.setEstado(EstadoUsuario.ACTIVO);
 
             usuarioRepo.save(usuario);
-
-            String cuerpo = String.format(
-                    "Hola %s,\n\n"
-                    + "¡Bienvenido al Marketplace de Alojamientos de Inversiones LR!\n\n"
-                    + "Nos alegra que formes parte de nuestra plataforma, "
-                    + "donde podrás descubrir, comparar y reservar alojamientos, "
-                    + "o publicar tus propiedades como anfitrión.\n\n"
-                    + "Gracias por confiar en nosotros.\n\n"
-                    + "Saludos,\n"
-                    + "Equipo Marketplace Inversiones LR",
-                    data.getNombre());
-
-            correoUtil.enviarCorreo(
-                    data.getCorreo(),
-                    "Bienvenido al Marketplace de Inversiones LR",
-                    cuerpo);
-
-            return 0;
+        } catch (DataIntegrityViolationException e) {
+            // Dos registros simultáneos con el mismo correo: lo frena el índice único
+            return CORREO_DUPLICADO;
         } catch (Exception e) {
-            return 2;
+            LOG.error("Error al registrar el usuario", e);
+            return ERROR_INTERNO;
         }
+
+        String cuerpo = String.format(
+                "Hola %s,\n\n"
+                + "¡Bienvenido al Marketplace de Alojamientos de Inversiones LR!\n\n"
+                + "Nos alegra que formes parte de nuestra plataforma, "
+                + "donde podrás descubrir, comparar y reservar alojamientos, "
+                + "o publicar tus propiedades como anfitrión.\n\n"
+                + "Gracias por confiar en nosotros.\n\n"
+                + "Saludos,\n"
+                + "Equipo Marketplace Inversiones LR",
+                data.getNombre().trim());
+
+        correoUtil.enviarCorreo(
+                correo,
+                "Bienvenido al Marketplace de Inversiones LR",
+                cuerpo);
+
+        return CREADO;
     }
 
     @Override
@@ -148,25 +202,23 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
                 usuario.setNombre(AESUtil.encrypt(newData.getNombre()));
             }
 
-            if (newData.getCorreo() != null
-                    && !newData.getCorreo().trim().isEmpty()) {
-
-                String correoEncriptado =
-                        AESUtil.encrypt(newData.getCorreo());
+            if (!esVacio(newData.getCorreo())) {
+                String correo = normalizarCorreo(newData.getCorreo());
+                String correoHash = AESUtil.hash(correo);
 
                 Optional<Usuario> existente =
-                        usuarioRepo.findByCorreo(correoEncriptado);
+                        usuarioRepo.findByCorreoHash(correoHash);
 
                 if (existente.isPresent()
                         && !existente.get().getIdUsuario().equals(id)) {
                     return 2;
                 }
 
-                usuario.setCorreo(correoEncriptado);
+                usuario.setCorreo(AESUtil.encrypt(correo));
+                usuario.setCorreoHash(correoHash);
             }
 
-            if (newData.getContrasenia() != null
-                    && !newData.getContrasenia().trim().isEmpty()) {
+            if (!esVacio(newData.getContrasenia())) {
                 usuario.setContrasenia(
                         passwordEncoder.encode(newData.getContrasenia()));
             }
@@ -179,6 +231,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             return 0;
 
         } catch (Exception e) {
+            LOG.error("Error al actualizar el usuario {}", id, e);
             return 2;
         }
     }
@@ -193,104 +246,36 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
         return usuarioRepo.existsById(id);
     }
 
-    public String generarCodigo(int longitud) {
-        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder codigo = new StringBuilder(longitud);
-
-        for (int i = 0; i < longitud; i++) {
-            int index = RND.nextInt(caracteres.length());
-            codigo.append(caracteres.charAt(index));
-        }
-
-        return codigo.toString();
-    }
-
-    public int autenticarUsuario(String correo, String password) {
-        try {
-            if (correo == null || correo.trim().isEmpty()) {
-                return 1;
-            }
-
-            if (password == null || password.trim().isEmpty()) {
-                return 2;
-            }
-
-            String correoEncriptado = AESUtil.encrypt(correo);
-            Optional<Usuario> usuarioFound =
-                    usuarioRepo.findByCorreo(correoEncriptado);
-
-            if (usuarioFound.isEmpty()) {
-                return 1;
-            }
-
-            Usuario usuario = usuarioFound.get();
-
-            if (passwordEncoder.matches(
-                    password, usuario.getContrasenia())) {
-                return 0;
-            }
-
-            return 2;
-
-        } catch (Exception e) {
-            return 3;
-        }
-    }
-
     @Override
     public boolean findUsernameAlreadyTaken(Usuario newUser) {
-        try {
-            return usuarioRepo.findByCorreo(newUser.getCorreo()).isPresent();
-        } catch (Exception e) {
-            return false;
-        }
+        return newUser.getCorreoHash() != null
+                && usuarioRepo.existsByCorreoHash(newUser.getCorreoHash());
     }
 
     @Override
     public boolean encontrarCorreoExitente(String username) {
-        return usuarioRepo.findByCorreo(
-                AESUtil.encrypt(username)).isPresent();
+        return !esVacio(username)
+                && usuarioRepo.existsByCorreoHash(hashCorreo(username));
     }
 
     public UsuarioDTO obtenerUsuarioPorCorreo(String correo) {
-        if (correo == null || correo.isBlank()) {
+        if (esVacio(correo)) {
             return null;
         }
 
-        String correoEncriptado = AESUtil.encrypt(
-                correo.trim().toLowerCase());
-
-        return usuarioRepo.findByCorreo(correoEncriptado)
+        return usuarioRepo.findByCorreoHash(hashCorreo(correo))
                 .map(this::convertirDTO)
                 .orElse(null);
     }
 
-	public Usuario loadUserByUsername(String correo)
-	        throws UsernameNotFoundException {
-
-	    if (correo == null || correo.isBlank()) {
-	        throw new UsernameNotFoundException("Correo no válido.");
-	    }
-
-	    String correoEncriptado = AESUtil.encrypt(
-	            correo.trim().toLowerCase());
-
-	    return usuarioRepo.findByCorreo(correoEncriptado)
-	            .orElseThrow(() ->
-	                    new UsernameNotFoundException("Usuario no encontrado."));
-	}
-	
 	public int desactivarCuenta(String correo) {
 	    try {
-	        if (correo == null || correo.isBlank()) {
+	        if (esVacio(correo)) {
 	            return 1;
 	        }
 
-	        String correoEncriptado = AESUtil.encrypt(
-	                correo.trim().toLowerCase());
-
 	        Optional<Usuario> usuarioOpt =
-	                usuarioRepo.findByCorreo(correoEncriptado);
+	                usuarioRepo.findByCorreoHash(hashCorreo(correo));
 
 	        if (usuarioOpt.isEmpty()) {
 	            return 1;
@@ -312,7 +297,12 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	        return 0;
 
 	    } catch (Exception e) {
+			LOG.error("Error al desactivar la cuenta", e);
 			return 3;
 		}
 	}
+
+    private static boolean esVacio(String texto) {
+        return texto == null || texto.isBlank();
+    }
 }

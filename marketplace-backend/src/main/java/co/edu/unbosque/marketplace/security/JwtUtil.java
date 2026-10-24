@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import io.jsonwebtoken.Claims;
@@ -46,6 +47,7 @@ public class JwtUtil {
         long now = System.currentTimeMillis();
         return Jwts
         .builder()
+        .setClaims(extraClaims)
         .setSubject(subject)
         .setIssuedAt(new Date(now))
         .setExpiration(new Date(now + expirationTime))
@@ -140,7 +142,9 @@ public class JwtUtil {
      */
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("authorities", userDetails.getAuthorities());
+        claims.put("authorities", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList());
         String usuario = userDetails.getUsername();
         return obtenerToken(claims, usuario);
     }

@@ -13,6 +13,7 @@ import java.util.Base64;
 import java.util.Objects;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -23,6 +24,7 @@ public final class AESUtil {
 
     private static final String ALGORITMO = "AES";
     private static final String TIPO_CIFRADO = "AES/GCM/NoPadding";
+    private static final String ALGORITMO_HASH = "HmacSHA256";
     private static final int TAMANO_IV = 12;
     private static final int TAMANO_TAG = 128;
     private static final int TAMANO_MINIMO = TAMANO_IV + 16;
@@ -130,6 +132,25 @@ public final class AESUtil {
         } catch (GeneralSecurityException | IllegalArgumentException e) {
             throw new IllegalArgumentException(
                     "No fue posible descifrar el texto", e);
+        }
+    }
+
+    /**
+     * Calcula un HMAC-SHA256 determinista del texto. A diferencia de
+     * {@link #encrypt(String)}, el mismo texto siempre produce el mismo
+     * resultado, por eso sirve para buscar en la base de datos (por ejemplo,
+     * el correo) sin guardar el valor en claro.
+     */
+    public static String hash(String texto) {
+        Objects.requireNonNull(texto, "El texto no puede ser null");
+
+        try {
+            Mac mac = Mac.getInstance(ALGORITMO_HASH);
+            mac.init(new SecretKeySpec(obtenerClave().getEncoded(), ALGORITMO_HASH));
+            byte[] resultado = mac.doFinal(texto.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(resultado);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Error al calcular el hash", e);
         }
     }
 

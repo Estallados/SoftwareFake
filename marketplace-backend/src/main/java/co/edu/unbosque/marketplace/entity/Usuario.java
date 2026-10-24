@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import co.edu.unbosque.marketplace.util.AESUtil;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
@@ -28,6 +29,9 @@ public class Usuario implements UserDetails{
     private Long idUsuario;
     private String nombre;
     private String correo;
+    /** HMAC del correo normalizado: permite buscar por correo aunque esté cifrado. */
+    @Column(unique = true)
+    private String correoHash;
     private String telefono;
     @Enumerated(EnumType.STRING)
     private Role rol;
@@ -72,6 +76,13 @@ public class Usuario implements UserDetails{
     }
     public void setCorreo(String correo) {
         this.correo = correo;
+    }
+
+    public String getCorreoHash() {
+        return correoHash;
+    }
+    public void setCorreoHash(String correoHash) {
+        this.correoHash = correoHash;
     }
 
     public String getTelefono() {

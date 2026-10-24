@@ -2,7 +2,6 @@ package co.edu.unbosque.marketplace.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,7 +33,6 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-	@Autowired
 	private final JwtAuthenticationFilter jwtAuthFilter;
 
 	private final UserDetailsService userDetailsService;
@@ -49,7 +47,11 @@ public class SecurityConfig {
 		return http.csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults())
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						.requestMatchers("/auth/**").permitAll().requestMatchers("/admin/**").hasRole("ADMIN")
+						.requestMatchers("/auth/**").permitAll()
+						// Spring reenvía los errores (400, 500...) a /error; si se protege,
+						// cualquier error en una ruta pública se convierte en un 401 engañoso
+						.requestMatchers("/error").permitAll()
+						.requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.GET, "/alojamientos/mios").hasRole("ANFITRION")
 						// búsqueda, detalle, disponibilidad y reseñas son públicos
 						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/{id}",

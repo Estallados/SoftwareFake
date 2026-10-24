@@ -8,11 +8,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import co.edu.unbosque.marketplace.util.AESUtil;
 
 import java.io.IOException;
 
@@ -68,10 +67,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.startsWith("/api-docs") ||
             path.startsWith("/swagger-resources") ||
             path.startsWith("/webjars") ||
-            path.startsWith("/auth") ||
-            path.startsWith("/usuarios/obtenercorreo") ||
-            path.startsWith("/usuarios/obtener")
-            ) 
+            path.startsWith("/auth")
+            )
         {
 
             filterChain.doFilter(request, response);
@@ -85,20 +82,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
             try {
-                String correoEncriptado = jwtUtil.extractUsername(jwt);
-                username = AESUtil.decrypt(correoEncriptado);
+                // El sujeto del token es el correo en claro (Usuario.getUsername())
+                username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
-                logger.error("Error al extraer el nombre de usuario del token", e);
+                // Token mal formado, con firma inválida o expirado: la petición sigue
+                // sin autenticar y SecurityConfig responde 401 si la ruta lo exige
+                logger.debug("Token JWT inválido: " + e.getMessage());
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            try {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                // Un usuario desactivado o restringido no debe seguir usando un token viejo
+                if (jwtUtil.validateToken(jwt, userDetails) && userDetails.isEnabled()
+                        && userDetails.isAccountNonLocked()) {
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                }
+            } catch (UsernameNotFoundException e) {
+                logger.debug("El usuario del token ya no existe: " + username);
             }
         }
 

@@ -5,9 +5,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
-import co.edu.unbosque.marketplace.util.AESUtil;
+import co.edu.unbosque.marketplace.service.UsuarioService;
 
 /**
  * Implementación personalizada de la interfaz UserDetailsService.
@@ -33,19 +32,21 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     /**
      * Carga un usuario desde la base de datos según su correo electrónico.
      * 
-     * El correo se encripta antes de realizar la búsqueda,
-     * y si el usuario no existe, se lanza una excepción.
-     * 
+     * Se busca por el hash del correo normalizado (el correo cifrado no sirve
+     * para buscar porque cambia en cada cifrado). Si el usuario no existe, se
+     * lanza una excepción.
+     *
      * @param correo correo electrónico del usuario a autenticar
      * @return los detalles del usuario como objeto UserDetails
      * @throws UsernameNotFoundException si el usuario no es encontrado en la base de datos
      */
     @Override
     public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
-        String correoEncriptado = AESUtil.encrypt(correo);
-        Usuario usuario = userRepository.findByCorreo(correoEncriptado)
+        if (correo == null || correo.isBlank()) {
+            throw new UsernameNotFoundException("Usuario no encontrado");
+        }
+
+        return userRepository.findByCorreoHash(UsuarioService.hashCorreo(correo))
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
-  
-        return usuario;
     }
 }
