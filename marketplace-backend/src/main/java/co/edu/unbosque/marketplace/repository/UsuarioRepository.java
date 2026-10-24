@@ -3,6 +3,7 @@ package co.edu.unbosque.marketplace.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
 
 /**
@@ -34,4 +35,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      *         {@code false} en caso contrario.
      */
     public boolean existsByCorreoHash(String correoHash);
+
+    /**
+     * Verifica si existe al menos un usuario con el rol indicado.
+     *
+     * @param rol Rol a buscar.
+     * @return {@code true} si hay algún usuario con ese rol.
+     */
+    public boolean existsByRol(Role rol);
 }

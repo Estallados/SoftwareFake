@@ -2,6 +2,9 @@ package co.edu.unbosque.marketplace.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,13 +23,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Seguridad stateless con JWT. Roles esperados en la entidad Usuario: HUESPED,
- * ANFITRION y ADMINISTRADOR (authorities ROLE_HUESPED, etc.). Ajusta las rutas
- * a los nombres de tus controladores.
+ * Seguridad stateless con JWT. Los roles salen del enum {@code Role}: HUESPED,
+ * ANFITRION y ADMIN, que Spring ve como ROLE_HUESPED, ROLE_ANFITRION y
+ * ROLE_ADMIN. En {@code hasRole(...)} y {@code @PreAuthorize} se escriben sin el
+ * prefijo, por ejemplo {@code hasRole('ANFITRION')}.
+ * <p>
+ * Las rutas {@code /alojamientos/**} corresponden al controlador de
+ * alojamientos que todavía no existe; quedan definidas para cuando se cree.
+ * </p>
  */
 @Configuration
 @EnableWebSecurity
@@ -37,9 +48,14 @@ public class SecurityConfig {
 
 	private final UserDetailsService userDetailsService;
 
-	public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService) {
+	/** Orígenes del front que pueden llamar a la API (propiedad app.cors.allowed-origins). */
+	private final List<String> origenesPermitidos;
+
+	public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService,
+			@Value("${app.cors.allowed-origins}") List<String> origenesPermitidos) {
 		this.jwtAuthFilter = jwtAuthFilter;
 		this.userDetailsService = userDetailsService;
+		this.origenesPermitidos = origenesPermitidos;
 	}
 
 	@Bean
@@ -72,6 +88,24 @@ public class SecurityConfig {
 		res.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		res.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		res.getWriter().write("{\"status\":" + status + ",\"message\":\"" + message + "\"}");
+	}
+
+	/**
+	 * CORS para el front (Angular). Lo usa {@code .cors(Customizer.withDefaults())}.
+	 * El token viaja en el encabezado Authorization, no en cookies, por eso no se
+	 * habilitan credenciales.
+	 */
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOrigins(origenesPermitidos.stream().map(String::trim).toList());
+		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key"));
+		config.setMaxAge(3600L);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
 	}
 
 	@Bean

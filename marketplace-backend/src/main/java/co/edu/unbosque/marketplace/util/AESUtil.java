@@ -154,6 +154,26 @@ public final class AESUtil {
         }
     }
 
+    /**
+     * Deriva una clave secundaria de 32 bytes a partir de AES_SECRET_KEY, para
+     * no tener que configurar otra variable de entorno. El propósito separa las
+     * claves: con propósitos distintos se obtienen claves distintas, y ninguna
+     * permite recuperar la clave AES original.
+     *
+     * @param proposito para qué se usará la clave, por ejemplo "jwt"
+     */
+    public static byte[] derivarClave(String proposito) {
+        Objects.requireNonNull(proposito, "El propósito no puede ser null");
+
+        try {
+            Mac mac = Mac.getInstance(ALGORITMO_HASH);
+            mac.init(new SecretKeySpec(obtenerClave().getEncoded(), ALGORITMO_HASH));
+            return mac.doFinal(("clave-derivada:" + proposito).getBytes(StandardCharsets.UTF_8));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Error al derivar la clave", e);
+        }
+    }
+
     public static void encryptFile(String inputPath, String outputPath)
             throws IOException, GeneralSecurityException {
 

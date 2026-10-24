@@ -11,9 +11,10 @@ import org.springframework.stereotype.Service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.security.Key;
+
+import co.edu.unbosque.marketplace.util.AESUtil;
 
 /**
  * Servicio utilitario para la generación, validación y manejo de tokens JWT.
@@ -21,13 +22,6 @@ import java.security.Key;
  */
 @Service
 public class JwtUtil {
-
-    /**
-     * Clave secreta utilizada para firmar los tokens JWT.
-     * Se inyecta desde la configuración de la aplicación.
-     */
-    @Value("${spring.jwt.secret}")
-    private String secretKey;
 
     /**
      * Tiempo de expiración de los tokens JWT en milisegundos.
@@ -56,13 +50,13 @@ public class JwtUtil {
     }
 
     /**
-     * Obtiene la clave de firma para los tokens JWT a partir de la clave secreta configurada.
+     * Obtiene la clave de firma para los tokens JWT. Se deriva de AES_SECRET_KEY,
+     * así no hay que configurar otro secreto ni escribirlo en el proyecto.
      *
      * @return Clave de firma para JWT.
      */
     private Key obtenerKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return Keys.hmacShaKeyFor(AESUtil.derivarClave("jwt"));
     }
 
     /**

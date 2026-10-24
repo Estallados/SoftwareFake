@@ -4,17 +4,27 @@ API REST con JWT. Java 17, Spring Boot 3.3, PostgreSQL, Maven.
 
 ## Ejecutar
 1. Crear la base: `CREATE DATABASE marketplace;`
-2. Variables de entorno (opcionales, hay valores de desarrollo): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (min. 32 caracteres), `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
-3. `mvn spring-boot:run`
-4. Swagger UI: http://localhost:8080/swagger-ui.html
+2. Variables de entorno (en IntelliJ: Run → Edit Configurations → Environment variables; revisen que los nombres no tengan espacios):
 
-Admin inicial por defecto: `admin@marketplace.local` / `Admin#12345` (cámbiala).
+| Variable | Obligatoria | Descripción |
+|---|---|---|
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Sí | Conexión a PostgreSQL |
+| `AES_SECRET_KEY` | Sí | Base64 de 32 bytes. Cifra nombre y correo, y de ella se deriva la clave que firma los JWT. **Todo el equipo debe usar la misma** si comparten base; si cambia, los usuarios existentes quedan inservibles y los tokens emitidos dejan de valer |
+| `MAIL_PASSWORD` | No | Contraseña de aplicación de Gmail de la cuenta remitente. Sin ella no se envían correos |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | No | Si no existe ningún ADMIN y `ADMIN_PASSWORD` está definida, se crea el admin inicial al arrancar |
+| `CORS_ORIGINS` | No | Orígenes del front separados por coma (por defecto `http://localhost:4200`) |
+
+   Generar una clave en PowerShell: `$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)`
+
+   Las claves nunca se escriben en `application.properties` ni se suben a git.
+3. `mvn spring-boot:run`
+4. Swagger UI: http://localhost:8081/swagger-ui.html (botón **Authorize** para pegar el token)
 
 ## Paquetes (co.edu.unbosque)
 `controller` · `service` · `repository` · `model` · `dto` · `security` · `configuration` · `exception` · `util`
 
 ## Roles
-GUEST (huésped), HOST (anfitrión), ADMIN. El registro público solo permite GUEST o HOST.
+HUESPED, ANFITRION y ADMIN (enum `Role`). El registro público solo permite HUESPED (por defecto) o ANFITRION; el primer ADMIN lo crea el arranque (ver `ADMIN_PASSWORD`).
 
 ## Endpoints principales
 | Área | Endpoint |
