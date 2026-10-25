@@ -1,0 +1,38 @@
+<footer class="border-t border-slate-200 bg-white">
+  <div class="mx-auto grid max-w-[1320px] grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 px-8 py-14">
+    <div>
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <div class="grid size-10 place-items-center rounded-xl bg-emerald-700 text-white shadow-sm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m3 11 9-8 9 8" />
+            <path d="M5 10v11h14V10M9 21v-7h6v7" />
+          </svg>
+        </div>
+        <div>
+          <div class="font-display text-lg font-bold leading-none text-slate-900">INVERSIONES</div>
+          <div class="mt-1 text-[10px] font-bold tracking-[0.35em] text-emerald-700">LR</div>
+        </div>
+      </div>
+      <p class="mt-5 max-w-xs text-sm leading-6 text-slate-500">
+        Conectamos personas con alojamientos únicos para vivir Colombia de
+        una manera diferente.
+      </p>
+    </div>
+
+    @for (g of groups; track g.title) {
+      <div>
+        <h3 class="text-sm font-bold">{{ g.title }}</h3>
+        @for (link of g.links; track link) {
+          <button type="button" class="mt-4 block text-sm text-slate-500 hover:text-emerald-700">
+            {{ link }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="border-t border-slate-100 py-6 text-center text-xs text-slate-400">
+    © 2025 Inversiones LR · Prototipo académico de Ingeniería de Software
+  </div>
+</footer>
