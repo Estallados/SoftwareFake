@@ -44,14 +44,17 @@
       <h1 class="font-display mt-3 text-4xl font-semibold text-slate-900">Alojamientos disponibles</h1>
       <p class="mt-2 text-slate-500">{{ visible().length }} alojamientos para tus fechas en Colombia</p>
     </div>
-    <select
-      id="sort-stays"
-      class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-500"
-    >
-      @for (o of sortOptions; track o) {
-        <option>{{ o }}</option>
-      }
-    </select>
+    <label class="block">
+      <span class="sr-only">Ordenar alojamientos por</span>
+      <select
+        id="sort-stays"
+        class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-500"
+      >
+        @for (o of sortOptions; track o) {
+          <option>{{ o }}</option>
+        }
+      </select>
+    </label>
   </div>
 
   <div class="mt-10 grid grid-cols-[280px_1fr] gap-10">
