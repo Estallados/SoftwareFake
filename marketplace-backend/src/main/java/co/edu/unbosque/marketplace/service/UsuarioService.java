@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -57,23 +56,23 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     private static final Pattern PATRON_TELEFONO = Pattern.compile("^\\+?\\d{7,15}$");
 
-    @Autowired
-    private UsuarioRepository usuarioRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final AuditoriaService auditoriaService;
+    private final NotificacionService notificacionService;
+    private final CorreoUtil correoUtil;
+    private final PasswordEncoder passwordEncoder;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private AuditoriaService auditoriaService;
-
-    @Autowired
-    private NotificacionService notificacionService;
-
-    @Autowired
-    private CorreoUtil correoUtil;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private ModelMapper modelMapper;
+    public UsuarioService(UsuarioRepository usuarioRepo, AuditoriaService auditoriaService,
+            NotificacionService notificacionService, CorreoUtil correoUtil, PasswordEncoder passwordEncoder,
+            ModelMapper modelMapper) {
+        this.usuarioRepo = usuarioRepo;
+        this.auditoriaService = auditoriaService;
+        this.notificacionService = notificacionService;
+        this.correoUtil = correoUtil;
+        this.passwordEncoder = passwordEncoder;
+        this.modelMapper = modelMapper;
+    }
 
     /**
      * Forma única de comparar correos en todo el sistema: sin espacios y en
@@ -179,7 +178,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             // Dos registros simultáneos con el mismo correo: lo frena el índice único
             auditarRechazo(idActor, accion, "Correo ya registrado");
             return CORREO_DUPLICADO;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error al registrar el usuario", e);
             auditoriaService.registrar(idActor, accion, AuditoriaService.ENTIDAD_USUARIO, null,
                     ResultadoAuditoria.ERROR, e.getClass().getSimpleName());
@@ -296,7 +295,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             usuarioRepo.save(usuario);
             return 0;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error al actualizar el usuario {}", id, e);
             return 2;
         }
@@ -334,41 +333,37 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
                 .orElse(null);
     }
 
-	public int desactivarCuenta(String correo) {
-	    try {
-	        if (esVacio(correo)) {
-	            return 1;
-	        }
+    /**
+     * Desactiva la cuenta propia (queda INACTIVO). Se reactiva con
+     * {@code POST /auth/reactivar}. Un administrador no puede desactivarse.
+     *
+     * @param correo Correo del usuario autenticado (sale del token JWT).
+     * @return 0 desactivada; 1 usuario no encontrado; 2 es ADMIN o la cuenta no
+     *         está ACTIVO.
+     * @see "RF-012, CA-050, CA-052"
+     */
+    public int desactivarCuenta(String correo) {
+        if (esVacio(correo)) {
+            return 1;
+        }
 
-	        Optional<Usuario> usuarioOpt =
-	                usuarioRepo.findByCorreoHash(hashCorreo(correo));
+        Optional<Usuario> usuarioOpt = usuarioRepo.findByCorreoHash(hashCorreo(correo));
+        if (usuarioOpt.isEmpty()) {
+            return 1;
+        }
 
-	        if (usuarioOpt.isEmpty()) {
-	            return 1;
-	        }
+        Usuario usuario = usuarioOpt.get();
+        if (usuario.getRol() == Role.ADMIN || usuario.getEstado() != EstadoUsuario.ACTIVO) {
+            return 2;
+        }
 
-	        Usuario usuario = usuarioOpt.get();
+        usuario.setEstado(EstadoUsuario.INACTIVO);
+        usuarioRepo.save(usuario);
 
-	        if (usuario.getRol() == Role.ADMIN) {
-	            return 2;
-	        }
-
-	        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
-	            return 2;
-	        }
-
-	        usuario.setEstado(EstadoUsuario.INACTIVO);
-	        usuarioRepo.save(usuario);
-
-	        auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.CUENTA_DESACTIVADA,
-	                AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO, null);
-	        return 0;
-
-	    } catch (Exception e) {
-			LOG.error("Error al desactivar la cuenta", e);
-			return 3;
-		}
-	}
+        auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.CUENTA_DESACTIVADA,
+                AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO, null);
+        return 0;
+    }
 
     /**
      * Actualiza el perfil propio. Solo se pueden cambiar el nombre y el

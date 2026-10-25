@@ -21,7 +21,7 @@ API REST con JWT. Java 17, Spring Boot 3.3, PostgreSQL, Maven.
 4. Swagger UI: http://localhost:8081/swagger-ui.html (botón **Authorize** para pegar el token)
 
 ## Paquetes (co.edu.unbosque)
-`controller` · `service` · `repository` · `model` · `dto` · `security` · `configuration` · `exception` · `util`
+`controller` · `service` · `repository` · `entity` · `dto` · `security` · `configuration` · `exception` · `util`
 
 ## Roles
 HUESPED, ANFITRION y ADMIN (enum `Role`). El registro público solo permite HUESPED (por defecto) o ANFITRION; el primer ADMIN lo crea el arranque (ver `ADMIN_PASSWORD`).
@@ -30,7 +30,7 @@ HUESPED, ANFITRION y ADMIN (enum `Role`). El registro público solo permite HUES
 | Área | Endpoint |
 |---|---|
 | Auth | `POST /auth/register`, `/auth/login`, `/auth/recuperar`, `/auth/restablecer`, `/auth/reactivar` |
-| Perfil | `GET/PUT /usuarios/perfil` (solo nombre y teléfono), `PATCH /usuarios/perfil/desactivar` |
+| Perfil | `GET/PUT /usuarios/perfil` (solo nombre y teléfono), `PATCH /usuarios/perfil/desactivar` (responde el nuevo `estado`) |
 | Usuarios (ADMIN) | `POST /usuarios/crearadministrador`, `GET /usuarios/listar`, `GET /usuarios/obtener/{id}`, `GET /usuarios/obtenercorreo` |
 | Salud | `GET /actuator/health` (público) |
 | Alojamientos | `GET /alojamientos` (búsqueda pública), `GET /alojamientos/politicas`, `GET /alojamientos/{id}`, `GET /alojamientos/mios`, `GET /alojamientos/{id}/historial`, `POST /alojamientos`, `PUT /alojamientos/{id}`, `POST /alojamientos/{id}/enviarrevision|pausar|reanudar` |

@@ -164,12 +164,14 @@ class IdentidadPerfilTest {
 	void debeDesactivarYReactivarLaCuentaPropiaMostrandoElEstado_CA050_CA052() throws Exception {
 		String token = registrar("reactivar@correo.com");
 		mvc.perform(patch("/usuarios/perfil/desactivar").header("Authorization", "Bearer " + token))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.estado").value("INACTIVO"));
 
 		mvc.perform(post("/auth/reactivar").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"correo\":\"reactivar@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.token").isNotEmpty());
+				.andExpect(jsonPath("$.token").isNotEmpty())
+				.andExpect(jsonPath("$.estado").value("ACTIVO"));
 
 		assertEquals(EstadoUsuario.ACTIVO, buscar("reactivar@correo.com").getEstado());
 		assertTrue(hayEvento(AuditoriaService.CUENTA_DESACTIVADA, ResultadoAuditoria.EXITOSO));

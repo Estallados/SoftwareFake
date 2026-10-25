@@ -26,7 +26,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
  * @since 2025-11-07
  * @see SpringBootServletInitializer
  * @see SpringApplicationBuilder
- * @see ProyectoIaApplication
+ * @see MarketplaceApplication
  */
 public class ServletInitializer extends SpringBootServletInitializer {
 
@@ -40,7 +40,7 @@ public class ServletInitializer extends SpringBootServletInitializer {
 	 * </p>
 	 * <p>
 	 * El método utiliza {@link SpringApplicationBuilder#sources(Class...)} para registrar
-	 * la clase {@link ProyectoIaApplication} como fuente de configuración, permitiendo
+	 * la clase {@link MarketplaceApplication} como fuente de configuración, permitiendo
 	 * que Spring Boot inicialice el contexto de aplicación con todas las configuraciones
 	 * y componentes definidos en dicha clase.
 	 * </p>
@@ -58,9 +58,9 @@ public class ServletInitializer extends SpringBootServletInitializer {
 		return application.sources(MarketplaceApplication.class);
 	}
 	
-	/** COnstructor */
+	/** Constructor vacío. */
 	public ServletInitializer() {
-		// TODO Auto-generated constructor stub
+		// Constructor vacío: Spring crea la instancia
 	}
 
 }

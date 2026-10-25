@@ -60,22 +60,15 @@ public final class RespuestaUtil {
 
     /** Estado HTTP de cada código de {@link Resultado}. */
     public static HttpStatus estadoDe(int codigo) {
-        switch (codigo) {
-        case Resultado.NO_ENCONTRADO:
-            return HttpStatus.NOT_FOUND;
-        case Resultado.DATOS_INVALIDOS:
-            return HttpStatus.BAD_REQUEST;
-        case Resultado.SIN_PERMISO:
-            return HttpStatus.FORBIDDEN;
-        case Resultado.ESTADO_INVALIDO, Resultado.NO_DISPONIBLE:
-            return HttpStatus.CONFLICT;
-        case Resultado.PAGO_RECHAZADO:
-            return HttpStatus.PAYMENT_REQUIRED;
-        case Resultado.PAGO_ERROR:
-            return HttpStatus.BAD_GATEWAY;
-        default:
-            return HttpStatus.INTERNAL_SERVER_ERROR;
-        }
+        return switch (codigo) {
+        case Resultado.NO_ENCONTRADO -> HttpStatus.NOT_FOUND;
+        case Resultado.DATOS_INVALIDOS -> HttpStatus.BAD_REQUEST;
+        case Resultado.SIN_PERMISO -> HttpStatus.FORBIDDEN;
+        case Resultado.ESTADO_INVALIDO, Resultado.NO_DISPONIBLE -> HttpStatus.CONFLICT;
+        case Resultado.PAGO_RECHAZADO -> HttpStatus.PAYMENT_REQUIRED;
+        case Resultado.PAGO_ERROR -> HttpStatus.BAD_GATEWAY;
+        default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
     }
 
     /** Id del usuario autenticado (el principal es la entidad Usuario); null si no hay sesión. */

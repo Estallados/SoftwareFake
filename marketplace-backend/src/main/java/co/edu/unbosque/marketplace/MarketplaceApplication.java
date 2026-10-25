@@ -8,15 +8,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MarketplaceApplication {
 
 	public static void main(String[] args) {
-
 		SpringApplication.run(MarketplaceApplication.class, args);
-
-
 	}
 
-	/** constructor vacio */
+	/** Constructor vacío. */
 	public MarketplaceApplication() {
-		// TODO Auto-generated constructor stub
+		// Constructor vacío: Spring crea la instancia
 	}
 
 	// El bean de ModelMapper se define en configuration/ModelMapperConfig

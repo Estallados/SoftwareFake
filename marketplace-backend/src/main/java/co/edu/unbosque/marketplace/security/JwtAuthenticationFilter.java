@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -84,10 +85,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 // El sujeto del token es el correo en claro (Usuario.getUsername())
                 username = jwtUtil.extractUsername(jwt);
-            } catch (Exception e) {
+            } catch (JwtException | IllegalArgumentException e) {
                 // Token mal formado, con firma inválida o expirado: la petición sigue
                 // sin autenticar y SecurityConfig responde 401 si la ruta lo exige
-                logger.debug("Token JWT inválido: " + e.getMessage());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Token JWT inválido: " + e.getMessage());
+                }
             }
         }
 
@@ -103,7 +106,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
             } catch (UsernameNotFoundException e) {
-                logger.debug("El usuario del token ya no existe: " + username);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("El usuario del token ya no existe: " + username);
+                }
             }
         }
 

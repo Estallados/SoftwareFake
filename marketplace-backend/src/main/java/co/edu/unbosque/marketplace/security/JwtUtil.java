@@ -143,9 +143,9 @@ public class JwtUtil {
         return obtenerToken(claims, usuario);
     }
 	
-	/** constructor vacio */
+	/** Constructor vacío. */
     public JwtUtil() {
-		// TODO Auto-generated constructor stub
+		// Constructor vacío: Spring crea la instancia
 	}
     
     

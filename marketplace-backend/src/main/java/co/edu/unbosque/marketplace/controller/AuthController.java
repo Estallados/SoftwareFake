@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import co.edu.unbosque.marketplace.dto.LoginDTO;
 import co.edu.unbosque.marketplace.dto.RestablecerContraseniaDTO;
 import co.edu.unbosque.marketplace.dto.UsuarioDTO;
+import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.security.JwtUtil;
@@ -28,6 +29,7 @@ import co.edu.unbosque.marketplace.service.AuditoriaService;
 import co.edu.unbosque.marketplace.service.AuthService;
 import co.edu.unbosque.marketplace.service.SegundoFactorService;
 import co.edu.unbosque.marketplace.service.UsuarioService;
+import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -103,7 +105,7 @@ public class AuthController {
 	@Operation(summary = "Iniciar sesión", description = "Devuelve {token, rol, correo}. Si la cuenta tiene "
 			+ "segundo factor, también hay que enviar codigo; sin él responde 401 con requiereSegundoFactor=true.")
 	@PostMapping("/login")
-	public ResponseEntity<?> login(@RequestBody LoginDTO loginRequest) {
+	public ResponseEntity<Object> login(@RequestBody LoginDTO loginRequest) {
 		if (loginRequest.getCorreo() == null || loginRequest.getCorreo().isBlank()
 				|| loginRequest.getContrasenia() == null || loginRequest.getContrasenia().isBlank()) {
 			return mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo y la contraseña.");
@@ -161,26 +163,21 @@ public class AuthController {
 	@Operation(summary = "Registrarse como HUESPED o ANFITRION",
 			description = "Crea la cuenta activa y devuelve {message, token, rol, correo}.")
 	@PostMapping("/register")
-	public ResponseEntity<?> register(@RequestBody UsuarioDTO registerRequest) {
-		int result = usuarioService.create(registerRequest);
-
-		switch (result) {
-		case UsuarioService.CREADO:
-			UserDetails usuario = userDetailsService
-					.loadUserByUsername(UsuarioService.normalizarCorreo(registerRequest.getCorreo()));
-			return respuestaConToken(HttpStatus.CREATED, usuario, "Usuario registrado correctamente.");
-		case UsuarioService.CORREO_DUPLICADO:
-			return mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
-		case UsuarioService.DATOS_INVALIDOS:
-			return mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos: nombre, correo válido y "
-					+ "contraseña son obligatorios; el teléfono, si se envía, debe tener de 7 a 15 dígitos.");
-		case UsuarioService.CONTRASENIA_DEBIL:
-			return mensaje(HttpStatus.BAD_REQUEST, MENSAJE_CONTRASENIA_DEBIL);
-		case UsuarioService.ROL_NO_PERMITIDO:
-			return mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");
-		default:
-			return mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "Error desconocido al registrar el usuario.");
-		}
+	public ResponseEntity<Object> register(@RequestBody UsuarioDTO registerRequest) {
+		return switch (usuarioService.create(registerRequest)) {
+		case UsuarioService.CREADO -> respuestaConToken(HttpStatus.CREATED,
+				userDetailsService.loadUserByUsername(UsuarioService.normalizarCorreo(registerRequest.getCorreo())),
+				"Usuario registrado correctamente.");
+		case UsuarioService.CORREO_DUPLICADO ->
+			mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
+		case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos: "
+				+ "nombre, correo válido y contraseña son obligatorios; el teléfono, si se envía, debe tener "
+				+ "de 7 a 15 dígitos.");
+		case UsuarioService.CONTRASENIA_DEBIL -> mensaje(HttpStatus.BAD_REQUEST, MENSAJE_CONTRASENIA_DEBIL);
+		case UsuarioService.ROL_NO_PERMITIDO ->
+			mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");
+		default -> mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "Error desconocido al registrar el usuario.");
+		};
 	}
 
 	/**
@@ -195,7 +192,7 @@ public class AuthController {
 	@Operation(summary = "Solicitar recuperación de contraseña (simulada)",
 			description = "El token se escribe en el log del backend en lugar de enviarse por correo.")
 	@PostMapping("/recuperar")
-	public ResponseEntity<?> recuperar(@RequestBody UsuarioDTO solicitud) {
+	public ResponseEntity<Object> recuperar(@RequestBody UsuarioDTO solicitud) {
 		if (authService.solicitarRecuperacion(solicitud.getCorreo()) != 0) {
 			return mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo.");
 		}
@@ -213,17 +210,13 @@ public class AuthController {
 	 */
 	@Operation(summary = "Restablecer la contraseña con el token de recuperación")
 	@PostMapping("/restablecer")
-	public ResponseEntity<?> restablecer(@RequestBody RestablecerContraseniaDTO datos) {
-		switch (authService.restablecerContrasenia(datos.getToken(), datos.getContrasenia())) {
-		case 0:
-			return mensaje(HttpStatus.OK, "Contraseña actualizada. Ya puedes iniciar sesión.");
-		case 1:
-			return mensaje(HttpStatus.BAD_REQUEST, "El enlace de recuperación no es válido o ya venció.");
-		case 3:
-			return mensaje(HttpStatus.BAD_REQUEST, MENSAJE_CONTRASENIA_DEBIL);
-		default:
-			return mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el token y la contraseña nueva.");
-		}
+	public ResponseEntity<Object> restablecer(@RequestBody RestablecerContraseniaDTO datos) {
+		return switch (authService.restablecerContrasenia(datos.getToken(), datos.getContrasenia())) {
+		case 0 -> mensaje(HttpStatus.OK, "Contraseña actualizada. Ya puedes iniciar sesión.");
+		case 1 -> mensaje(HttpStatus.BAD_REQUEST, "El enlace de recuperación no es válido o ya venció.");
+		case 3 -> mensaje(HttpStatus.BAD_REQUEST, MENSAJE_CONTRASENIA_DEBIL);
+		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el token y la contraseña nueva.");
+		};
 	}
 
 	/**
@@ -238,34 +231,43 @@ public class AuthController {
 	@Operation(summary = "Reactivar la cuenta propia",
 			description = "Una cuenta restringida por un administrador no puede reactivarse por esta vía.")
 	@PostMapping("/reactivar")
-	public ResponseEntity<?> reactivar(@RequestBody UsuarioDTO credenciales) {
-		switch (authService.reactivarCuenta(credenciales.getCorreo(), credenciales.getContrasenia())) {
-		case 0:
-			UserDetails usuario = userDetailsService
-					.loadUserByUsername(UsuarioService.normalizarCorreo(credenciales.getCorreo()));
-			// Con segundo factor activo no se entrega token aquí: debe iniciar sesión con su código
-			if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
-				return mensaje(HttpStatus.OK, "Cuenta reactivada correctamente. Inicia sesión con tu código.");
-			}
-			return respuestaConToken(HttpStatus.OK, usuario, "Cuenta reactivada correctamente.");
-		case 1:
-			return mensaje(HttpStatus.UNAUTHORIZED, "Correo o contraseña inválidos.");
-		case 3:
-			return mensaje(HttpStatus.FORBIDDEN,
-					"La cuenta fue restringida por un administrador y no puede reactivarse.");
-		case 4:
-			return mensaje(HttpStatus.CONFLICT, "La cuenta ya está activa.");
-		default:
-			return mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo y la contraseña.");
+	public ResponseEntity<Object> reactivar(@RequestBody UsuarioDTO credenciales) {
+		return switch (authService.reactivarCuenta(credenciales.getCorreo(), credenciales.getContrasenia())) {
+		case 0 -> respuestaReactivada(userDetailsService
+				.loadUserByUsername(UsuarioService.normalizarCorreo(credenciales.getCorreo())));
+		case 1 -> mensaje(HttpStatus.UNAUTHORIZED, "Correo o contraseña inválidos.");
+		case 3 -> mensaje(HttpStatus.FORBIDDEN,
+				"La cuenta fue restringida por un administrador y no puede reactivarse.");
+		case 4 -> mensaje(HttpStatus.CONFLICT, "La cuenta ya está activa.");
+		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo y la contraseña.");
+		};
+	}
+
+	/**
+	 * Respuesta de una cuenta reactivada con su nuevo estado (CA-052). Con
+	 * segundo factor activo no se entrega token aquí: debe iniciar sesión con su
+	 * código.
+	 */
+	private ResponseEntity<Object> respuestaReactivada(UserDetails usuario) {
+		if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
+			return ResponseEntity.ok(Map.of("message", "Cuenta reactivada correctamente. Inicia sesión con tu código.",
+					"estado", EstadoUsuario.ACTIVO.name()));
 		}
+		Map<String, String> respuesta = cuerpoConToken(usuario, "Cuenta reactivada correctamente.");
+		respuesta.put("estado", EstadoUsuario.ACTIVO.name());
+		return ResponseEntity.ok(respuesta);
 	}
 
 	/**
 	 * Respuesta de sesión iniciada: {message?, token, rol, correo}. La usan
 	 * login, registro y reactivación para que el front guarde el token igual.
 	 */
-	private ResponseEntity<Map<String, String>> respuestaConToken(HttpStatus status, UserDetails userDetails,
+	private ResponseEntity<Object> respuestaConToken(HttpStatus status, UserDetails userDetails,
 			String texto) {
+		return ResponseEntity.status(status).body(cuerpoConToken(userDetails, texto));
+	}
+
+	private Map<String, String> cuerpoConToken(UserDetails userDetails, String texto) {
 		String rol = userDetails.getAuthorities().stream().findFirst()
 				.map(a -> a.getAuthority().replaceFirst("^ROLE_", "")).orElse(null);
 
@@ -276,11 +278,11 @@ public class AuthController {
 		respuesta.put("token", jwtUtil.generateToken(userDetails));
 		respuesta.put("rol", rol);
 		respuesta.put("correo", userDetails.getUsername());
-		return ResponseEntity.status(status).body(respuesta);
+		return respuesta;
 	}
 
 	/** Respuesta JSON uniforme: {"message": "..."} para que el front la lea siempre igual. */
-	private ResponseEntity<Map<String, String>> mensaje(HttpStatus status, String texto) {
-		return ResponseEntity.status(status).body(Map.of("message", texto));
+	private static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
+		return RespuestaUtil.mensaje(status, texto);
 	}
 }

@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.unbosque.marketplace.dto.UsuarioDTO;
+import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.service.UsuarioService;
+import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +40,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class UsuarioController {
 
     private static final String ROL_ADMIN = "ROLE_ADMIN";
+    private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado.";
 
     private final UsuarioService usuarioService;
 
@@ -48,11 +51,11 @@ public class UsuarioController {
     // Consultar el perfil propio
     @Operation(summary = "Consultar el perfil propio")
     @GetMapping("/perfil")
-    public ResponseEntity<?> miPerfil(Authentication authentication) {
+    public ResponseEntity<Object> miPerfil(Authentication authentication) {
         UsuarioDTO usuario = usuarioService.obtenerUsuarioPorCorreo(authentication.getName());
 
         if (usuario == null) {
-            return mensaje(HttpStatus.NOT_FOUND, "Usuario no encontrado.");
+            return mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
         }
 
         return ResponseEntity.ok(usuario);
@@ -62,35 +65,30 @@ public class UsuarioController {
     @Operation(summary = "Actualizar el perfil propio",
             description = "Solo cambia nombre y teléfono; los demás campos enviados se ignoran.")
     @PutMapping("/perfil")
-    public ResponseEntity<?> actualizarPerfil(
+    public ResponseEntity<Object> actualizarPerfil(
             @RequestBody UsuarioDTO cambios,
             Authentication authentication) {
 
-        switch (usuarioService.actualizarPerfil(authentication.getName(), cambios.getNombre(),
+        return switch (usuarioService.actualizarPerfil(authentication.getName(), cambios.getNombre(),
                 cambios.getTelefono())) {
-            case 0:
-                return mensaje(HttpStatus.OK, "Perfil actualizado correctamente.");
-            case 1:
-                return mensaje(HttpStatus.NOT_FOUND, "Usuario no encontrado.");
-            default:
-                return mensaje(HttpStatus.BAD_REQUEST, "Envía un nombre no vacío y/o un teléfono "
-                        + "de 7 a 15 dígitos.");
-        }
+            case 0 -> mensaje(HttpStatus.OK, "Perfil actualizado correctamente.");
+            case 1 -> mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
+            default -> mensaje(HttpStatus.BAD_REQUEST, "Envía un nombre no vacío y/o un teléfono "
+                    + "de 7 a 15 dígitos.");
+        };
     }
 
-    // Desactivar la cuenta propia
+    // Desactivar la cuenta propia; la respuesta trae el nuevo estado (CA-052)
     @Operation(summary = "Desactivar la cuenta propia",
-            description = "Se puede reactivar luego con POST /auth/reactivar.")
+            description = "Responde {message, estado}. Se puede reactivar luego con POST /auth/reactivar.")
     @PatchMapping("/perfil/desactivar")
-    public ResponseEntity<?> desactivarCuenta(Authentication authentication) {
-        switch (usuarioService.desactivarCuenta(authentication.getName())) {
-            case 0:
-                return mensaje(HttpStatus.OK, "Cuenta desactivada correctamente.");
-            case 1:
-                return mensaje(HttpStatus.NOT_FOUND, "Usuario no encontrado.");
-            default:
-                return mensaje(HttpStatus.FORBIDDEN, "Esta cuenta no se puede desactivar.");
-        }
+    public ResponseEntity<Object> desactivarCuenta(Authentication authentication) {
+        return switch (usuarioService.desactivarCuenta(authentication.getName())) {
+            case 0 -> ResponseEntity.ok(Map.of("message", "Cuenta desactivada correctamente.",
+                    "estado", EstadoUsuario.INACTIVO.name()));
+            case 1 -> mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
+            default -> mensaje(HttpStatus.FORBIDDEN, "Esta cuenta no se puede desactivar.");
+        };
     }
 
     // Crear otro administrador: solo administradores (decisión sobre RF-001)
@@ -98,25 +96,22 @@ public class UsuarioController {
             description = "El registro público nunca crea administradores; el rol enviado se ignora.")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/crearadministrador")
-    public ResponseEntity<?> crearAdministrador(
+    public ResponseEntity<Object> crearAdministrador(
             @RequestBody UsuarioDTO datos,
             Authentication authentication) {
 
         Long idActor = authentication.getPrincipal() instanceof Usuario admin ? admin.getIdUsuario() : null;
 
-        switch (usuarioService.crearAdministrador(datos, idActor)) {
-            case UsuarioService.CREADO:
-                return mensaje(HttpStatus.CREATED, "Administrador creado correctamente.");
-            case UsuarioService.CORREO_DUPLICADO:
-                return mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
-            case UsuarioService.CONTRASENIA_DEBIL:
-                return mensaje(HttpStatus.BAD_REQUEST, "La contraseña debe tener al menos 8 caracteres, "
-                        + "una mayúscula, una minúscula, un número y un símbolo.");
-            case UsuarioService.DATOS_INVALIDOS:
-                return mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos.");
-            default:
-                return mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo crear el administrador.");
-        }
+        return switch (usuarioService.crearAdministrador(datos, idActor)) {
+            case UsuarioService.CREADO -> mensaje(HttpStatus.CREATED, "Administrador creado correctamente.");
+            case UsuarioService.CORREO_DUPLICADO ->
+                mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
+            case UsuarioService.CONTRASENIA_DEBIL -> mensaje(HttpStatus.BAD_REQUEST,
+                    "La contraseña debe tener al menos 8 caracteres, "
+                            + "una mayúscula, una minúscula, un número y un símbolo.");
+            case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos.");
+            default -> mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo crear el administrador.");
+        };
     }
 
     // Listar todos los usuarios: solo administradores
@@ -130,7 +125,7 @@ public class UsuarioController {
     // Consultar usuario por ID: propio usuario o administrador
     @Operation(summary = "Consultar un usuario por id (el propio o, si eres ADMIN, cualquiera)")
     @GetMapping("/obtener/{id}")
-    public ResponseEntity<?> obtenerUsuarioPorId(
+    public ResponseEntity<Object> obtenerUsuarioPorId(
             @PathVariable Long id,
             Authentication authentication) {
 
@@ -151,7 +146,7 @@ public class UsuarioController {
         UsuarioDTO usuario = usuarioService.getById(id);
 
         if (usuario == null) {
-            return mensaje(HttpStatus.NOT_FOUND, "Usuario no encontrado.");
+            return mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
         }
 
         return ResponseEntity.ok(usuario);
@@ -161,20 +156,17 @@ public class UsuarioController {
     @Operation(summary = "Consultar un usuario por correo (solo ADMIN)")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/obtenercorreo")
-    public ResponseEntity<?> obtenerUsuarioPorCorreo(@RequestParam String correo) {
+    public ResponseEntity<Object> obtenerUsuarioPorCorreo(@RequestParam String correo) {
         UsuarioDTO usuario = usuarioService.obtenerUsuarioPorCorreo(correo.trim().toLowerCase());
 
         if (usuario == null) {
-            return mensaje(HttpStatus.NOT_FOUND, "Usuario no encontrado.");
+            return mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
         }
 
         return ResponseEntity.ok(usuario);
     }
 
-    private ResponseEntity<Map<String, String>> mensaje(
-            HttpStatus status,
-            String texto) {
-        return ResponseEntity.status(status)
-                .body(Map.of("message", texto));
+    private static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
+        return RespuestaUtil.mensaje(status, texto);
     }
 }
