@@ -33,6 +33,7 @@ public class NotificacionService {
     public static final String ALOJAMIENTO_RECHAZADO = "ALOJAMIENTO_RECHAZADO";
     public static final String ALOJAMIENTO_BLOQUEADO = "ALOJAMIENTO_BLOQUEADO";
     public static final String RESENA_RECIBIDA = "RESENA_RECIBIDA";
+    public static final String RESENA_OCULTA = "RESENA_OCULTA";
     public static final String CUENTA_RESTRINGIDA = "CUENTA_RESTRINGIDA";
     public static final String CUENTA_LIBERADA = "CUENTA_LIBERADA";
     public static final String MENSAJE_RECIBIDO = "MENSAJE_RECIBIDO";
@@ -76,6 +77,25 @@ public class NotificacionService {
     public PaginaDTO<NotificacionDTO> listar(Long idUsuario, Pageable pagina) {
         return PaginaDTO.de(notificacionRepo.findByIdUsuario(idUsuario, pagina),
                 n -> modelMapper.map(n, NotificacionDTO.class));
+    }
+
+    /**
+     * Cantidad de notificaciones sin leer del usuario (contador de la campana).
+     *
+     * @see "CA-013"
+     */
+    public long contarNoLeidas(Long idUsuario) {
+        return notificacionRepo.countByIdUsuarioAndLeidaFalse(idUsuario);
+    }
+
+    /**
+     * Marca como leídas todas las notificaciones del usuario.
+     *
+     * @return cuántas notificaciones cambiaron.
+     */
+    @Transactional
+    public int marcarTodasLeidas(Long idUsuario) {
+        return notificacionRepo.marcarTodasLeidas(idUsuario);
     }
 
     /**

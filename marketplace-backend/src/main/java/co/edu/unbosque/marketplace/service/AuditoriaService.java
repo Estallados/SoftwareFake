@@ -47,11 +47,14 @@ public class AuditoriaService {
     public static final String CUENTA_REACTIVADA = "CUENTA_REACTIVADA";
     public static final String RECUPERACION_SOLICITADA = "RECUPERACION_SOLICITADA";
     public static final String CONTRASENIA_RESTABLECIDA = "CONTRASENIA_RESTABLECIDA";
+    public static final String CODIGO_VERIFICACION_ENVIADO = "CODIGO_VERIFICACION_ENVIADO";
+    public static final String CORREO_VERIFICADO = "CORREO_VERIFICADO";
 
     /** Acciones de alojamientos, disponibilidad y tarifas. */
     public static final String ALOJAMIENTO_CREADO = "ALOJAMIENTO_CREADO";
     public static final String ALOJAMIENTO_ACTUALIZADO = "ALOJAMIENTO_ACTUALIZADO";
     public static final String ALOJAMIENTO_CAMBIO_ESTADO = "ALOJAMIENTO_CAMBIO_ESTADO";
+    public static final String IMAGEN_ALOJAMIENTO = "IMAGEN_ALOJAMIENTO";
     public static final String SERVICIO_ADICIONAL = "SERVICIO_ADICIONAL";
     public static final String DISPONIBILIDAD = "DISPONIBILIDAD";
     public static final String TARIFA_ACTUALIZADA = "TARIFA_ACTUALIZADA";

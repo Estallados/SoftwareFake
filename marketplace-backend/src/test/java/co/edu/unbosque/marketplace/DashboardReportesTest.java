@@ -34,6 +34,22 @@ class DashboardReportesTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void elHistorialMuestraCadaExportacionConQuienLaHizo_CA029() throws Exception {
+		String admin = tokenAdmin();
+		descargar("/admin/reportes/usuarios?formato=excel", admin);
+		descargar("/admin/reportes/demanda?formato=pdf", admin);
+
+		JsonNode historial = llamar(get("/admin/reportes/historial"), admin, null, 200);
+
+		JsonNode ultima = historial.get("contenido").get(0);
+		assertEquals("demanda", ultima.get("tipoReporte").asText());
+		assertEquals("pdf", ultima.get("formato").asText());
+		assertEquals("Administrador", ultima.get("nombreUsuario").asText());
+		assertEquals("usuarios", historial.get("contenido").get(1).get("tipoReporte").asText());
+		llamar(get("/admin/reportes/historial"), registrar("HUESPED").token(), null, 403);
+	}
+
+	@Test
 	void elDashboardMuestraTodosLosIndicadores_CA022_CA023_CA024_CA025_CA026() throws Exception {
 		String ciudad = unico("Demanda");
 		Long id = crearAlojamientoActivo(registrar("ANFITRION"), ciudad, "Casa", 4, new BigDecimal("100000"),

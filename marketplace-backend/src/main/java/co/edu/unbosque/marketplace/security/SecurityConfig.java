@@ -69,6 +69,8 @@ public class SecurityConfig {
 						.requestMatchers("/error").permitAll()
 						// Endpoint de salud para monitoreo y reinicio automático (RNF-001..003)
 						.requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+						// Imágenes subidas de los alojamientos (ArchivosConfig)
+						.requestMatchers(HttpMethod.GET, "/archivos/**").permitAll()
 						.requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.GET, "/alojamientos/mios").hasRole("ANFITRION")
 						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;

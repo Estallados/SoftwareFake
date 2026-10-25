@@ -1,6 +1,7 @@
 
 package co.edu.unbosque.marketplace.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +31,6 @@ import co.edu.unbosque.marketplace.exception.SmallException;
 import co.edu.unbosque.marketplace.exception.SymbolException;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
-import co.edu.unbosque.marketplace.util.CorreoUtil;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -56,22 +56,38 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     private static final Pattern PATRON_TELEFONO = Pattern.compile("^\\+?\\d{7,15}$");
 
+    /** Separadores que se aceptan al escribir el teléfono y se quitan antes de guardarlo. */
+    private static final Pattern SEPARADORES_TELEFONO = Pattern.compile("[\\s().-]");
+
     private final UsuarioRepository usuarioRepo;
     private final AuditoriaService auditoriaService;
     private final NotificacionService notificacionService;
-    private final CorreoUtil correoUtil;
+    private final VerificacionCorreoService verificacionCorreoService;
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
 
     public UsuarioService(UsuarioRepository usuarioRepo, AuditoriaService auditoriaService,
-            NotificacionService notificacionService, CorreoUtil correoUtil, PasswordEncoder passwordEncoder,
-            ModelMapper modelMapper) {
+            NotificacionService notificacionService, VerificacionCorreoService verificacionCorreoService,
+            PasswordEncoder passwordEncoder, ModelMapper modelMapper) {
         this.usuarioRepo = usuarioRepo;
         this.auditoriaService = auditoriaService;
         this.notificacionService = notificacionService;
-        this.correoUtil = correoUtil;
+        this.verificacionCorreoService = verificacionCorreoService;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
+    }
+
+    /**
+     * Forma única de guardar teléfonos: sin espacios, guiones, puntos ni
+     * paréntesis. Así "+57 300 000 0000" queda "+573000000000".
+     *
+     * @return el teléfono normalizado, o null si viene vacío.
+     */
+    public static String normalizarTelefono(String telefono) {
+        if (esVacio(telefono)) {
+            return null;
+        }
+        return SEPARADORES_TELEFONO.matcher(telefono.trim()).replaceAll("");
     }
 
     /**
@@ -88,7 +104,9 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
     }
 
     /**
-     * Registra un usuario nuevo. La cuenta queda ACTIVA de inmediato. Solo se
+     * Registra un usuario nuevo. La cuenta queda ACTIVA pero con el correo sin
+     * verificar: se le envía un código de verificación en el correo de
+     * bienvenida y no puede iniciar sesión hasta confirmarlo. Solo se
      * permiten los roles HUESPED (por defecto) y ANFITRION; nunca ADMIN.
      * <p>
      * DECISIÓN (contradice el literal de RF-001): el registro público no crea
@@ -168,10 +186,12 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             usuario.setNombre(AESUtil.encrypt(data.getNombre().trim()));
             usuario.setCorreo(AESUtil.encrypt(correo));
             usuario.setCorreoHash(correoHash);
-            usuario.setTelefono(esVacio(data.getTelefono()) ? null : data.getTelefono().trim());
+            usuario.setTelefono(normalizarTelefono(data.getTelefono()));
             usuario.setContrasenia(passwordEncoder.encode(data.getContrasenia()));
             usuario.setRol(rol);
             usuario.setEstado(EstadoUsuario.ACTIVO);
+            usuario.setFechaRegistro(LocalDateTime.now());
+            usuario.setCorreoVerificado(false);
 
             usuario = usuarioRepo.save(usuario);
         } catch (DataIntegrityViolationException e) {
@@ -189,21 +209,8 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
                 AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO,
                 "Rol " + rol);
 
-        String cuerpo = String.format(
-                "Hola %s,\n\n"
-                + "¡Bienvenido al Marketplace de Alojamientos de Inversiones LR!\n\n"
-                + "Nos alegra que formes parte de nuestra plataforma, "
-                + "donde podrás descubrir, comparar y reservar alojamientos, "
-                + "o publicar tus propiedades como anfitrión.\n\n"
-                + "Gracias por confiar en nosotros.\n\n"
-                + "Saludos,\n"
-                + "Equipo Marketplace Inversiones LR",
-                data.getNombre().trim());
-
-        correoUtil.enviarCorreo(
-                correo,
-                "Bienvenido al Marketplace de Inversiones LR",
-                cuerpo);
+        // Correo de bienvenida con el código de verificación (RF-001)
+        verificacionCorreoService.enviarCodigo(usuario, correo, data.getNombre().trim(), true);
 
         return CREADO;
     }
@@ -372,7 +379,8 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
      *
      * @param correo   Correo del usuario autenticado (sale del token JWT).
      * @param nombre   Nombre nuevo; si se envía no puede estar vacío.
-     * @param telefono Teléfono nuevo: 7 a 15 dígitos, opcionalmente con +.
+     * @param telefono Teléfono nuevo: 7 a 15 dígitos, opcionalmente con + y
+     *                 separadores (espacios, guiones, puntos o paréntesis).
      * @return 0 actualizado; 1 usuario no encontrado; 2 datos inválidos o
      *         ningún campo para actualizar.
      * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
@@ -396,7 +404,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
             cambios.append("nombre ");
         }
         if (telefono != null) {
-            usuario.setTelefono(telefono.isBlank() ? null : telefono.trim());
+            usuario.setTelefono(normalizarTelefono(telefono));
             cambios.append("telefono");
         }
         usuarioRepo.save(usuario);
@@ -451,15 +459,19 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
     /**
      * Libera una cuenta restringida (administrador). Queda ACTIVA.
+     * <p>
+     * DECISIÓN: el motivo es opcional. Las acciones que castigan (restringir,
+     * bloquear, rechazar, ocultar) exigen motivo porque se le comunica al
+     * afectado y respalda la decisión en la auditoría; devolver el acceso no
+     * perjudica a nadie, así que el motivo solo se guarda si se envía.
+     * </p>
      *
-     * @return 0 con el usuario; 1 no existe; 2 falta el motivo; 4 no estaba restringida.
+     * @param motivo Motivo opcional; si se envía queda en la auditoría.
+     * @return 0 con el usuario; 1 no existe; 4 no estaba restringida.
      * @see "RF-014"
      */
     @Transactional
     public Resultado<UsuarioDTO> liberar(Long idUsuario, String motivo, Long idAdmin) {
-        if (esVacio(motivo)) {
-            return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo para liberar la cuenta es obligatorio.");
-        }
         Optional<Usuario> usuario = usuarioRepo.findById(idUsuario);
         if (usuario.isEmpty()) {
             return Resultado.error(Resultado.NO_ENCONTRADO, "Usuario no encontrado.");
@@ -474,16 +486,17 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
         notificacionService.enviar(idUsuario, NotificacionService.CUENTA_LIBERADA,
                 "Tu cuenta fue habilitada de nuevo por un administrador.");
         auditoriaService.registrar(idAdmin, AuditoriaService.USUARIO_LIBERADO, AuditoriaService.ENTIDAD_USUARIO,
-                idUsuario, ResultadoAuditoria.EXITOSO, motivo.trim());
+                idUsuario, ResultadoAuditoria.EXITOSO, esVacio(motivo) ? null : motivo.trim());
         return Resultado.exito(convertirDTO(guardado));
     }
 
     /**
      * El teléfono es opcional; si se envía debe tener de 7 a 15 dígitos,
-     * opcionalmente precedidos de +. Vacío equivale a no enviarlo.
+     * opcionalmente precedidos de + y con separadores (espacios, guiones,
+     * puntos o paréntesis). Vacío equivale a no enviarlo.
      */
     private static boolean telefonoValido(String telefono) {
-        return esVacio(telefono) || PATRON_TELEFONO.matcher(telefono.trim()).matches();
+        return esVacio(telefono) || PATRON_TELEFONO.matcher(normalizarTelefono(telefono)).matches();
     }
 
     private void auditarRechazo(Long idActor, String accion, String motivo) {

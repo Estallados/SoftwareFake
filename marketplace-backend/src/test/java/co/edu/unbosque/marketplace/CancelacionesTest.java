@@ -56,6 +56,45 @@ class CancelacionesTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void laSimulacionMuestraLaDevolucionSinCancelarYCoincideConLaReal_CA002_CA003() throws Exception {
+		Long id = crearAlojamientoActivo(registrar("ANFITRION"), "Bogotá", "Casa", 4, new BigDecimal("100000"),
+				Set.of(), "MODERADA");
+		Sesion huesped = registrar("HUESPED");
+		JsonNode reserva = reservaConfirmada(huesped, id, 2, 2);
+		long idReserva = reserva.get("idReserva").asLong();
+
+		JsonNode simulacion = llamar(get("/reservas/" + idReserva + "/simularcancelacion"), huesped.token(), null,
+				200);
+		assertEquals("MODERADA", simulacion.get("politica").asText());
+		assertEquals(2, simulacion.get("diasAnticipacion").asInt());
+		assertEquals(50, simulacion.get("porcentajeReembolso").asInt());
+		assertEquals(0, reserva.get("total").decimalValue().compareTo(simulacion.get("totalPagado").decimalValue()));
+		assertEquals(EstadoReserva.CONFIRMADA, reservaRepo.findById(idReserva).orElseThrow().getEstado());
+
+		JsonNode cancelacion = cancelar(huesped, idReserva, Map.of("motivo", "Cambio de planes"), unico("c-"), 200);
+		assertEquals(0, simulacion.get("valorReembolso").decimalValue()
+				.compareTo(cancelacion.get("valorReembolso").decimalValue()));
+
+		// Ya cancelada no se puede simular, y otro usuario nunca ve la reserva
+		llamar(get("/reservas/" + idReserva + "/simularcancelacion"), huesped.token(), null, 409);
+		llamar(get("/reservas/" + idReserva + "/simularcancelacion"), registrar("HUESPED").token(), null, 404);
+	}
+
+	@Test
+	void laReservaCanceladaMuestraFechaMotivoYDevolucion() throws Exception {
+		Long id = crearAlojamientoActivo(registrar("ANFITRION"));
+		Sesion huesped = registrar("HUESPED");
+		long idReserva = reservaConfirmada(huesped, id, 10, 2).get("idReserva").asLong();
+		cancelar(huesped, idReserva, Map.of("motivo", "Encontré otra opción"), unico("c-"), 200);
+
+		JsonNode detalle = llamar(get("/reservas/" + idReserva), huesped.token(), null, 200);
+
+		assertEquals("Encontré otra opción", detalle.get("cancelacion").get("motivo").asText());
+		assertNotNull(detalle.get("cancelacion").get("fecha").asText());
+		assertTrue(detalle.get("cancelacion").get("valorReembolso").decimalValue().signum() > 0);
+	}
+
+	@Test
 	void debeRegistrarUsuarioFechaMotivoDevolucionYEstadoFinal_CA004_CA005_CA006() throws Exception {
 		Long id = crearAlojamientoActivo(registrar("ANFITRION"), "Bogotá", "Casa", 4, new BigDecimal("100000"),
 				Set.of(), "FLEXIBLE");

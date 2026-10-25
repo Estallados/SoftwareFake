@@ -121,5 +121,69 @@ class NotificacionesResenasTest extends PruebaIntegracionBase {
 		assertEquals(2, resumen.get("cantidad").asLong());
 		assertEquals(4.5, resumen.get("promedio").asDouble());
 		assertEquals(2, resumen.get("resenas").get("totalElementos").asInt());
+		assertEquals("Usuario HUESPED", resumen.get("resenas").get("contenido").get(0).get("nombreUsuario").asText());
+
+		JsonNode detalle = llamar(get("/alojamientos/" + id), null, null, 200);
+		assertEquals(4.5, detalle.get("promedioCalificacion").asDouble());
+		assertEquals(2, detalle.get("cantidadResenas").asInt());
+	}
+
+	@Test
+	void elContadorDeNoLeidasYMarcarTodasComoLeidas_CA013() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		crearAlojamientoActivo(anfitrion);
+		crearAlojamientoActivo(anfitrion);
+		Sesion otro = registrar("HUESPED");
+
+		assertEquals(2, llamar(get("/notificaciones/noleidas"), anfitrion.token(), null, 200).get("cantidad").asInt());
+		assertEquals(0, llamar(get("/notificaciones/noleidas"), otro.token(), null, 200).get("cantidad").asInt());
+
+		assertEquals(2, llamar(patch("/notificaciones/leidas"), anfitrion.token(), null, 200).get("actualizadas")
+				.asInt());
+		assertEquals(0, llamar(get("/notificaciones/noleidas"), anfitrion.token(), null, 200).get("cantidad").asInt());
+		assertEquals(0, llamar(patch("/notificaciones/leidas"), anfitrion.token(), null, 200).get("actualizadas")
+				.asInt());
+	}
+
+	@Test
+	void elHuespedVeSusResenasYElAnfitrionLasDeSusAlojamientos() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = crearAlojamientoActivo(anfitrion);
+		Long otroAlojamiento = crearAlojamientoActivo(anfitrion);
+		Long ajeno = crearAlojamientoActivo(registrar("ANFITRION"));
+		Sesion huesped = registrar("HUESPED");
+		resenar(huesped, reservaCompletada(huesped, id), 5, 201);
+		resenar(huesped, reservaCompletada(huesped, otroAlojamiento), 3, 201);
+		resenar(huesped, reservaCompletada(huesped, ajeno), 1, 201);
+
+		JsonNode mias = llamar(get("/resenas/mias"), huesped.token(), null, 200);
+		assertEquals(3, mias.get("totalElementos").asInt());
+		assertTrue(mias.get("contenido").get(0).hasNonNull("tituloAlojamiento"));
+
+		JsonNode todas = llamar(get("/resenas/anfitrion"), anfitrion.token(), null, 200);
+		assertEquals(2, todas.get("cantidad").asInt());
+		assertEquals(4.0, todas.get("promedio").asDouble());
+		JsonNode deUno = llamar(get("/resenas/anfitrion?idAlojamiento=" + id), anfitrion.token(), null, 200);
+		assertEquals(1, deUno.get("cantidad").asInt());
+		llamar(get("/resenas/anfitrion?idAlojamiento=" + ajeno), anfitrion.token(), null, 404);
+		llamar(get("/resenas/mias"), anfitrion.token(), null, 403);
+	}
+
+	@Test
+	void elAdminListaLasResenasYAlOcultarUnaSeNotificaAlAutor_CA066() throws Exception {
+		Long id = crearAlojamientoActivo(registrar("ANFITRION"));
+		Sesion huesped = registrar("HUESPED");
+		Long idResena = resenar(huesped, reservaCompletada(huesped, id), 2, 201).get("idResena").asLong();
+		String admin = tokenAdmin();
+
+		llamar(patch("/admin/resenas/" + idResena + "/ocultar"), admin, Map.of("motivo", "Lenguaje ofensivo"), 200);
+
+		JsonNode ocultas = llamar(get("/admin/resenas?estado=OCULTA"), admin, null, 200);
+		assertTrue(ocultas.get("contenido").toString().contains("\"idResena\":" + idResena));
+		assertTrue(llamar(get("/notificaciones"), huesped.token(), null, 200).toString().contains("Lenguaje ofensivo"));
+		// El huésped sigue viendo su reseña, con su estado
+		assertEquals("OCULTA", llamar(get("/resenas/mias"), huesped.token(), null, 200).get("contenido").get(0)
+				.get("estado").asText());
+		llamar(get("/admin/resenas"), huesped.token(), null, 403);
 	}
 }

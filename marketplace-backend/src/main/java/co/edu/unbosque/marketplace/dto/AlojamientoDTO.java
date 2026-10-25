@@ -2,10 +2,15 @@ package co.edu.unbosque.marketplace.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
+import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 
 /**
  * Datos de un alojamiento. De entrada se ignoran id, estado, idAnfitrion y fechaCreacion: los asigna el service.
@@ -34,6 +39,29 @@ public class AlojamientoDTO {
     private Set<String> amenidades = new HashSet<>();
     private List<String> imagenes;
     private List<ServicioAdicionalDTO> serviciosAdicionales;
+    private Integer habitaciones;
+    private Integer banos;
+    /** Hora de entrada (check-in), formato HH:mm. */
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime horaEntrada;
+    /** Hora de salida (check-out), formato HH:mm. */
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime horaSalida;
+    private LocalDateTime fechaActualizacion;
+    /** Imágenes con id y portada; la principal va primero. Solo salida. */
+    private List<ImagenDTO> detalleImagenes;
+    /** Promedio de las reseñas visibles (una cifra decimal); null si no tiene. Solo salida. */
+    private Double promedioCalificacion;
+    /** Cantidad de reseñas visibles. Solo salida. */
+    private Long cantidadResenas;
+    /** Reservas no canceladas del alojamiento. Solo salida. */
+    private Long cantidadReservas;
+    /** Solo salida. */
+    private String nombreAnfitrion;
+    /** Solo salida y solo para el administrador. */
+    private String correoAnfitrion;
+    /** Solo salida y solo para el administrador. */
+    private EstadoUsuario estadoAnfitrion;
 
     public AlojamientoDTO() {
     }
@@ -183,5 +211,89 @@ public class AlojamientoDTO {
     }
     public void setServiciosAdicionales(List<ServicioAdicionalDTO> serviciosAdicionales) {
         this.serviciosAdicionales = serviciosAdicionales;
+    }
+
+    public Integer getHabitaciones() {
+        return habitaciones;
+    }
+    public void setHabitaciones(Integer habitaciones) {
+        this.habitaciones = habitaciones;
+    }
+
+    public Integer getBanos() {
+        return banos;
+    }
+    public void setBanos(Integer banos) {
+        this.banos = banos;
+    }
+
+    public LocalTime getHoraEntrada() {
+        return horaEntrada;
+    }
+    public void setHoraEntrada(LocalTime horaEntrada) {
+        this.horaEntrada = horaEntrada;
+    }
+
+    public LocalTime getHoraSalida() {
+        return horaSalida;
+    }
+    public void setHoraSalida(LocalTime horaSalida) {
+        this.horaSalida = horaSalida;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
+    }
+
+    public List<ImagenDTO> getDetalleImagenes() {
+        return detalleImagenes;
+    }
+    public void setDetalleImagenes(List<ImagenDTO> detalleImagenes) {
+        this.detalleImagenes = detalleImagenes;
+    }
+
+    public Double getPromedioCalificacion() {
+        return promedioCalificacion;
+    }
+    public void setPromedioCalificacion(Double promedioCalificacion) {
+        this.promedioCalificacion = promedioCalificacion;
+    }
+
+    public Long getCantidadResenas() {
+        return cantidadResenas;
+    }
+    public void setCantidadResenas(Long cantidadResenas) {
+        this.cantidadResenas = cantidadResenas;
+    }
+
+    public Long getCantidadReservas() {
+        return cantidadReservas;
+    }
+    public void setCantidadReservas(Long cantidadReservas) {
+        this.cantidadReservas = cantidadReservas;
+    }
+
+    public String getNombreAnfitrion() {
+        return nombreAnfitrion;
+    }
+    public void setNombreAnfitrion(String nombreAnfitrion) {
+        this.nombreAnfitrion = nombreAnfitrion;
+    }
+
+    public String getCorreoAnfitrion() {
+        return correoAnfitrion;
+    }
+    public void setCorreoAnfitrion(String correoAnfitrion) {
+        this.correoAnfitrion = correoAnfitrion;
+    }
+
+    public EstadoUsuario getEstadoAnfitrion() {
+        return estadoAnfitrion;
+    }
+    public void setEstadoAnfitrion(EstadoUsuario estadoAnfitrion) {
+        this.estadoAnfitrion = estadoAnfitrion;
     }
 }

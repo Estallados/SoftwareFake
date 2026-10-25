@@ -6,7 +6,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 
-/** Entidad que representa imagen en el marketplace. */
+/**
+ * Entidad que representa imagen en el marketplace. Puede ser un archivo
+ * subido por el anfitrión (se guarda en disco y {@code rutaArchivo} indica
+ * dónde) o una URL externa ({@code rutaArchivo} en null). Una imagen por
+ * alojamiento es la principal (portada).
+ *
+ * @see "RF-017"
+ */
 @Entity
 @Table(name = "imagen")
 public class Imagen {
@@ -15,6 +22,10 @@ public class Imagen {
     private Long idImagen;
     private String url;
     private Long idAlojamiento;
+    /** Portada del alojamiento; null en imágenes anteriores a este campo. */
+    private Boolean principal;
+    /** Ruta relativa del archivo en el almacenamiento; null si es una URL externa. */
+    private String rutaArchivo;
 
     public Imagen() {
     }
@@ -38,5 +49,19 @@ public class Imagen {
     }
     public void setIdAlojamiento(Long idAlojamiento) {
         this.idAlojamiento = idAlojamiento;
+    }
+
+    public Boolean getPrincipal() {
+        return principal;
+    }
+    public void setPrincipal(Boolean principal) {
+        this.principal = principal;
+    }
+
+    public String getRutaArchivo() {
+        return rutaArchivo;
+    }
+    public void setRutaArchivo(String rutaArchivo) {
+        this.rutaArchivo = rutaArchivo;
     }
 }

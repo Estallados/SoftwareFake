@@ -1,10 +1,15 @@
 package co.edu.unbosque.marketplace.dto;
 
-
+/**
+ * Imagen de un alojamiento: su URL pública y si es la principal (portada).
+ *
+ * @see "RF-017"
+ */
 public class ImagenDTO {
     private Long idImagen;
     private String url;
     private Long idAlojamiento;
+    private Boolean principal;
 
     public ImagenDTO() {
     }
@@ -28,5 +33,12 @@ public class ImagenDTO {
     }
     public void setIdAlojamiento(Long idAlojamiento) {
         this.idAlojamiento = idAlojamiento;
+    }
+
+    public Boolean getPrincipal() {
+        return principal;
+    }
+    public void setPrincipal(Boolean principal) {
+        this.principal = principal;
     }
 }

@@ -39,6 +39,32 @@ class ReservasPagosTest extends PruebaIntegracionBase {
 	@Autowired
 	private ReservaRepository reservaRepo;
 
+	@Test
+	void laReservaTraeLosDatosQueMuestranLasPantallasAunqueElAlojamientoSeBloquee() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = crearAlojamientoActivo(anfitrion, "Santa Marta", "Cabaña", 4, new BigDecimal("120000"), Set.of(),
+				"ESTRICTA");
+		Sesion huesped = registrar("HUESPED");
+		long idReserva = reservaConfirmada(huesped, id, 5, 2).get("idReserva").asLong();
+		llamar(post("/admin/alojamientos/" + id + "/bloquear"), tokenAdmin(), Map.of("motivo", "Revisión"), 200);
+
+		JsonNode reserva = llamar(get("/reservas/" + idReserva), huesped.token(), null, 200);
+
+		assertEquals("Santa Marta", reserva.get("ciudad").asText());
+		assertEquals("Cabaña", reserva.get("tipoAlojamiento").asText());
+		assertEquals(4, reserva.get("capacidadAlojamiento").asInt());
+		assertEquals("ESTRICTA", reserva.get("nombrePolitica").asText());
+		assertEquals("Usuario HUESPED", reserva.get("nombreHuesped").asText());
+		assertEquals("Usuario ANFITRION", reserva.get("nombreAnfitrion").asText());
+		assertEquals(anfitrion.id(), reserva.get("idAnfitrion").asLong());
+		assertEquals("/img/foto1.jpg", reserva.get("imagenAlojamiento").asText());
+		assertFalse(reserva.get("tieneResena").asBoolean());
+		assertTrue(reserva.get("cancelacion").isNull());
+
+		JsonNode deAnfitrion = llamar(get("/reservas/anfitrion"), anfitrion.token(), null, 200);
+		assertEquals("Usuario HUESPED", deAnfitrion.get("contenido").get(0).get("nombreHuesped").asText());
+	}
+
 	private static BigDecimal valor(JsonNode nodo, String campo) {
 		return nodo.get(campo).decimalValue();
 	}

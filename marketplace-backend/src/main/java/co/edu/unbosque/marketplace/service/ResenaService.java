@@ -21,12 +21,15 @@ import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ResenaRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
+import co.edu.unbosque.marketplace.repository.UsuarioRepository;
+import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
  * Reseñas y calificaciones. Solo el huésped de una reserva completada puede
  * reseñar, una vez por reserva, con calificación de 1 a 5. La consulta pública
- * no incluye las reseñas ocultas por un administrador.
+ * y la del anfitrión no incluyen las reseñas ocultas por un administrador; el
+ * huésped ve todas las suyas con su estado y el administrador ve todas.
  *
  * @see "RF-004, RF-016, CA-016 a CA-020, CA-066, CA-067"
  */
@@ -40,16 +43,18 @@ public class ResenaService {
     private final ResenaRepository resenaRepo;
     private final ReservaRepository reservaRepo;
     private final AlojamientoRepository alojamientoRepo;
+    private final UsuarioRepository usuarioRepo;
     private final NotificacionService notificacionService;
     private final AuditoriaService auditoriaService;
     private final ModelMapper modelMapper;
 
     public ResenaService(ResenaRepository resenaRepo, ReservaRepository reservaRepo,
-            AlojamientoRepository alojamientoRepo, NotificacionService notificacionService,
-            AuditoriaService auditoriaService, ModelMapper modelMapper) {
+            AlojamientoRepository alojamientoRepo, UsuarioRepository usuarioRepo,
+            NotificacionService notificacionService, AuditoriaService auditoriaService, ModelMapper modelMapper) {
         this.resenaRepo = resenaRepo;
         this.reservaRepo = reservaRepo;
         this.alojamientoRepo = alojamientoRepo;
+        this.usuarioRepo = usuarioRepo;
         this.notificacionService = notificacionService;
         this.auditoriaService = auditoriaService;
         this.modelMapper = modelMapper;
@@ -104,7 +109,7 @@ public class ResenaService {
                 "Recibiste una reseña de " + datos.getCalificacion() + " estrellas en \"" + a.getTitulo() + "\"."));
         auditoriaService.registrar(idHuesped, AuditoriaService.RESENA_CREADA, AuditoriaService.ENTIDAD_RESENA,
                 resena.getIdResena(), ResultadoAuditoria.EXITOSO, "Reserva " + resena.getIdReserva());
-        return Resultado.exito(modelMapper.map(resena, ResenaDTO.class));
+        return Resultado.exito(convertirDTO(resena));
     }
 
     /**
@@ -120,16 +125,60 @@ public class ResenaService {
         Double promedio = resenaRepo.promedio(idAlojamiento, EstadoResena.PUBLICADA);
         ResumenResenasDTO resumen = new ResumenResenasDTO();
         resumen.setIdAlojamiento(idAlojamiento);
-        resumen.setPromedio(promedio == null ? null
-                : BigDecimal.valueOf(promedio).setScale(1, RoundingMode.HALF_UP).doubleValue());
+        resumen.setPromedio(redondear(promedio));
         resumen.setCantidad(resenaRepo.countByIdAlojamientoAndEstado(idAlojamiento, EstadoResena.PUBLICADA));
         resumen.setResenas(PaginaDTO.de(resenaRepo.findByIdAlojamientoAndEstado(idAlojamiento,
-                EstadoResena.PUBLICADA, pagina), r -> modelMapper.map(r, ResenaDTO.class)));
+                EstadoResena.PUBLICADA, pagina), this::convertirDTO));
         return Resultado.exito(resumen);
     }
 
     /**
-     * Oculta o vuelve a mostrar una reseña (administrador). No la borra.
+     * Reseñas que escribió el huésped autenticado, incluidas las ocultas (con
+     * su estado).
+     *
+     * @see "RF-004"
+     */
+    public PaginaDTO<ResenaDTO> listarMias(Long idHuesped, Pageable pagina) {
+        return PaginaDTO.de(resenaRepo.findByIdUsuario(idHuesped, pagina), this::convertirDTO);
+    }
+
+    /**
+     * Reseñas visibles de los alojamientos del anfitrión autenticado, con su
+     * promedio y cantidad. Si se indica un alojamiento, solo las de ese (y
+     * debe ser suyo).
+     *
+     * @return 0 con el resumen; 1 si el alojamiento no existe o es de otro anfitrión.
+     * @see "RF-004, CA-019"
+     */
+    public Resultado<ResumenResenasDTO> resumenDeAnfitrion(Long idAnfitrion, Long idAlojamiento, Pageable pagina) {
+        if (idAlojamiento != null && alojamientoRepo.findById(idAlojamiento)
+                .filter(a -> a.getIdAnfitrion().equals(idAnfitrion)).isEmpty()) {
+            return Resultado.error(Resultado.NO_ENCONTRADO, "El alojamiento no existe.");
+        }
+        Double promedio = resenaRepo.promedioDeAnfitrion(idAnfitrion, idAlojamiento, EstadoResena.PUBLICADA);
+        ResumenResenasDTO resumen = new ResumenResenasDTO();
+        resumen.setIdAlojamiento(idAlojamiento);
+        resumen.setPromedio(redondear(promedio));
+        resumen.setCantidad(resenaRepo.contarDeAnfitrion(idAnfitrion, idAlojamiento, EstadoResena.PUBLICADA));
+        resumen.setResenas(PaginaDTO.de(resenaRepo.buscarDeAnfitrion(idAnfitrion, idAlojamiento,
+                EstadoResena.PUBLICADA, pagina), this::convertirDTO));
+        return Resultado.exito(resumen);
+    }
+
+    /**
+     * Todas las reseñas, o solo las de un estado (moderación del
+     * administrador).
+     *
+     * @see "RF-016, CA-066"
+     */
+    public PaginaDTO<ResenaDTO> listarTodas(EstadoResena estado, Pageable pagina) {
+        return PaginaDTO.de(estado == null ? resenaRepo.findAll(pagina) : resenaRepo.findByEstado(estado, pagina),
+                this::convertirDTO);
+    }
+
+    /**
+     * Oculta o vuelve a mostrar una reseña (administrador). No la borra. Al
+     * ocultarla se notifica al autor con el motivo.
      *
      * @param oculta  true para ocultar, false para mostrar.
      * @param motivo  Motivo obligatorio al ocultar.
@@ -147,9 +196,27 @@ public class ResenaService {
         }
         resena.get().setEstado(oculta ? EstadoResena.OCULTA : EstadoResena.PUBLICADA);
         Resena guardada = resenaRepo.save(resena.get());
+        if (oculta) {
+            notificacionService.enviar(guardada.getIdUsuario(), NotificacionService.RESENA_OCULTA,
+                    "Un administrador ocultó tu reseña de la reserva " + guardada.getIdReserva() + ". Motivo: "
+                            + motivo.trim());
+        }
         auditoriaService.registrar(idAdmin, AuditoriaService.RESENA_MODERADA, AuditoriaService.ENTIDAD_RESENA,
                 idResena, ResultadoAuditoria.EXITOSO, (oculta ? "Ocultada: " + motivo.trim() : "Visible de nuevo"));
-        return Resultado.exito(modelMapper.map(guardada, ResenaDTO.class));
+        return Resultado.exito(convertirDTO(guardada));
+    }
+
+    /** Convierte la reseña a DTO con el nombre del huésped y el título del alojamiento. */
+    public ResenaDTO convertirDTO(Resena resena) {
+        ResenaDTO dto = modelMapper.map(resena, ResenaDTO.class);
+        usuarioRepo.findById(resena.getIdUsuario())
+                .ifPresent(u -> dto.setNombreUsuario(AESUtil.decrypt(u.getNombre())));
+        alojamientoRepo.findById(resena.getIdAlojamiento()).ifPresent(a -> dto.setTituloAlojamiento(a.getTitulo()));
+        return dto;
+    }
+
+    private static Double redondear(Double promedio) {
+        return promedio == null ? null : BigDecimal.valueOf(promedio).setScale(1, RoundingMode.HALF_UP).doubleValue();
     }
 
     private Resultado<ResenaDTO> rechazar(Long idHuesped, String mensaje) {

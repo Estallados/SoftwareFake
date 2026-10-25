@@ -1,0 +1,45 @@
+package co.edu.unbosque.marketplace;
+
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.mockito.ArgumentCaptor;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+
+import co.edu.unbosque.marketplace.service.UsuarioService;
+
+/**
+ * Lee los correos que la aplicación "envió" al {@link JavaMailSender} simulado
+ * de las pruebas, para sacar el código de verificación del registro.
+ */
+final class CorreoPrueba {
+
+	/** El código va solo en su línea, con sangría (ver VerificacionCorreoService). */
+	private static final Pattern CODIGO = Pattern.compile("(?m)^\\s+(\\d{6})\\s*$");
+
+	private CorreoPrueba() {
+	}
+
+	/** Último código de verificación enviado al correo indicado (sin importar mayúsculas). */
+	static String codigoEnviadoA(JavaMailSender mailSender, String correo) {
+		ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+		verify(mailSender, atLeastOnce()).send(captor.capture());
+		String destino = UsuarioService.normalizarCorreo(correo);
+		List<SimpleMailMessage> enviados = captor.getAllValues().stream()
+				.filter(m -> m.getTo() != null && Arrays.asList(m.getTo()).contains(destino)).toList();
+		if (enviados.isEmpty()) {
+			throw new AssertionError("No se envió ningún correo a " + correo);
+		}
+		Matcher codigo = CODIGO.matcher(enviados.get(enviados.size() - 1).getText());
+		if (!codigo.find()) {
+			throw new AssertionError("El correo enviado a " + correo + " no trae código de verificación");
+		}
+		return codigo.group(1);
+	}
+}

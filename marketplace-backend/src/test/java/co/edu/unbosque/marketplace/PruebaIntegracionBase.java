@@ -88,11 +88,17 @@ abstract class PruebaIntegracionBase {
 
 	protected Sesion registrar(String rol) throws Exception {
 		String correo = unico(rol.toLowerCase()) + "@correo.com";
-		JsonNode respuesta = llamar(post("/auth/register"), null,
+		llamar(post("/auth/register"), null,
 				Map.of("nombre", "Usuario " + rol, "correo", correo, "contrasenia", CLAVE, "rol", rol), 201);
-		String token = respuesta.get("token").asText();
+		String token = verificarCorreo(correo).get("token").asText();
 		JsonNode perfil = llamar(get("/usuarios/perfil"), token, null, 200);
 		return new Sesion(token, perfil.get("idUsuario").asLong(), correo);
+	}
+
+	/** Confirma el correo con el código que llegó al registrarse; devuelve la respuesta con el token. */
+	protected JsonNode verificarCorreo(String correo) throws Exception {
+		return llamar(post("/auth/verificar"), null,
+				Map.of("correo", correo, "codigo", CorreoPrueba.codigoEnviadoA(mailSender, correo)), 200);
 	}
 
 	protected String tokenAdmin() throws Exception {
@@ -114,6 +120,10 @@ abstract class PruebaIntegracionBase {
 		datos.put("ciudad", ciudad);
 		datos.put("tipo", tipo);
 		datos.put("capacidad", capacidad);
+		datos.put("habitaciones", 2);
+		datos.put("banos", 1);
+		datos.put("horaEntrada", "15:00");
+		datos.put("horaSalida", "11:00");
 		datos.put("precioNoche", precio);
 		datos.put("reglas", "No fumar");
 		datos.put("idPolitica", idPolitica(politica));

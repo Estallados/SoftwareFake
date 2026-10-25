@@ -42,6 +42,12 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     public Page<Reserva> findByIdHuesped(Long idHuesped, Pageable pageable);
 
+    /** Todas las reservas en un estado (vista del administrador). */
+    public Page<Reserva> findByEstado(EstadoReserva estado, Pageable pageable);
+
+    /** Cantidad de reservas de un alojamiento en los estados indicados. */
+    public long countByIdAlojamientoAndEstadoIn(Long idAlojamiento, Collection<EstadoReserva> estados);
+
     /** Reservas de los alojamientos de un anfitrión. */
     @Query("select r from Reserva r where r.idAlojamiento in "
             + "(select a.idAlojamiento from Alojamiento a where a.idAnfitrion = :idAnfitrion)")

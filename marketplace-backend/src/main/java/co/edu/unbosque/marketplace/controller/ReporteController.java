@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.controller;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -42,6 +43,14 @@ public class ReporteController {
     @GetMapping("/dashboard")
     public ResponseEntity<Object> dashboard() {
         return ResponseEntity.ok(reporteService.dashboard());
+    }
+
+    @Operation(summary = "Historial de exportaciones (quién, qué, formato y cuándo)")
+    @GetMapping("/reportes/historial")
+    public ResponseEntity<Object> historial(@RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return ResponseEntity.ok(reporteService.historial(RespuestaUtil.pagina(pagina, tamanio,
+                Sort.by("fecha").descending().and(Sort.by("idRegistro").descending()))));
     }
 
     @Operation(summary = "Exportar un reporte",

@@ -7,11 +7,13 @@ import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import co.edu.unbosque.marketplace.dto.AlojamientoDTO;
 import co.edu.unbosque.marketplace.dto.ServicioAdicionalDTO;
@@ -115,6 +118,37 @@ public class AlojamientoController {
             Authentication authentication) {
         return RespuestaUtil.desde(publicacionService.actualizar(id, datos, RespuestaUtil.idUsuario(authentication),
                 RespuestaUtil.esAdmin(authentication)));
+    }
+
+    @Operation(summary = "Subir imágenes (propietario o ADMIN)",
+            description = "multipart/form-data con uno o varios archivos en el campo 'archivos'. JPG, PNG o WEBP de "
+                    + "hasta 5 MB, máximo 15 por alojamiento. Si no había portada, la primera queda como principal.")
+    @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @PostMapping(value = "/{id}/imagenes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Object> subirImagenes(@PathVariable Long id,
+            @RequestParam("archivos") List<MultipartFile> archivos, Authentication authentication) {
+        return RespuestaUtil.desde(publicacionService.subirImagenes(id, archivos,
+                RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)), HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Eliminar una imagen (propietario o ADMIN)",
+            description = "Si era la principal, la siguiente pasa a serlo. Una publicación ya enviada debe conservar "
+                    + "al menos una imagen.")
+    @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @DeleteMapping("/{id}/imagenes/{idImagen}")
+    public ResponseEntity<Object> eliminarImagen(@PathVariable Long id, @PathVariable Long idImagen,
+            Authentication authentication) {
+        return RespuestaUtil.desde(publicacionService.eliminarImagen(id, idImagen,
+                RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)));
+    }
+
+    @Operation(summary = "Marcar una imagen como principal (propietario o ADMIN)")
+    @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @PatchMapping("/{id}/imagenes/{idImagen}/principal")
+    public ResponseEntity<Object> marcarPrincipal(@PathVariable Long id, @PathVariable Long idImagen,
+            Authentication authentication) {
+        return RespuestaUtil.desde(publicacionService.marcarPrincipal(id, idImagen,
+                RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)));
     }
 
     @Operation(summary = "Enviar a revisión: BORRADOR → PENDIENTE_REVISION (ANFITRION)")

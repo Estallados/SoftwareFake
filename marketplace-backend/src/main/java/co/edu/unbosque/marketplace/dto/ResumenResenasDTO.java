@@ -1,7 +1,8 @@
 package co.edu.unbosque.marketplace.dto;
 
 /**
- * Reseñas visibles de un alojamiento con su promedio y cantidad.
+ * Reseñas visibles de un alojamiento (o de todos los alojamientos de un
+ * anfitrión, con idAlojamiento en null) con su promedio y cantidad.
  *
  * @see "RF-004, CA-019, CA-020"
  */

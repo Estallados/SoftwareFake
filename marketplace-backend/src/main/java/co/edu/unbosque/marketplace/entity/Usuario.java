@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.entity;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -44,6 +45,14 @@ public class Usuario implements UserDetails{
     /** Secreto TOTP cifrado con AES; null si nunca se activó el segundo factor (RNF-033). */
     private String secretoTotp;
     private Boolean totpHabilitado;
+    /** Fecha en que se creó la cuenta; null en cuentas anteriores a este campo. */
+    private LocalDateTime fechaRegistro;
+    /**
+     * Indica si el usuario confirmó su correo con el código de verificación.
+     * false bloquea el inicio de sesión; null (cuentas anteriores a la
+     * verificación) se considera verificado.
+     */
+    private Boolean correoVerificado;
 
     public Usuario() {
     }
@@ -139,6 +148,25 @@ public class Usuario implements UserDetails{
     }
     public void setTotpHabilitado(Boolean totpHabilitado) {
         this.totpHabilitado = totpHabilitado;
+    }
+
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
+    }
+    public void setFechaRegistro(LocalDateTime fechaRegistro) {
+        this.fechaRegistro = fechaRegistro;
+    }
+
+    public Boolean getCorreoVerificado() {
+        return correoVerificado;
+    }
+    public void setCorreoVerificado(Boolean correoVerificado) {
+        this.correoVerificado = correoVerificado;
+    }
+
+    /** El correo está verificado si se confirmó o si la cuenta es anterior a la verificación (null). */
+    public boolean esCorreoVerificado() {
+        return !Boolean.FALSE.equals(correoVerificado);
     }
 
     @Override

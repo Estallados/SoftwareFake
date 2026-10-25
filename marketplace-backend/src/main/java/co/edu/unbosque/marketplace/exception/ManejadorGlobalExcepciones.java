@@ -5,6 +5,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +18,9 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
@@ -73,8 +77,25 @@ public class ManejadorGlobalExcepciones {
 	}
 
 	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-	public ResponseEntity<Map<String, String>> tipoContenidoNoSoportado() {
-		return mensaje(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "El cuerpo debe enviarse como application/json.");
+	public ResponseEntity<Map<String, String>> tipoContenidoNoSoportado(HttpMediaTypeNotSupportedException e) {
+		String esperado = e.getSupportedMediaTypes().stream().anyMatch(MediaType.MULTIPART_FORM_DATA::includes)
+				? "multipart/form-data" : "application/json";
+		return mensaje(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "El cuerpo debe enviarse como " + esperado + ".");
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<Map<String, String>> archivoMuyGrande() {
+		return mensaje(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño permitido (5 MB por imagen).");
+	}
+
+	@ExceptionHandler(MissingServletRequestPartException.class)
+	public ResponseEntity<Map<String, String>> parteFaltante(MissingServletRequestPartException e) {
+		return mensaje(HttpStatus.BAD_REQUEST, "Falta el campo " + e.getRequestPartName() + " con los archivos.");
+	}
+
+	@ExceptionHandler(MultipartException.class)
+	public ResponseEntity<Map<String, String>> multipartInvalido() {
+		return mensaje(HttpStatus.BAD_REQUEST, "Los archivos deben enviarse como multipart/form-data.");
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)

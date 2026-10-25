@@ -21,7 +21,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controlador REST de reseñas. Registrar requiere ser el huésped de una
- * reserva completada; la consulta por alojamiento es pública.
+ * reserva completada; la consulta por alojamiento es pública. El huésped ve
+ * sus reseñas y el anfitrión las de sus alojamientos.
  *
  * @see "RF-004"
  */
@@ -29,6 +30,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Reseñas", description = "Calificaciones de estancias completadas")
 public class ResenaController {
+
+    private static final Sort RECIENTES = Sort.by("fecha").descending();
 
     private final ResenaService resenaService;
 
@@ -45,12 +48,34 @@ public class ResenaController {
                 HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Mis reseñas como huésped, incluidas las ocultas (HUESPED)")
+    @PreAuthorize("hasRole('HUESPED')")
+    @GetMapping("/resenas/mias")
+    public ResponseEntity<Object> mias(Authentication authentication,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return ResponseEntity.ok(resenaService.listarMias(RespuestaUtil.idUsuario(authentication),
+                RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+    }
+
+    @Operation(summary = "Reseñas visibles de mis alojamientos con promedio y cantidad (ANFITRION)",
+            description = "Con idAlojamiento se filtran las de ese alojamiento (debe ser propio).")
+    @PreAuthorize("hasRole('ANFITRION')")
+    @GetMapping("/resenas/anfitrion")
+    public ResponseEntity<Object> deAnfitrion(Authentication authentication,
+            @RequestParam(required = false) Long idAlojamiento,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return RespuestaUtil.desde(resenaService.resumenDeAnfitrion(RespuestaUtil.idUsuario(authentication),
+                idAlojamiento, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+    }
+
     @Operation(summary = "Reseñas visibles de un alojamiento con promedio y cantidad (público)")
     @GetMapping("/alojamientos/{idAlojamiento}/resenas")
     public ResponseEntity<Object> deAlojamiento(@PathVariable Long idAlojamiento,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanio) {
         return RespuestaUtil.desde(resenaService.resumen(idAlojamiento,
-                RespuestaUtil.pagina(pagina, tamanio, Sort.by("fecha").descending())));
+                RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
     }
 }

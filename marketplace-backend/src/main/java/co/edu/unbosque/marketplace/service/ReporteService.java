@@ -8,11 +8,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.unbosque.marketplace.dto.DashboardDTO;
 import co.edu.unbosque.marketplace.dto.DemandaCiudadDTO;
+import co.edu.unbosque.marketplace.dto.PaginaDTO;
+import co.edu.unbosque.marketplace.dto.RegistroExportacionDTO;
 import co.edu.unbosque.marketplace.entity.Alojamiento;
 import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
 import co.edu.unbosque.marketplace.entity.EstadoPago;
@@ -141,6 +144,27 @@ public class ReporteService {
         String tipoContenido = pdf ? "application/pdf"
                 : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         return Resultado.exito(new ArchivoReporte(nombre, tipoContenido, contenido));
+    }
+
+    /**
+     * Historial de exportaciones, de la más reciente a la más antigua, con el
+     * nombre de quien exportó.
+     *
+     * @see "CA-029"
+     */
+    public PaginaDTO<RegistroExportacionDTO> historial(Pageable pagina) {
+        return PaginaDTO.de(exportacionRepo.findAll(pagina), registro -> {
+            RegistroExportacionDTO dto = new RegistroExportacionDTO();
+            dto.setIdRegistro(registro.getIdRegistro());
+            dto.setTipoReporte(registro.getTipoReporte());
+            dto.setFormato(registro.getFormato());
+            dto.setCantidadRegistros(registro.getCantidadRegistros());
+            dto.setIdUsuario(registro.getIdUsuario());
+            dto.setFecha(registro.getFecha());
+            usuarioRepo.findById(registro.getIdUsuario())
+                    .ifPresent(u -> dto.setNombreUsuario(AESUtil.decrypt(u.getNombre())));
+            return dto;
+        });
     }
 
     private void llenar(String tipo, List<String> encabezados, List<List<String>> filas) {

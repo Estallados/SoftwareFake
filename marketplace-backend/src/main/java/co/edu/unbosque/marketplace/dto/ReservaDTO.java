@@ -6,7 +6,9 @@ import java.time.LocalDateTime;
 import co.edu.unbosque.marketplace.entity.EstadoReserva;
 
 /**
- * Datos de una reserva con su desglose congelado y el último pago.
+ * Datos de una reserva con su desglose congelado, el último pago y los datos
+ * del alojamiento, del huésped y del anfitrión que muestran las pantallas de
+ * reservas (así no hace falta una llamada por fila).
  *
  * @see "RF-021, RF-022"
  */
@@ -26,6 +28,21 @@ public class ReservaDTO {
     private LocalDateTime fechaCreacion;
     private Boolean completada;
     private PagoDTO pago;
+    /** URL de la imagen principal del alojamiento. */
+    private String imagenAlojamiento;
+    private String ciudad;
+    private String ubicacion;
+    private String tipoAlojamiento;
+    private Integer capacidadAlojamiento;
+    /** Política de cancelación del alojamiento. */
+    private String nombrePolitica;
+    private String nombreHuesped;
+    private Long idAnfitrion;
+    private String nombreAnfitrion;
+    /** Indica si el huésped ya reseñó esta reserva. */
+    private Boolean tieneResena;
+    /** Datos de la cancelación (fecha, motivo, devolución); null si no fue cancelada por el huésped. */
+    private CancelacionDTO cancelacion;
 
     public ReservaDTO() {
     }
@@ -133,5 +150,82 @@ public class ReservaDTO {
     }
     public void setPago(PagoDTO pago) {
         this.pago = pago;
+    }
+
+    public String getImagenAlojamiento() {
+        return imagenAlojamiento;
+    }
+    public void setImagenAlojamiento(String imagenAlojamiento) {
+        this.imagenAlojamiento = imagenAlojamiento;
+    }
+
+    public String getCiudad() {
+        return ciudad;
+    }
+    public void setCiudad(String ciudad) {
+        this.ciudad = ciudad;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
+
+    public String getTipoAlojamiento() {
+        return tipoAlojamiento;
+    }
+    public void setTipoAlojamiento(String tipoAlojamiento) {
+        this.tipoAlojamiento = tipoAlojamiento;
+    }
+
+    public Integer getCapacidadAlojamiento() {
+        return capacidadAlojamiento;
+    }
+    public void setCapacidadAlojamiento(Integer capacidadAlojamiento) {
+        this.capacidadAlojamiento = capacidadAlojamiento;
+    }
+
+    public String getNombrePolitica() {
+        return nombrePolitica;
+    }
+    public void setNombrePolitica(String nombrePolitica) {
+        this.nombrePolitica = nombrePolitica;
+    }
+
+    public String getNombreHuesped() {
+        return nombreHuesped;
+    }
+    public void setNombreHuesped(String nombreHuesped) {
+        this.nombreHuesped = nombreHuesped;
+    }
+
+    public Long getIdAnfitrion() {
+        return idAnfitrion;
+    }
+    public void setIdAnfitrion(Long idAnfitrion) {
+        this.idAnfitrion = idAnfitrion;
+    }
+
+    public String getNombreAnfitrion() {
+        return nombreAnfitrion;
+    }
+    public void setNombreAnfitrion(String nombreAnfitrion) {
+        this.nombreAnfitrion = nombreAnfitrion;
+    }
+
+    public Boolean getTieneResena() {
+        return tieneResena;
+    }
+    public void setTieneResena(Boolean tieneResena) {
+        this.tieneResena = tieneResena;
+    }
+
+    public CancelacionDTO getCancelacion() {
+        return cancelacion;
+    }
+    public void setCancelacion(CancelacionDTO cancelacion) {
+        this.cancelacion = cancelacion;
     }
 }

@@ -20,9 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 import co.edu.unbosque.marketplace.dto.ConfiguracionTarifaDTO;
 import co.edu.unbosque.marketplace.dto.MotivoDTO;
 import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
+import co.edu.unbosque.marketplace.entity.EstadoResena;
+import co.edu.unbosque.marketplace.entity.EstadoReserva;
 import co.edu.unbosque.marketplace.service.AuditoriaService;
 import co.edu.unbosque.marketplace.service.PublicacionService;
 import co.edu.unbosque.marketplace.service.ResenaService;
+import co.edu.unbosque.marketplace.service.ReservaService;
 import co.edu.unbosque.marketplace.service.TarifaService;
 import co.edu.unbosque.marketplace.service.UsuarioService;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
@@ -32,8 +35,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controlador REST de administración (solo ADMIN). Ruta base: {@code /admin}.
- * Moderación de alojamientos y reseñas, restricción de usuarios, tarifas
- * globales y consulta de la auditoría.
+ * Moderación de alojamientos y reseñas, restricción de usuarios, consulta de
+ * todas las reservas, tarifas globales y consulta de la auditoría.
  *
  * @see "RF-013, RF-014, RF-015, RF-016, RF-023, RF-027"
  */
@@ -44,17 +47,22 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Administración", description = "Moderación, usuarios, tarifas y auditoría")
 public class AdminController {
 
+    private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();
+
     private final UsuarioService usuarioService;
     private final PublicacionService publicacionService;
     private final ResenaService resenaService;
+    private final ReservaService reservaService;
     private final TarifaService tarifaService;
     private final AuditoriaService auditoriaService;
 
     public AdminController(UsuarioService usuarioService, PublicacionService publicacionService,
-            ResenaService resenaService, TarifaService tarifaService, AuditoriaService auditoriaService) {
+            ResenaService resenaService, ReservaService reservaService, TarifaService tarifaService,
+            AuditoriaService auditoriaService) {
         this.usuarioService = usuarioService;
         this.publicacionService = publicacionService;
         this.resenaService = resenaService;
+        this.reservaService = reservaService;
         this.tarifaService = tarifaService;
         this.auditoriaService = auditoriaService;
     }
@@ -69,6 +77,23 @@ public class AdminController {
                 Sort.by("idUsuario"))));
     }
 
+    @Operation(summary = "Reservas de un usuario como huésped (detalle de usuario)")
+    @GetMapping("/usuarios/{id}/reservas")
+    public ResponseEntity<Object> reservasDeUsuario(@PathVariable Long id,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return ResponseEntity.ok(reservaService.listarMias(id, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+    }
+
+    @Operation(summary = "Alojamientos de un usuario como anfitrión, en cualquier estado (detalle de usuario)")
+    @GetMapping("/usuarios/{id}/alojamientos")
+    public ResponseEntity<Object> alojamientosDeUsuario(@PathVariable Long id,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return ResponseEntity.ok(publicacionService.listarDeAnfitrion(id,
+                RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+    }
+
     @Operation(summary = "Restringir un usuario con motivo")
     @PatchMapping("/usuarios/{id}/restringir")
     public ResponseEntity<Object> restringir(@PathVariable Long id, @RequestBody MotivoDTO datos,
@@ -77,11 +102,11 @@ public class AdminController {
                 RespuestaUtil.idUsuario(authentication)));
     }
 
-    @Operation(summary = "Liberar un usuario restringido con motivo")
+    @Operation(summary = "Liberar un usuario restringido (motivo opcional)")
     @PatchMapping("/usuarios/{id}/liberar")
-    public ResponseEntity<Object> liberar(@PathVariable Long id, @RequestBody MotivoDTO datos,
+    public ResponseEntity<Object> liberar(@PathVariable Long id, @RequestBody(required = false) MotivoDTO datos,
             Authentication authentication) {
-        return RespuestaUtil.desde(usuarioService.liberar(id, datos.getMotivo(),
+        return RespuestaUtil.desde(usuarioService.liberar(id, datos == null ? null : datos.getMotivo(),
                 RespuestaUtil.idUsuario(authentication)));
     }
 
@@ -93,7 +118,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanio) {
         return ResponseEntity.ok(publicacionService.listarPorEstado(estado, RespuestaUtil.pagina(pagina, tamanio,
-                Sort.by("fechaCreacion").descending())));
+                RECIENTES)));
     }
 
     @Operation(summary = "Aprobar: PENDIENTE_REVISION → ACTIVA")
@@ -124,7 +149,26 @@ public class AdminController {
         return RespuestaUtil.desde(publicacionService.desbloquear(id, RespuestaUtil.idUsuario(authentication)));
     }
 
+    // ----- reservas -----
+
+    @Operation(summary = "Todas las reservas, opcionalmente filtradas por estado")
+    @GetMapping("/reservas")
+    public ResponseEntity<Object> reservas(@RequestParam(required = false) EstadoReserva estado,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return ResponseEntity.ok(reservaService.listarTodas(estado, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+    }
+
     // ----- reseñas -----
+
+    @Operation(summary = "Todas las reseñas para moderar, opcionalmente filtradas por estado")
+    @GetMapping("/resenas")
+    public ResponseEntity<Object> resenas(@RequestParam(required = false) EstadoResena estado,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return ResponseEntity.ok(resenaService.listarTodas(estado, RespuestaUtil.pagina(pagina, tamanio,
+                Sort.by("fecha").descending())));
+    }
 
     @Operation(summary = "Ocultar una reseña con motivo (no se borra)")
     @PatchMapping("/resenas/{id}/ocultar")

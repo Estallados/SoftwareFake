@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -83,6 +84,43 @@ class AdministracionTest extends PruebaIntegracionBase {
 
 		llamar(patch("/admin/usuarios/" + huesped.id() + "/liberar"), admin, Map.of("motivo", "Aclarado"), 200);
 		llamar(post("/auth/login"), null, Map.of("correo", huesped.correo(), "contrasenia", CLAVE), 200);
+
+		// Liberar no exige motivo: devolver el acceso no perjudica al usuario
+		llamar(patch("/admin/usuarios/" + huesped.id() + "/restringir"), admin, Map.of("motivo", "Revisión"), 200);
+		llamar(patch("/admin/usuarios/" + huesped.id() + "/liberar"), admin, null, 200);
+	}
+
+	@Test
+	void elAdminConsultaTodasLasReservasYLasDeCadaUsuario() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = crearAlojamientoActivo(anfitrion);
+		Sesion huesped = registrar("HUESPED");
+		long idReserva = reservaConfirmada(huesped, id, 3, 2).get("idReserva").asLong();
+		String admin = tokenAdmin();
+
+		JsonNode confirmadas = llamar(get("/admin/reservas?estado=CONFIRMADA&tamanio=100"), admin, null, 200);
+		assertTrue(confirmadas.get("contenido").toString().contains("\"idReserva\":" + idReserva));
+		assertTrue(confirmadas.get("contenido").get(0).hasNonNull("nombreHuesped"));
+		JsonNode canceladas = llamar(get("/admin/reservas?estado=CANCELADA&tamanio=100"), admin, null, 200);
+		assertFalse(canceladas.get("contenido").toString().contains("\"idReserva\":" + idReserva));
+
+		JsonNode delHuesped = llamar(get("/admin/usuarios/" + huesped.id() + "/reservas"), admin, null, 200);
+		assertEquals(1, delHuesped.get("totalElementos").asInt());
+		JsonNode delAnfitrion = llamar(get("/admin/usuarios/" + anfitrion.id() + "/alojamientos"), admin, null, 200);
+		assertEquals(1, delAnfitrion.get("totalElementos").asInt());
+		assertEquals(anfitrion.correo(), delAnfitrion.get("contenido").get(0).get("correoAnfitrion").asText());
+
+		llamar(get("/admin/reservas"), huesped.token(), null, 403);
+	}
+
+	@Test
+	void elListadoDeUsuariosMuestraLaFechaDeRegistro() throws Exception {
+		Sesion huesped = registrar("HUESPED");
+
+		JsonNode usuario = llamar(get("/usuarios/obtener/" + huesped.id()), tokenAdmin(), null, 200);
+
+		assertNotNull(usuario.get("fechaRegistro").asText());
+		assertTrue(usuario.get("correoVerificado").asBoolean());
 	}
 
 	@Test

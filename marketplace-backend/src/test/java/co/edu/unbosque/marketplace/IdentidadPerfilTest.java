@@ -76,10 +76,15 @@ class IdentidadPerfilTest {
 		tokenRepo.deleteAll();
 	}
 
+	/** Registra y verifica el correo con el código enviado; devuelve el token de sesión. */
 	private String registrar(String correo) throws Exception {
-		String respuesta = mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nombre\":\"Ana\",\"correo\":\"" + correo + "\",\"contrasenia\":\"Segura#2026\"}"))
-				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+				.andExpect(status().isCreated());
+		String respuesta = mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"" + correo + "\",\"codigo\":\"" + CorreoPrueba.codigoEnviadoA(mailSender, correo)
+						+ "\"}"))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 		return json.readTree(respuesta).get("token").asText();
 	}
 
@@ -267,6 +272,15 @@ class IdentidadPerfilTest {
 				.content("{\"nombre\":\"Segundo Admin\",\"correo\":\"admin2@correo.com\","
 						+ "\"contrasenia\":\"Admin#2026\",\"rol\":\"HUESPED\"}"))
 				.andExpect(status().isCreated());
+
+		// El nuevo administrador también confirma su correo antes de entrar
+		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"admin2@correo.com\",\"contrasenia\":\"Admin#2026\"}"))
+				.andExpect(status().isForbidden());
+		mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"admin2@correo.com\",\"codigo\":\""
+						+ CorreoPrueba.codigoEnviadoA(mailSender, "admin2@correo.com") + "\"}"))
+				.andExpect(status().isOk());
 
 		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"correo\":\"admin2@correo.com\",\"contrasenia\":\"Admin#2026\"}"))

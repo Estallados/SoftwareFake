@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import co.edu.unbosque.marketplace.dto.CancelacionDTO;
 import co.edu.unbosque.marketplace.dto.PagoDTO;
 import co.edu.unbosque.marketplace.dto.PaginaDTO;
 import co.edu.unbosque.marketplace.dto.ReservaDTO;
@@ -27,12 +28,18 @@ import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
 import co.edu.unbosque.marketplace.entity.EstadoPago;
 import co.edu.unbosque.marketplace.entity.EstadoReserva;
 import co.edu.unbosque.marketplace.entity.Pago;
+import co.edu.unbosque.marketplace.entity.PoliticaCancelacion;
 import co.edu.unbosque.marketplace.entity.Reserva;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
+import co.edu.unbosque.marketplace.repository.CancelacionRepository;
 import co.edu.unbosque.marketplace.repository.CotizacionRepository;
 import co.edu.unbosque.marketplace.repository.PagoRepository;
+import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
+import co.edu.unbosque.marketplace.repository.ResenaRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
+import co.edu.unbosque.marketplace.repository.UsuarioRepository;
+import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -65,7 +72,12 @@ public class ReservaService {
     private final CotizacionRepository cotizacionRepo;
     private final ReservaRepository reservaRepo;
     private final PagoRepository pagoRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final PoliticaCancelacionRepository politicaRepo;
+    private final ResenaRepository resenaRepo;
+    private final CancelacionRepository cancelacionRepo;
     private final CalendarioService calendarioService;
+    private final PublicacionService publicacionService;
     private final CotizacionService cotizacionService;
     private final PagoService pagoService;
     private final NotificacionService notificacionService;
@@ -75,15 +87,22 @@ public class ReservaService {
     private final TransactionTemplate transaccion;
 
     public ReservaService(AlojamientoRepository alojamientoRepo, CotizacionRepository cotizacionRepo,
-            ReservaRepository reservaRepo, PagoRepository pagoRepo, CalendarioService calendarioService,
-            CotizacionService cotizacionService, PagoService pagoService, NotificacionService notificacionService,
-            AuditoriaService auditoriaService, ModelMapper modelMapper, ObjectMapper objectMapper,
-            PlatformTransactionManager transactionManager) {
+            ReservaRepository reservaRepo, PagoRepository pagoRepo, UsuarioRepository usuarioRepo,
+            PoliticaCancelacionRepository politicaRepo, ResenaRepository resenaRepo,
+            CancelacionRepository cancelacionRepo, CalendarioService calendarioService,
+            PublicacionService publicacionService, CotizacionService cotizacionService, PagoService pagoService,
+            NotificacionService notificacionService, AuditoriaService auditoriaService, ModelMapper modelMapper,
+            ObjectMapper objectMapper, PlatformTransactionManager transactionManager) {
         this.alojamientoRepo = alojamientoRepo;
         this.cotizacionRepo = cotizacionRepo;
         this.reservaRepo = reservaRepo;
         this.pagoRepo = pagoRepo;
+        this.usuarioRepo = usuarioRepo;
+        this.politicaRepo = politicaRepo;
+        this.resenaRepo = resenaRepo;
+        this.cancelacionRepo = cancelacionRepo;
         this.calendarioService = calendarioService;
+        this.publicacionService = publicacionService;
         this.cotizacionService = cotizacionService;
         this.pagoService = pagoService;
         this.notificacionService = notificacionService;
@@ -150,6 +169,17 @@ public class ReservaService {
     }
 
     /**
+     * Todas las reservas de la plataforma, o solo las de un estado (vista del
+     * administrador).
+     *
+     * @see "RF-005, RF-022"
+     */
+    public PaginaDTO<ReservaDTO> listarTodas(EstadoReserva estado, Pageable pagina) {
+        return PaginaDTO.de(estado == null ? reservaRepo.findAll(pagina) : reservaRepo.findByEstado(estado, pagina),
+                this::convertirDTO);
+    }
+
+    /**
      * Detalle de una reserva: la ven su huésped, el anfitrión del alojamiento y
      * los administradores.
      *
@@ -185,14 +215,40 @@ public class ReservaService {
         }
     }
 
-    /** Convierte la reserva a DTO con el título del alojamiento y el último pago. */
+    /**
+     * Convierte la reserva a DTO con el último pago, los datos del alojamiento
+     * (aunque esté pausado o bloqueado), los nombres del huésped y del
+     * anfitrión, si ya tiene reseña y su cancelación, si la hubo.
+     */
     public ReservaDTO convertirDTO(Reserva reserva) {
         ReservaDTO dto = modelMapper.map(reserva, ReservaDTO.class);
         dto.setCompletada(esCompletada(reserva));
-        alojamientoRepo.findById(reserva.getIdAlojamiento()).ifPresent(a -> dto.setTituloAlojamiento(a.getTitulo()));
+        alojamientoRepo.findById(reserva.getIdAlojamiento()).ifPresent(a -> {
+            dto.setTituloAlojamiento(a.getTitulo());
+            dto.setCiudad(a.getCiudad());
+            dto.setUbicacion(a.getUbicacion());
+            dto.setTipoAlojamiento(a.getTipo());
+            dto.setCapacidadAlojamiento(a.getCapacidad());
+            dto.setIdAnfitrion(a.getIdAnfitrion());
+            dto.setNombreAnfitrion(nombreUsuario(a.getIdAnfitrion()));
+            publicacionService.imagenesDTO(a.getIdAlojamiento()).stream().findFirst()
+                    .ifPresent(i -> dto.setImagenAlojamiento(i.getUrl()));
+            String politica = a.getIdPolitica() == null ? null
+                    : politicaRepo.findById(a.getIdPolitica()).map(PoliticaCancelacion::getNombre).orElse(null);
+            dto.setNombrePolitica(politica == null ? CancelacionService.POLITICA_POR_DEFECTO : politica);
+        });
+        dto.setNombreHuesped(nombreUsuario(reserva.getIdHuesped()));
+        dto.setTieneResena(resenaRepo.existsByIdReserva(reserva.getIdReserva()));
+        cancelacionRepo.findByIdReserva(reserva.getIdReserva())
+                .ifPresent(c -> dto.setCancelacion(modelMapper.map(c, CancelacionDTO.class)));
         pagoRepo.findTopByIdReservaOrderByFechaDescIdPagoDesc(reserva.getIdReserva())
                 .ifPresent(p -> dto.setPago(modelMapper.map(p, PagoDTO.class)));
         return dto;
+    }
+
+    private String nombreUsuario(Long idUsuario) {
+        return idUsuario == null ? null
+                : usuarioRepo.findById(idUsuario).map(u -> AESUtil.decrypt(u.getNombre())).orElse(null);
     }
 
     /** Paso 1: validaciones con bloqueo pesimista y reserva PENDIENTE_PAGO. */

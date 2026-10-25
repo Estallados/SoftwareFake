@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import co.edu.unbosque.marketplace.dto.LoginDTO;
 import co.edu.unbosque.marketplace.dto.RestablecerContraseniaDTO;
 import co.edu.unbosque.marketplace.dto.UsuarioDTO;
+import co.edu.unbosque.marketplace.dto.VerificacionCorreoDTO;
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.entity.Usuario;
@@ -29,15 +30,17 @@ import co.edu.unbosque.marketplace.service.AuditoriaService;
 import co.edu.unbosque.marketplace.service.AuthService;
 import co.edu.unbosque.marketplace.service.SegundoFactorService;
 import co.edu.unbosque.marketplace.service.UsuarioService;
+import co.edu.unbosque.marketplace.service.VerificacionCorreoService;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controlador REST de autenticación del marketplace. Ruta base: {@code /auth}.
- * Expone el inicio de sesión y el registro de usuarios (ambos devuelven un
- * token JWT listo para usar), la recuperación de contraseña simulada y la
- * reactivación de una cuenta desactivada. Todas sus rutas son públicas.
+ * Expone el registro con verificación del correo por código, el inicio de
+ * sesión (devuelve un token JWT listo para usar), la recuperación de
+ * contraseña simulada y la reactivación de una cuenta desactivada. Todas sus
+ * rutas son públicas.
  *
  * @see "RF-001"
  * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
@@ -71,20 +74,25 @@ public class AuthController {
 	/** Verificación del segundo factor (TOTP). */
 	private final SegundoFactorService segundoFactorService;
 
+	/** Verificación del correo con código al registrarse. */
+	private final VerificacionCorreoService verificacionCorreoService;
+
 	/**
 	 * Constructor con inyección de dependencias.
 	 *
-	 * @param authenticationManager gestor de autenticación de Spring Security
-	 * @param jwtUtil               utilidad para generar tokens JWT
-	 * @param usuarioService        servicio de usuarios
-	 * @param userDetailsService    servicio que carga usuarios por correo
-	 * @param authService           servicio de recuperación y reactivación
-	 * @param auditoriaService      servicio de auditoría
-	 * @param segundoFactorService  servicio del segundo factor
+	 * @param authenticationManager     gestor de autenticación de Spring Security
+	 * @param jwtUtil                   utilidad para generar tokens JWT
+	 * @param usuarioService            servicio de usuarios
+	 * @param userDetailsService        servicio que carga usuarios por correo
+	 * @param authService               servicio de recuperación y reactivación
+	 * @param auditoriaService          servicio de auditoría
+	 * @param segundoFactorService      servicio del segundo factor
+	 * @param verificacionCorreoService servicio de verificación del correo
 	 */
 	public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
 			UsuarioService usuarioService, UserDetailsService userDetailsService, AuthService authService,
-			AuditoriaService auditoriaService, SegundoFactorService segundoFactorService) {
+			AuditoriaService auditoriaService, SegundoFactorService segundoFactorService,
+			VerificacionCorreoService verificacionCorreoService) {
 		this.authenticationManager = authenticationManager;
 		this.jwtUtil = jwtUtil;
 		this.usuarioService = usuarioService;
@@ -92,6 +100,7 @@ public class AuthController {
 		this.authService = authService;
 		this.auditoriaService = auditoriaService;
 		this.segundoFactorService = segundoFactorService;
+		this.verificacionCorreoService = verificacionCorreoService;
 	}
 
 	/**
@@ -100,10 +109,12 @@ public class AuthController {
 	 * @param loginRequest DTO con {@code correo} y {@code contrasenia}
 	 * @return 200 con un JSON {token, rol, correo}; 400 si faltan
 	 *         datos; 401 si las credenciales son inválidas; 403 si la cuenta está
-	 *         restringida o desactivada
+	 *         restringida o desactivada, o si el correo no está verificado
+	 *         (con {@code requiereVerificacion=true})
 	 */
 	@Operation(summary = "Iniciar sesión", description = "Devuelve {token, rol, correo}. Si la cuenta tiene "
-			+ "segundo factor, también hay que enviar codigo; sin él responde 401 con requiereSegundoFactor=true.")
+			+ "segundo factor, también hay que enviar codigo; sin él responde 401 con requiereSegundoFactor=true. "
+			+ "Si el correo no está verificado responde 403 con requiereVerificacion=true.")
 	@PostMapping("/login")
 	public ResponseEntity<Object> login(@RequestBody LoginDTO loginRequest) {
 		if (loginRequest.getCorreo() == null || loginRequest.getCorreo().isBlank()
@@ -117,6 +128,15 @@ public class AuthController {
 
 			UserDetails usuario = (UserDetails) authentication.getPrincipal();
 			Long idUsuario = usuario instanceof Usuario u ? u.getIdUsuario() : null;
+
+			// Correo sin verificar (RF-001): la contraseña es correcta pero aún no se entrega el token
+			if (usuario instanceof Usuario u && !u.esCorreoVerificado()) {
+				auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO,
+						idUsuario, ResultadoAuditoria.RECHAZADO, "Correo sin verificar");
+				return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message",
+						"Debes verificar tu correo con el código que te enviamos antes de iniciar sesión.",
+						"requiereVerificacion", true));
+			}
 
 			// Segundo factor (RNF-033): con las credenciales válidas aún no se entrega el token
 			if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
@@ -148,26 +168,33 @@ public class AuthController {
 	}
 
 	/**
-	 * Registra un usuario nuevo e inicia su sesión. Ruta: {@code POST /auth/register}.
-	 * La cuenta queda activa de inmediato y la respuesta ya trae el token JWT,
-	 * así el front no necesita llamar a {@code /auth/login} después. El rol
-	 * permitido (HUESPED por defecto, o ANFITRION) lo valida
-	 * {@link UsuarioService#create}; nunca se acepta ADMIN por esta vía.
+	 * Registra un usuario nuevo. Ruta: {@code POST /auth/register}. La cuenta
+	 * queda activa pero con el correo sin verificar: se envía un código de 6
+	 * dígitos al correo y el token se entrega al confirmarlo con
+	 * {@code POST /auth/verificar}. El rol permitido (HUESPED por defecto, o
+	 * ANFITRION) lo valida {@link UsuarioService#create}; nunca se acepta ADMIN
+	 * por esta vía.
 	 *
 	 * @param registerRequest DTO con nombre, correo, contrasenia, y opcionalmente
 	 *                        telefono y rol
-	 * @return 201 con {message, token, rol, correo}; 409 si el correo ya existe;
-	 *         400 si los datos o la contraseña son inválidos; 403 si se pide un
-	 *         rol no permitido; 500 si ocurre un error inesperado
+	 * @return 201 con {message, correo, requiereVerificacion}; 409 si el correo
+	 *         ya existe; 400 si los datos o la contraseña son inválidos; 403 si
+	 *         se pide un rol no permitido; 500 si ocurre un error inesperado
 	 */
 	@Operation(summary = "Registrarse como HUESPED o ANFITRION",
-			description = "Crea la cuenta activa y devuelve {message, token, rol, correo}.")
+			description = "Crea la cuenta y envía un código de verificación al correo. Devuelve "
+					+ "{message, correo, requiereVerificacion}; el token se obtiene en /auth/verificar.")
 	@PostMapping("/register")
 	public ResponseEntity<Object> register(@RequestBody UsuarioDTO registerRequest) {
 		return switch (usuarioService.create(registerRequest)) {
-		case UsuarioService.CREADO -> respuestaConToken(HttpStatus.CREATED,
-				userDetailsService.loadUserByUsername(UsuarioService.normalizarCorreo(registerRequest.getCorreo())),
-				"Usuario registrado correctamente.");
+		case UsuarioService.CREADO -> {
+			Map<String, Object> respuesta = new LinkedHashMap<>();
+			respuesta.put("message", "Usuario registrado. Te enviamos un código de verificación al correo; "
+					+ "vence en " + VerificacionCorreoService.MINUTOS_VIGENCIA + " minutos.");
+			respuesta.put("correo", UsuarioService.normalizarCorreo(registerRequest.getCorreo()));
+			respuesta.put("requiereVerificacion", true);
+			yield ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+		}
 		case UsuarioService.CORREO_DUPLICADO ->
 			mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
 		case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos: "
@@ -177,6 +204,53 @@ public class AuthController {
 		case UsuarioService.ROL_NO_PERMITIDO ->
 			mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");
 		default -> mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "Error desconocido al registrar el usuario.");
+		};
+	}
+
+	/**
+	 * Confirma el correo con el código de verificación e inicia la sesión.
+	 * Ruta: {@code POST /auth/verificar}.
+	 *
+	 * @param datos DTO con {@code correo} y {@code codigo}
+	 * @return 200 con {message, token, rol, correo}; 400 si faltan datos o el
+	 *         código no es válido o venció; 409 si el correo ya estaba
+	 *         verificado; 429 si se agotaron los intentos del código
+	 */
+	@Operation(summary = "Verificar el correo con el código recibido",
+			description = "El código vence a los 15 minutos y admite 5 intentos. Devuelve el token de sesión.")
+	@PostMapping("/verificar")
+	public ResponseEntity<Object> verificar(@RequestBody VerificacionCorreoDTO datos) {
+		return switch (verificacionCorreoService.verificar(datos.getCorreo(), datos.getCodigo())) {
+		case VerificacionCorreoService.VERIFICADO -> respuestaVerificada(
+				userDetailsService.loadUserByUsername(UsuarioService.normalizarCorreo(datos.getCorreo())));
+		case VerificacionCorreoService.CODIGO_INVALIDO -> mensaje(HttpStatus.BAD_REQUEST,
+				"El código no es válido o ya venció. Revísalo o solicita uno nuevo.");
+		case VerificacionCorreoService.INTENTOS_AGOTADOS -> mensaje(HttpStatus.TOO_MANY_REQUESTS,
+				"Superaste los intentos permitidos para este código. Solicita uno nuevo.");
+		case VerificacionCorreoService.YA_VERIFICADO -> mensaje(HttpStatus.CONFLICT,
+				"El correo ya está verificado. Inicia sesión.");
+		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo y el código.");
+		};
+	}
+
+	/**
+	 * Envía un código de verificación nuevo. Ruta: {@code POST /auth/reenviarcodigo}.
+	 *
+	 * @param solicitud DTO con {@code correo}
+	 * @return 200 siempre que se envíe un correo (exista o no la cuenta, para no
+	 *         revelarlo); 400 si falta el correo; 429 si el último código se
+	 *         pidió hace menos de un minuto
+	 */
+	@Operation(summary = "Reenviar el código de verificación del correo",
+			description = "Invalida el código anterior. Solo se permite una vez por minuto.")
+	@PostMapping("/reenviarcodigo")
+	public ResponseEntity<Object> reenviarCodigo(@RequestBody UsuarioDTO solicitud) {
+		return switch (verificacionCorreoService.reenviar(solicitud.getCorreo())) {
+		case VerificacionCorreoService.ENVIADO -> mensaje(HttpStatus.OK,
+				"Si la cuenta existe y no está verificada, te enviamos un código nuevo.");
+		case VerificacionCorreoService.ESPERAR -> mensaje(HttpStatus.TOO_MANY_REQUESTS,
+				"Espera un minuto antes de pedir otro código.");
+		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo.");
 		};
 	}
 
@@ -259,8 +333,19 @@ public class AuthController {
 	}
 
 	/**
+	 * Respuesta de un correo recién verificado. Con segundo factor activo no se
+	 * entrega token aquí: debe iniciar sesión con su código.
+	 */
+	private ResponseEntity<Object> respuestaVerificada(UserDetails usuario) {
+		if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
+			return mensaje(HttpStatus.OK, "Correo verificado. Inicia sesión con tu código.");
+		}
+		return respuestaConToken(HttpStatus.OK, usuario, "Correo verificado correctamente.");
+	}
+
+	/**
 	 * Respuesta de sesión iniciada: {message?, token, rol, correo}. La usan
-	 * login, registro y reactivación para que el front guarde el token igual.
+	 * login, verificación y reactivación para que el front guarde el token igual.
 	 */
 	private ResponseEntity<Object> respuestaConToken(HttpStatus status, UserDetails userDetails,
 			String texto) {

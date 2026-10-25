@@ -1,5 +1,7 @@
 package co.edu.unbosque.marketplace.dto;
 
+import java.time.LocalDateTime;
+
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Role;
 
@@ -13,6 +15,8 @@ public class UsuarioDTO {
     private String contrasenia;
     private String motivoRestriccion;
     private Boolean totpHabilitado;
+    private LocalDateTime fechaRegistro;
+    private Boolean correoVerificado;
 
     public UsuarioDTO() {
     }
@@ -80,5 +84,18 @@ public class UsuarioDTO {
     public void setTotpHabilitado(Boolean totpHabilitado) {
         this.totpHabilitado = totpHabilitado;
     }
-    
+
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
+    }
+    public void setFechaRegistro(LocalDateTime fechaRegistro) {
+        this.fechaRegistro = fechaRegistro;
+    }
+
+    public Boolean getCorreoVerificado() {
+        return correoVerificado;
+    }
+    public void setCorreoVerificado(Boolean correoVerificado) {
+        this.correoVerificado = correoVerificado;
+    }
 }

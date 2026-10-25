@@ -1,10 +1,12 @@
 package co.edu.unbosque.marketplace.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -15,32 +17,39 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import co.edu.unbosque.marketplace.dto.AlojamientoDTO;
 import co.edu.unbosque.marketplace.dto.HistorialEstadoAlojamientoDTO;
+import co.edu.unbosque.marketplace.dto.ImagenDTO;
 import co.edu.unbosque.marketplace.dto.PaginaDTO;
 import co.edu.unbosque.marketplace.dto.PoliticaCancelacionDTO;
 import co.edu.unbosque.marketplace.dto.ServicioAdicionalDTO;
 import co.edu.unbosque.marketplace.entity.Alojamiento;
 import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
+import co.edu.unbosque.marketplace.entity.EstadoResena;
 import co.edu.unbosque.marketplace.entity.EstadoReserva;
 import co.edu.unbosque.marketplace.entity.HistorialEstadoAlojamiento;
 import co.edu.unbosque.marketplace.entity.Imagen;
 import co.edu.unbosque.marketplace.entity.Reserva;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.entity.ServicioAdicional;
+import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.AlojamientoEspecificacion;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.HistorialEstadoAlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ImagenRepository;
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
+import co.edu.unbosque.marketplace.repository.ResenaRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
 import co.edu.unbosque.marketplace.repository.ServicioAdicionalRepository;
+import co.edu.unbosque.marketplace.repository.UsuarioRepository;
+import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Publicaciones de alojamiento: creación, edición, ciclo de estados, servicios
- * adicionales y búsqueda pública.
+ * Publicaciones de alojamiento: creación, edición, imágenes, ciclo de estados,
+ * servicios adicionales y búsqueda pública.
  * <p>
  * Transiciones permitidas (cualquier otra se rechaza y queda en la auditoría):
  * </p>
@@ -64,6 +73,10 @@ public class PublicacionService {
             + "este alojamiento.";
     private static final int LATITUD_MAXIMA = 90;
     private static final int LONGITUD_MAXIMA = 180;
+    /** Máximo de imágenes por alojamiento. */
+    public static final int MAXIMO_IMAGENES = 15;
+    private static final List<EstadoReserva> RESERVAS_VIGENTES = List.of(EstadoReserva.CONFIRMADA,
+            EstadoReserva.EN_REVISION);
 
     private final AlojamientoRepository alojamientoRepo;
     private final ImagenRepository imagenRepo;
@@ -71,6 +84,9 @@ public class PublicacionService {
     private final PoliticaCancelacionRepository politicaRepo;
     private final HistorialEstadoAlojamientoRepository historialRepo;
     private final ReservaRepository reservaRepo;
+    private final ResenaRepository resenaRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final AlmacenamientoService almacenamientoService;
     private final AuditoriaService auditoriaService;
     private final NotificacionService notificacionService;
     private final ModelMapper modelMapper;
@@ -78,6 +94,7 @@ public class PublicacionService {
     public PublicacionService(AlojamientoRepository alojamientoRepo, ImagenRepository imagenRepo,
             ServicioAdicionalRepository servicioRepo, PoliticaCancelacionRepository politicaRepo,
             HistorialEstadoAlojamientoRepository historialRepo, ReservaRepository reservaRepo,
+            ResenaRepository resenaRepo, UsuarioRepository usuarioRepo, AlmacenamientoService almacenamientoService,
             AuditoriaService auditoriaService, NotificacionService notificacionService, ModelMapper modelMapper) {
         this.alojamientoRepo = alojamientoRepo;
         this.imagenRepo = imagenRepo;
@@ -85,6 +102,9 @@ public class PublicacionService {
         this.politicaRepo = politicaRepo;
         this.historialRepo = historialRepo;
         this.reservaRepo = reservaRepo;
+        this.resenaRepo = resenaRepo;
+        this.usuarioRepo = usuarioRepo;
+        this.almacenamientoService = almacenamientoService;
         this.auditoriaService = auditoriaService;
         this.notificacionService = notificacionService;
         this.modelMapper = modelMapper;
@@ -109,7 +129,7 @@ public class PublicacionService {
         if (alojamiento.isEmpty() || !esVisible(alojamiento.get(), idActor, esAdmin)) {
             return Resultado.error(Resultado.NO_ENCONTRADO, NO_EXISTE);
         }
-        return Resultado.exito(convertirDTO(alojamiento.get()));
+        return Resultado.exito(esAdmin ? convertirDTOAdmin(alojamiento.get()) : convertirDTO(alojamiento.get()));
     }
 
     /**
@@ -124,7 +144,15 @@ public class PublicacionService {
     /** Publicaciones en un estado, o todas si es null (vista del administrador). */
     public PaginaDTO<AlojamientoDTO> listarPorEstado(EstadoAlojamiento estado, Pageable pagina) {
         return PaginaDTO.de(estado == null ? alojamientoRepo.findAll(pagina)
-                : alojamientoRepo.findByEstado(estado, pagina), this::convertirDTO);
+                : alojamientoRepo.findByEstado(estado, pagina), this::convertirDTOAdmin);
+    }
+
+    /**
+     * Publicaciones de un anfitrión en cualquier estado (detalle de usuario del
+     * administrador).
+     */
+    public PaginaDTO<AlojamientoDTO> listarDeAnfitrion(Long idAnfitrion, Pageable pagina) {
+        return PaginaDTO.de(alojamientoRepo.findByIdAnfitrion(idAnfitrion, pagina), this::convertirDTOAdmin);
     }
 
     /**
@@ -200,6 +228,7 @@ public class PublicacionService {
         alojamiento.setIdAnfitrion(idAnfitrion);
         alojamiento.setEstado(EstadoAlojamiento.BORRADOR);
         alojamiento.setFechaCreacion(LocalDateTime.now());
+        alojamiento.setFechaActualizacion(alojamiento.getFechaCreacion());
         alojamiento = alojamientoRepo.save(alojamiento);
         guardarImagenes(alojamiento.getIdAlojamiento(), datos.getImagenes());
         registrarHistorial(alojamiento.getIdAlojamiento(), null, EstadoAlojamiento.BORRADOR, idAnfitrion, null);
@@ -213,8 +242,10 @@ public class PublicacionService {
     /**
      * Edita una publicación (propietario o administrador). Los campos en null
      * se dejan como están; las listas enviadas (imágenes, amenidades)
-     * reemplazan a las anteriores. El estado y el propietario no se cambian
-     * por esta vía.
+     * reemplazan a las anteriores: de las imágenes se conservan las que sigan
+     * en la lista y se borran las demás (con su archivo, si fue subido). El
+     * estado y el propietario no se cambian por esta vía. Para subir archivos
+     * se usa {@link #subirImagenes}.
      *
      * @return 0 con la publicación; 1 no existe; 2 datos inválidos; 3 sin permiso.
      * @see "RF-018, CA-100, CA-101, CA-113, CA-114"
@@ -234,15 +265,136 @@ public class PublicacionService {
 
         Alojamiento alojamiento = carga.getDato();
         aplicar(datos, alojamiento);
+        alojamiento.setFechaActualizacion(LocalDateTime.now());
         alojamiento = alojamientoRepo.save(alojamiento);
         if (datos.getImagenes() != null) {
-            imagenRepo.deleteByIdAlojamiento(idAlojamiento);
-            guardarImagenes(idAlojamiento, datos.getImagenes());
+            reemplazarImagenes(idAlojamiento, datos.getImagenes());
         }
 
         auditoriaService.registrar(idActor, AuditoriaService.ALOJAMIENTO_ACTUALIZADO,
                 AuditoriaService.ENTIDAD_ALOJAMIENTO, idAlojamiento, ResultadoAuditoria.EXITOSO, null);
         return Resultado.exito(convertirDTO(alojamiento));
+    }
+
+    // ----- imágenes -----
+
+    /**
+     * Sube una o varias imágenes (JPG, PNG o WEBP de hasta 5 MB) al
+     * alojamiento. Se validan todas antes de guardar alguna. Si el alojamiento
+     * no tenía portada, la primera imagen subida queda como principal.
+     *
+     * @return 0 con todas las imágenes del alojamiento (la principal primero);
+     *         1 no existe; 2 archivos inválidos o se supera el máximo; 3 sin
+     *         permiso.
+     * @see "RF-017, RF-018"
+     */
+    @Transactional
+    public Resultado<List<ImagenDTO>> subirImagenes(Long idAlojamiento, List<MultipartFile> archivos, Long idActor,
+            boolean esAdmin) {
+        Resultado<Alojamiento> carga = cargarModificable(idAlojamiento, idActor, esAdmin,
+                AuditoriaService.IMAGEN_ALOJAMIENTO);
+        if (!carga.esExito()) {
+            return Resultado.error(carga.getCodigo(), carga.getMensaje());
+        }
+        if (archivos == null || archivos.isEmpty()) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, "Debes enviar al menos una imagen.");
+        }
+        List<Imagen> actuales = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
+        if (actuales.size() + archivos.size() > MAXIMO_IMAGENES) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS,
+                    "Un alojamiento puede tener máximo " + MAXIMO_IMAGENES + " imágenes.");
+        }
+        for (MultipartFile archivo : archivos) {
+            String error = almacenamientoService.errorImagen(archivo);
+            if (error != null) {
+                String nombre = archivo == null ? "" : " (" + archivo.getOriginalFilename() + ")";
+                return Resultado.error(Resultado.DATOS_INVALIDOS, error + nombre);
+            }
+        }
+
+        boolean tienePrincipal = actuales.stream().anyMatch(i -> Boolean.TRUE.equals(i.getPrincipal()));
+        for (MultipartFile archivo : archivos) {
+            String ruta = almacenamientoService.guardarImagen(archivo, "alojamientos/" + idAlojamiento);
+            Imagen imagen = new Imagen();
+            imagen.setIdAlojamiento(idAlojamiento);
+            imagen.setRutaArchivo(ruta);
+            imagen.setUrl(AlmacenamientoService.urlPublica(ruta));
+            imagen.setPrincipal(!tienePrincipal);
+            imagenRepo.save(imagen);
+            tienePrincipal = true;
+        }
+        marcarActualizado(carga.getDato());
+        auditoriaService.registrar(idActor, AuditoriaService.IMAGEN_ALOJAMIENTO, AuditoriaService.ENTIDAD_ALOJAMIENTO,
+                idAlojamiento, ResultadoAuditoria.EXITOSO, "Subidas: " + archivos.size());
+        return Resultado.exito(imagenesDTO(idAlojamiento));
+    }
+
+    /**
+     * Elimina una imagen (y su archivo, si fue subido). Si era la principal,
+     * la siguiente pasa a serlo. Un alojamiento ACTIVA, PAUSADA o
+     * PENDIENTE_REVISION debe conservar al menos una imagen.
+     *
+     * @return 0 con las imágenes restantes; 1 no existe; 3 sin permiso;
+     *         4 es la última imagen de una publicación ya enviada.
+     * @see "RF-018"
+     */
+    @Transactional
+    public Resultado<List<ImagenDTO>> eliminarImagen(Long idAlojamiento, Long idImagen, Long idActor,
+            boolean esAdmin) {
+        Resultado<Alojamiento> carga = cargarModificable(idAlojamiento, idActor, esAdmin,
+                AuditoriaService.IMAGEN_ALOJAMIENTO);
+        if (!carga.esExito()) {
+            return Resultado.error(carga.getCodigo(), carga.getMensaje());
+        }
+        Optional<Imagen> imagen = imagenRepo.findByIdImagenAndIdAlojamiento(idImagen, idAlojamiento);
+        if (imagen.isEmpty()) {
+            return Resultado.error(Resultado.NO_ENCONTRADO, "La imagen no existe.");
+        }
+        List<Imagen> actuales = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
+        if (actuales.size() == 1 && carga.getDato().getEstado() != EstadoAlojamiento.BORRADOR) {
+            return Resultado.error(Resultado.ESTADO_INVALIDO,
+                    "La publicación debe conservar al menos una imagen. Sube otra antes de borrar esta.");
+        }
+
+        imagenRepo.delete(imagen.get());
+        almacenamientoService.eliminar(imagen.get().getRutaArchivo());
+        if (Boolean.TRUE.equals(imagen.get().getPrincipal())) {
+            actuales.stream().filter(i -> !i.getIdImagen().equals(idImagen)).findFirst().ifPresent(siguiente -> {
+                siguiente.setPrincipal(true);
+                imagenRepo.save(siguiente);
+            });
+        }
+        marcarActualizado(carga.getDato());
+        auditoriaService.registrar(idActor, AuditoriaService.IMAGEN_ALOJAMIENTO, AuditoriaService.ENTIDAD_ALOJAMIENTO,
+                idAlojamiento, ResultadoAuditoria.EXITOSO, "Eliminada la imagen " + idImagen);
+        return Resultado.exito(imagenesDTO(idAlojamiento));
+    }
+
+    /**
+     * Marca una imagen como principal (portada); las demás dejan de serlo.
+     *
+     * @return 0 con las imágenes (la principal primero); 1 no existe; 3 sin permiso.
+     * @see "RF-018"
+     */
+    @Transactional
+    public Resultado<List<ImagenDTO>> marcarPrincipal(Long idAlojamiento, Long idImagen, Long idActor,
+            boolean esAdmin) {
+        Resultado<Alojamiento> carga = cargarModificable(idAlojamiento, idActor, esAdmin,
+                AuditoriaService.IMAGEN_ALOJAMIENTO);
+        if (!carga.esExito()) {
+            return Resultado.error(carga.getCodigo(), carga.getMensaje());
+        }
+        if (imagenRepo.findByIdImagenAndIdAlojamiento(idImagen, idAlojamiento).isEmpty()) {
+            return Resultado.error(Resultado.NO_ENCONTRADO, "La imagen no existe.");
+        }
+        for (Imagen imagen : imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento)) {
+            imagen.setPrincipal(imagen.getIdImagen().equals(idImagen));
+            imagenRepo.save(imagen);
+        }
+        marcarActualizado(carga.getDato());
+        auditoriaService.registrar(idActor, AuditoriaService.IMAGEN_ALOJAMIENTO, AuditoriaService.ENTIDAD_ALOJAMIENTO,
+                idAlojamiento, ResultadoAuditoria.EXITOSO, "Principal: imagen " + idImagen);
+        return Resultado.exito(imagenesDTO(idAlojamiento));
     }
 
     // ----- ciclo de estados -----
@@ -477,8 +629,8 @@ public class PublicacionService {
 
     /**
      * Datos mínimos para enviar a revisión: título, descripción, ubicación,
-     * ciudad, tipo, capacidad, precio, reglas, política de cancelación y al
-     * menos una imagen.
+     * ciudad, tipo, capacidad, habitaciones, baños, horas de entrada y salida,
+     * precio, reglas, política de cancelación y al menos una imagen.
      *
      * @return nombres de los datos que faltan (vacía si está completa).
      * @see "CA-096, CA-097"
@@ -494,6 +646,18 @@ public class PublicacionService {
         if (alojamiento.getCapacidad() == null) {
             faltantes.add("capacidad");
         }
+        if (alojamiento.getHabitaciones() == null) {
+            faltantes.add("habitaciones");
+        }
+        if (alojamiento.getBanos() == null) {
+            faltantes.add("baños");
+        }
+        if (alojamiento.getHoraEntrada() == null) {
+            faltantes.add("hora de entrada");
+        }
+        if (alojamiento.getHoraSalida() == null) {
+            faltantes.add("hora de salida");
+        }
         if (alojamiento.getPrecioNoche() == null) {
             faltantes.add("precio por noche");
         }
@@ -506,18 +670,50 @@ public class PublicacionService {
         return faltantes;
     }
 
-    /** Convierte la entidad a DTO con imágenes, servicios adicionales y nombre de la política. */
+    /**
+     * Convierte la entidad a DTO con imágenes (la principal primero),
+     * servicios adicionales, nombre de la política, calificación, cantidad de
+     * reseñas y reservas, y nombre del anfitrión. Así el front arma tarjetas y
+     * detalle con una sola llamada.
+     */
     public AlojamientoDTO convertirDTO(Alojamiento alojamiento) {
+        Long id = alojamiento.getIdAlojamiento();
         AlojamientoDTO dto = modelMapper.map(alojamiento, AlojamientoDTO.class);
         dto.setAmenidades(new HashSet<>(alojamiento.getAmenidades()));
-        dto.setImagenes(imagenRepo.findByIdAlojamientoOrderByIdImagen(alojamiento.getIdAlojamiento()).stream()
-                .map(Imagen::getUrl).toList());
-        dto.setServiciosAdicionales(servicioRepo.findByIdAlojamientoOrderByIdServicio(alojamiento.getIdAlojamiento())
+        List<ImagenDTO> imagenes = imagenesDTO(id);
+        dto.setDetalleImagenes(imagenes);
+        dto.setImagenes(imagenes.stream().map(ImagenDTO::getUrl).toList());
+        dto.setServiciosAdicionales(servicioRepo.findByIdAlojamientoOrderByIdServicio(id)
                 .stream().map(s -> modelMapper.map(s, ServicioAdicionalDTO.class)).toList());
         if (alojamiento.getIdPolitica() != null) {
             politicaRepo.findById(alojamiento.getIdPolitica()).ifPresent(p -> dto.setNombrePolitica(p.getNombre()));
         }
+        Double promedio = resenaRepo.promedio(id, EstadoResena.PUBLICADA);
+        dto.setPromedioCalificacion(promedio == null ? null
+                : BigDecimal.valueOf(promedio).setScale(1, RoundingMode.HALF_UP).doubleValue());
+        dto.setCantidadResenas(resenaRepo.countByIdAlojamientoAndEstado(id, EstadoResena.PUBLICADA));
+        dto.setCantidadReservas(reservaRepo.countByIdAlojamientoAndEstadoIn(id, RESERVAS_VIGENTES));
+        usuarioRepo.findById(alojamiento.getIdAnfitrion())
+                .ifPresent(u -> dto.setNombreAnfitrion(AESUtil.decrypt(u.getNombre())));
         return dto;
+    }
+
+    /** Igual que {@link #convertirDTO(Alojamiento)} más el correo y el estado del anfitrión (solo ADMIN). */
+    public AlojamientoDTO convertirDTOAdmin(Alojamiento alojamiento) {
+        AlojamientoDTO dto = convertirDTO(alojamiento);
+        Optional<Usuario> anfitrion = usuarioRepo.findById(alojamiento.getIdAnfitrion());
+        anfitrion.ifPresent(u -> {
+            dto.setCorreoAnfitrion(AESUtil.decrypt(u.getCorreo()));
+            dto.setEstadoAnfitrion(u.getEstado());
+        });
+        return dto;
+    }
+
+    /** Imágenes del alojamiento con la principal primero y luego en orden de carga. */
+    public List<ImagenDTO> imagenesDTO(Long idAlojamiento) {
+        return imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento).stream()
+                .sorted(Comparator.comparing((Imagen i) -> !Boolean.TRUE.equals(i.getPrincipal())))
+                .map(i -> modelMapper.map(i, ImagenDTO.class)).toList();
     }
 
     private static boolean esVisible(Alojamiento alojamiento, Long idActor, boolean esAdmin) {
@@ -600,6 +796,10 @@ public class PublicacionService {
         if (datos.getCapacidad() != null && datos.getCapacidad() <= 0) {
             return "La capacidad debe ser mayor que cero.";
         }
+        if ((datos.getHabitaciones() != null && datos.getHabitaciones() < 0)
+                || (datos.getBanos() != null && datos.getBanos() < 0)) {
+            return "Las habitaciones y los baños no pueden ser negativos.";
+        }
         if (datos.getPrecioNoche() != null && datos.getPrecioNoche().signum() <= 0) {
             return "El precio por noche debe ser positivo.";
         }
@@ -646,6 +846,18 @@ public class PublicacionService {
         if (datos.getCapacidad() != null) {
             alojamiento.setCapacidad(datos.getCapacidad());
         }
+        if (datos.getHabitaciones() != null) {
+            alojamiento.setHabitaciones(datos.getHabitaciones());
+        }
+        if (datos.getBanos() != null) {
+            alojamiento.setBanos(datos.getBanos());
+        }
+        if (datos.getHoraEntrada() != null) {
+            alojamiento.setHoraEntrada(datos.getHoraEntrada());
+        }
+        if (datos.getHoraSalida() != null) {
+            alojamiento.setHoraSalida(datos.getHoraSalida());
+        }
         if (datos.getPrecioNoche() != null) {
             alojamiento.setPrecioNoche(datos.getPrecioNoche());
         }
@@ -669,18 +881,63 @@ public class PublicacionService {
         }
     }
 
+    /** Guarda imágenes por URL; si el alojamiento no tiene portada, la primera queda como principal. */
     private void guardarImagenes(Long idAlojamiento, List<String> urls) {
         if (urls == null) {
             return;
         }
+        boolean tienePrincipal = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento).stream()
+                .anyMatch(i -> Boolean.TRUE.equals(i.getPrincipal()));
         for (String url : urls) {
             if (url != null && !url.isBlank()) {
                 Imagen imagen = new Imagen();
                 imagen.setIdAlojamiento(idAlojamiento);
                 imagen.setUrl(url.trim());
+                imagen.setPrincipal(!tienePrincipal);
                 imagenRepo.save(imagen);
+                tienePrincipal = true;
             }
         }
+    }
+
+    /**
+     * Deja exactamente las URL enviadas: conserva las imágenes que siguen en la
+     * lista (con su id y portada), borra las demás junto con su archivo y
+     * agrega las URL nuevas.
+     */
+    private void reemplazarImagenes(Long idAlojamiento, List<String> urls) {
+        Set<String> enviadas = new HashSet<>();
+        for (String url : urls) {
+            if (url != null && !url.isBlank()) {
+                enviadas.add(url.trim());
+            }
+        }
+        Set<String> conservadas = new HashSet<>();
+        for (Imagen imagen : imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento)) {
+            if (enviadas.contains(imagen.getUrl())) {
+                conservadas.add(imagen.getUrl());
+            } else {
+                imagenRepo.delete(imagen);
+                almacenamientoService.eliminar(imagen.getRutaArchivo());
+            }
+        }
+        imagenRepo.flush();
+        guardarImagenes(idAlojamiento, enviadas.stream().filter(u -> !conservadas.contains(u)).toList());
+        asegurarPrincipal(idAlojamiento);
+    }
+
+    /** Si ninguna imagen es la principal (por ejemplo, se borró la portada), la primera pasa a serlo. */
+    private void asegurarPrincipal(Long idAlojamiento) {
+        List<Imagen> imagenes = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
+        if (!imagenes.isEmpty() && imagenes.stream().noneMatch(i -> Boolean.TRUE.equals(i.getPrincipal()))) {
+            imagenes.get(0).setPrincipal(true);
+            imagenRepo.save(imagenes.get(0));
+        }
+    }
+
+    private void marcarActualizado(Alojamiento alojamiento) {
+        alojamiento.setFechaActualizacion(LocalDateTime.now());
+        alojamientoRepo.save(alojamiento);
     }
 
     private static boolean servicioValido(ServicioAdicionalDTO datos) {

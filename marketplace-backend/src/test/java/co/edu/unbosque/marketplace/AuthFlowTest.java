@@ -29,7 +29,8 @@ import co.edu.unbosque.marketplace.service.UsuarioService;
 
 /**
  * Flujo completo de autenticación contra una base H2 en memoria:
- * registro (con token automático), login y acceso a un endpoint protegido.
+ * registro con código de verificación al correo, verificación (entrega el
+ * token), login y acceso a un endpoint protegido.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -44,7 +45,7 @@ class AuthFlowTest {
 	@Autowired
 	private UsuarioRepository usuarioRepo;
 
-	/** Evita conectarse a un servidor SMTP real al enviar el correo de bienvenida. */
+	/** Evita conectarse a un servidor SMTP real; de aquí se lee el código de verificación. */
 	@MockBean
 	private JavaMailSender mailSender;
 
@@ -65,15 +66,33 @@ class AuthFlowTest {
 		return json.readTree(contenido);
 	}
 
+	/** Verifica el correo con el código enviado y devuelve el token de sesión. */
+	private String verificar(String correo) throws Exception {
+		String respuesta = mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content(verificacion(correo, CorreoPrueba.codigoEnviadoA(mailSender, correo))))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		return leer(respuesta).get("token").asText();
+	}
+
+	private String verificacion(String correo, String codigo) throws Exception {
+		return json.writeValueAsString(json.createObjectNode().put("correo", correo).put("codigo", codigo));
+	}
+
 	@Test
-	void registroCreaLaCuentaConSuRolYDevuelveToken_CA030_CA032_CA033_CA042() throws Exception {
-		String respuesta = mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+	void registroCreaLaCuentaYEnviaUnCodigoQueEntregaElToken_CA030_CA032_CA033_CA042() throws Exception {
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content(registro("Ana Pérez", "  Ana@Correo.com ", "Segura#2026", null)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.rol").value("HUESPED"))
 				.andExpect(jsonPath("$.correo").value("ana@correo.com"))
-				.andReturn().getResponse().getContentAsString();
+				.andExpect(jsonPath("$.requiereVerificacion").value(true))
+				.andExpect(jsonPath("$.token").doesNotExist());
 
+		String respuesta = mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content(verificacion("ana@correo.com", CorreoPrueba.codigoEnviadoA(mailSender, "ana@correo.com"))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.rol").value("HUESPED"))
+				.andReturn().getResponse().getContentAsString();
 		String token = leer(respuesta).get("token").asText();
 
 		mvc.perform(get("/usuarios/perfil").header("Authorization", "Bearer " + token))
@@ -81,6 +100,8 @@ class AuthFlowTest {
 				.andExpect(jsonPath("$.nombre").value("Ana Pérez"))
 				.andExpect(jsonPath("$.correo").value("ana@correo.com"))
 				.andExpect(jsonPath("$.estado").value("ACTIVO"))
+				.andExpect(jsonPath("$.correoVerificado").value(true))
+				.andExpect(jsonPath("$.fechaRegistro").isNotEmpty())
 				.andExpect(jsonPath("$.contrasenia").doesNotExist());
 
 		// En la base el correo y el nombre quedan cifrados
@@ -94,8 +115,8 @@ class AuthFlowTest {
 	void loginPermiteElAccesoIdentificaElRolYRechazaCredencialesMalas_CA034_CA035_CA036() throws Exception {
 		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content(registro("Luis", "luis@correo.com", "Segura#2026", "ANFITRION")))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.rol").value("ANFITRION"));
+				.andExpect(status().isCreated());
+		verificar("luis@correo.com");
 
 		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"correo\":\" LUIS@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
@@ -177,11 +198,84 @@ class AuthFlowTest {
 	}
 
 	@Test
-	void cuentaDesactivadaNoPuedeUsarSuToken() throws Exception {
-		String respuesta = mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+	void sinVerificarElCorreoNoPuedeIniciarSesion() throws Exception {
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content(registro("Ana", "ana@correo.com", "Segura#2026", null)))
-				.andReturn().getResponse().getContentAsString();
-		String token = leer(respuesta).get("token").asText();
+				.andExpect(status().isCreated());
+
+		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"ana@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.requiereVerificacion").value(true))
+				.andExpect(jsonPath("$.token").doesNotExist());
+
+		verificar("ana@correo.com");
+		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"ana@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
+				.andExpect(status().isOk());
+
+		// El código sirve una sola vez
+		mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content(verificacion("ana@correo.com", "000000")))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void codigoIncorrectoSeRechazaYAlQuintoIntentoSeBloquea() throws Exception {
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+				.content(registro("Ana", "ana@correo.com", "Segura#2026", null)))
+				.andExpect(status().isCreated());
+		String correcto = CorreoPrueba.codigoEnviadoA(mailSender, "ana@correo.com");
+		String incorrecto = correcto.equals("123456") ? "654321" : "123456";
+
+		for (int intento = 1; intento < 5; intento++) {
+			mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+					.content(verificacion("ana@correo.com", incorrecto)))
+					.andExpect(status().isBadRequest());
+		}
+		mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content(verificacion("ana@correo.com", incorrecto)))
+				.andExpect(status().isTooManyRequests());
+		// Agotados los intentos, ni el código correcto sirve: hay que pedir otro
+		mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content(verificacion("ana@correo.com", correcto)))
+				.andExpect(status().isTooManyRequests());
+	}
+
+	@Test
+	void reenviarCodigoNoRevelaCuentasYRespetaLaEspera() throws Exception {
+		mvc.perform(post("/auth/reenviarcodigo").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"nadie@correo.com\"}"))
+				.andExpect(status().isOk());
+
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+				.content(registro("Ana", "ana@correo.com", "Segura#2026", null)))
+				.andExpect(status().isCreated());
+		mvc.perform(post("/auth/reenviarcodigo").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"ana@correo.com\"}"))
+				.andExpect(status().isTooManyRequests());
+		mvc.perform(post("/auth/reenviarcodigo").contentType(MediaType.APPLICATION_JSON).content("{}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void aceptaTelefonoConEspaciosYLoGuardaNormalizado() throws Exception {
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nombre\":\"Ana\",\"correo\":\"ana@correo.com\",\"contrasenia\":\"Segura#2026\","
+						+ "\"telefono\":\"+57 300 000-0000\"}"))
+				.andExpect(status().isCreated());
+		String token = verificar("ana@correo.com");
+
+		mvc.perform(get("/usuarios/perfil").header("Authorization", "Bearer " + token))
+				.andExpect(jsonPath("$.telefono").value("+573000000000"));
+	}
+
+	@Test
+	void cuentaDesactivadaNoPuedeUsarSuToken() throws Exception {
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+				.content(registro("Ana", "ana@correo.com", "Segura#2026", null)))
+				.andExpect(status().isCreated());
+		String token = verificar("ana@correo.com");
 
 		mvc.perform(patch("/usuarios/perfil/desactivar").header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk());

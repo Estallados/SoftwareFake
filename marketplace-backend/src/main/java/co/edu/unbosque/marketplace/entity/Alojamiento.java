@@ -2,6 +2,7 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -53,6 +54,12 @@ public class Alojamiento {
     private Double longitud;
     private String tipo;
     private Integer capacidad;
+    private Integer habitaciones;
+    private Integer banos;
+    /** Hora desde la que el huésped puede llegar (check-in). */
+    private LocalTime horaEntrada;
+    /** Hora límite de salida del huésped (check-out). */
+    private LocalTime horaSalida;
     private BigDecimal precioNoche;
     /** Porcentaje propio de limpieza; si es null se usa el global de ConfiguracionTarifa. */
     private BigDecimal porcentajeLimpieza;
@@ -65,6 +72,8 @@ public class Alojamiento {
     private Long idAnfitrion;
     private Long idPolitica;
     private LocalDateTime fechaCreacion;
+    /** Última edición de los datos o de las imágenes de la publicación. */
+    private LocalDateTime fechaActualizacion;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "alojamientoAmenidad", joinColumns = @JoinColumn(name = "id_alojamiento"))
     @Column(name = "amenidad")
@@ -136,6 +145,34 @@ public class Alojamiento {
         this.capacidad = capacidad;
     }
 
+    public Integer getHabitaciones() {
+        return habitaciones;
+    }
+    public void setHabitaciones(Integer habitaciones) {
+        this.habitaciones = habitaciones;
+    }
+
+    public Integer getBanos() {
+        return banos;
+    }
+    public void setBanos(Integer banos) {
+        this.banos = banos;
+    }
+
+    public LocalTime getHoraEntrada() {
+        return horaEntrada;
+    }
+    public void setHoraEntrada(LocalTime horaEntrada) {
+        this.horaEntrada = horaEntrada;
+    }
+
+    public LocalTime getHoraSalida() {
+        return horaSalida;
+    }
+    public void setHoraSalida(LocalTime horaSalida) {
+        this.horaSalida = horaSalida;
+    }
+
     public BigDecimal getPrecioNoche() {
         return precioNoche;
     }
@@ -190,6 +227,13 @@ public class Alojamiento {
     }
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
     }
 
     public Set<String> getAmenidades() {

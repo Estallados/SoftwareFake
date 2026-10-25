@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.unbosque.marketplace.dto.CancelacionDTO;
+import co.edu.unbosque.marketplace.dto.SimulacionCancelacionDTO;
 import co.edu.unbosque.marketplace.entity.Alojamiento;
 import co.edu.unbosque.marketplace.entity.Cancelacion;
 import co.edu.unbosque.marketplace.entity.EstadoCancelacion;
@@ -104,21 +105,16 @@ public class CancelacionService {
             return Resultado.error(Resultado.NO_ENCONTRADO, "La reserva no existe.");
         }
         Reserva reserva = reservaOpt.get();
-        if (reserva.getEstado() != EstadoReserva.CONFIRMADA && reserva.getEstado() != EstadoReserva.EN_REVISION) {
-            return rechazar(idActor, idReserva, "La reserva no se puede cancelar en estado " + reserva.getEstado() + ".");
-        }
-        LocalDate hoy = LocalDate.now();
-        if (!reserva.getFechaEntrada().isAfter(hoy)) {
-            return rechazar(idActor, idReserva, "Solo se pueden cancelar reservas futuras.");
+        String noCancelable = motivoNoCancelable(reserva);
+        if (noCancelable != null) {
+            return rechazar(idActor, idReserva, noCancelable);
         }
 
         Optional<Alojamiento> alojamiento = alojamientoRepo.findById(reserva.getIdAlojamiento());
-        PoliticaCancelacion politica = alojamiento.map(Alojamiento::getIdPolitica).flatMap(politicaRepo::findById)
-                .or(() -> politicaRepo.findByNombre(POLITICA_POR_DEFECTO)).orElseThrow();
-        long dias = ChronoUnit.DAYS.between(hoy, reserva.getFechaEntrada());
+        PoliticaCancelacion politica = politicaDe(alojamiento);
+        long dias = diasAnticipacion(reserva);
         int porcentaje = porcentajeReembolso(politica, dias);
-        BigDecimal devolucion = reserva.getTotal().multiply(BigDecimal.valueOf(porcentaje))
-                .divide(BigDecimal.valueOf(CIEN), 2, RoundingMode.HALF_UP);
+        BigDecimal devolucion = devolucion(reserva, porcentaje);
 
         reserva.setEstado(EstadoReserva.CANCELADA);
         reservaRepo.save(reserva);
@@ -145,6 +141,66 @@ public class CancelacionService {
         auditoriaService.registrar(idActor, AuditoriaService.CANCELACION, AuditoriaService.ENTIDAD_RESERVA, idReserva,
                 ResultadoAuditoria.EXITOSO, politica.getNombre() + " " + porcentaje + " %, devolución " + devolucion);
         return Resultado.exito(modelMapper.map(cancelacion, CancelacionDTO.class));
+    }
+
+    /**
+     * Devolución que recibiría el huésped si cancelara hoy, con la misma regla
+     * de {@link #cancelar(Long, String, Long)}. No cambia la reserva ni queda
+     * en la auditoría.
+     *
+     * @return 0 con la estimación; 1 la reserva no existe o es de otro
+     *         usuario; 4 la reserva no se puede cancelar.
+     * @see "CA-002, CA-003"
+     */
+    public Resultado<SimulacionCancelacionDTO> simular(Long idReserva, Long idActor) {
+        Optional<Reserva> reservaOpt = reservaRepo.findById(idReserva).filter(r -> r.getIdHuesped().equals(idActor));
+        if (reservaOpt.isEmpty()) {
+            return Resultado.error(Resultado.NO_ENCONTRADO, "La reserva no existe.");
+        }
+        Reserva reserva = reservaOpt.get();
+        String noCancelable = motivoNoCancelable(reserva);
+        if (noCancelable != null) {
+            return Resultado.error(Resultado.ESTADO_INVALIDO, noCancelable);
+        }
+
+        PoliticaCancelacion politica = politicaDe(alojamientoRepo.findById(reserva.getIdAlojamiento()));
+        long dias = diasAnticipacion(reserva);
+        int porcentaje = porcentajeReembolso(politica, dias);
+
+        SimulacionCancelacionDTO simulacion = new SimulacionCancelacionDTO();
+        simulacion.setIdReserva(idReserva);
+        simulacion.setPolitica(politica.getNombre());
+        simulacion.setDiasAnticipacion(dias);
+        simulacion.setPorcentajeReembolso(porcentaje);
+        simulacion.setValorReembolso(devolucion(reserva, porcentaje));
+        simulacion.setTotalPagado(reserva.getTotal());
+        return Resultado.exito(simulacion);
+    }
+
+    /** Causa por la que la reserva no se puede cancelar, o null si se puede. */
+    private static String motivoNoCancelable(Reserva reserva) {
+        if (reserva.getEstado() != EstadoReserva.CONFIRMADA && reserva.getEstado() != EstadoReserva.EN_REVISION) {
+            return "La reserva no se puede cancelar en estado " + reserva.getEstado() + ".";
+        }
+        if (!reserva.getFechaEntrada().isAfter(LocalDate.now())) {
+            return "Solo se pueden cancelar reservas futuras.";
+        }
+        return null;
+    }
+
+    /** Política del alojamiento, o la política por defecto si no tiene una asignada. */
+    private PoliticaCancelacion politicaDe(Optional<Alojamiento> alojamiento) {
+        return alojamiento.map(Alojamiento::getIdPolitica).flatMap(politicaRepo::findById)
+                .or(() -> politicaRepo.findByNombre(POLITICA_POR_DEFECTO)).orElseThrow();
+    }
+
+    private static long diasAnticipacion(Reserva reserva) {
+        return ChronoUnit.DAYS.between(LocalDate.now(), reserva.getFechaEntrada());
+    }
+
+    private static BigDecimal devolucion(Reserva reserva, int porcentaje) {
+        return reserva.getTotal().multiply(BigDecimal.valueOf(porcentaje))
+                .divide(BigDecimal.valueOf(CIEN), 2, RoundingMode.HALF_UP);
     }
 
     private Resultado<CancelacionDTO> rechazar(Long idActor, Long idReserva, String mensaje) {

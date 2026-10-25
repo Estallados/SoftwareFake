@@ -99,6 +99,15 @@ public class ReservaController {
                 RespuestaUtil.esAdmin(authentication)));
     }
 
+    @Operation(summary = "Simular la cancelación de una reserva (HUESPED)",
+            description = "Devuelve la política, los días de anticipación, el porcentaje y el valor que se "
+                    + "devolvería si se cancelara hoy. No cancela nada.")
+    @PreAuthorize("hasRole('HUESPED')")
+    @GetMapping("/reservas/{id}/simularcancelacion")
+    public ResponseEntity<Object> simularCancelacion(@PathVariable Long id, Authentication authentication) {
+        return RespuestaUtil.desde(cancelacionService.simular(id, RespuestaUtil.idUsuario(authentication)));
+    }
+
     @Operation(summary = "Cancelar una reserva futura (HUESPED)",
             description = "Aplica la política de cancelación del alojamiento. Requiere Idempotency-Key y motivo.")
     @PreAuthorize("hasRole('HUESPED')")

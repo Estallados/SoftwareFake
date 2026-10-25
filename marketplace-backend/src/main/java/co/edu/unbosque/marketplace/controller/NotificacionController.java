@@ -1,5 +1,7 @@
 package co.edu.unbosque.marketplace.controller;
 
+import java.util.Map;
+
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -42,6 +44,21 @@ public class NotificacionController {
         return ResponseEntity.ok(notificacionService.listar(RespuestaUtil.idUsuario(authentication),
                 RespuestaUtil.pagina(pagina, tamanio, Sort.by("fecha").descending().and(Sort.by("idNotificacion")
                         .descending()))));
+    }
+
+    @Operation(summary = "Cantidad de notificaciones sin leer (contador de la campana)",
+            description = "Devuelve {cantidad}.")
+    @GetMapping("/noleidas")
+    public ResponseEntity<Object> noLeidas(Authentication authentication) {
+        return ResponseEntity.ok(Map.of("cantidad",
+                notificacionService.contarNoLeidas(RespuestaUtil.idUsuario(authentication))));
+    }
+
+    @Operation(summary = "Marcar todas mis notificaciones como leídas", description = "Devuelve {actualizadas}.")
+    @PatchMapping("/leidas")
+    public ResponseEntity<Object> marcarTodasLeidas(Authentication authentication) {
+        return ResponseEntity.ok(Map.of("actualizadas",
+                notificacionService.marcarTodasLeidas(RespuestaUtil.idUsuario(authentication))));
     }
 
     @Operation(summary = "Marcar una notificación propia como leída")

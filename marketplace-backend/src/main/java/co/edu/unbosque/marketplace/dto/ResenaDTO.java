@@ -17,6 +17,10 @@ public class ResenaDTO {
     private Long idUsuario;
     private Long idReserva;
     private Long idAlojamiento;
+    /** Nombre del huésped que escribió la reseña. Solo salida. */
+    private String nombreUsuario;
+    /** Solo salida. */
+    private String tituloAlojamiento;
 
     public ResenaDTO() {
     }
@@ -75,5 +79,19 @@ public class ResenaDTO {
     }
     public void setIdAlojamiento(Long idAlojamiento) {
         this.idAlojamiento = idAlojamiento;
+    }
+
+    public String getNombreUsuario() {
+        return nombreUsuario;
+    }
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = nombreUsuario;
+    }
+
+    public String getTituloAlojamiento() {
+        return tituloAlojamiento;
+    }
+    public void setTituloAlojamiento(String tituloAlojamiento) {
+        this.tituloAlojamiento = tituloAlojamiento;
     }
 }

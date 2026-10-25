@@ -52,10 +52,15 @@ class SeguridadRolesYCorsTest {
 		return json.readTree(respuesta).get("token").asText();
 	}
 
+	/** Registra y verifica el correo con el código enviado; devuelve el token de sesión. */
 	private String registrarHuesped(String correo) throws Exception {
-		String respuesta = mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nombre\":\"Huésped\",\"correo\":\"" + correo + "\",\"contrasenia\":\"Segura#2026\"}"))
-				.andExpect(status().isCreated())
+				.andExpect(status().isCreated());
+		String respuesta = mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"" + correo + "\",\"codigo\":\"" + CorreoPrueba.codigoEnviadoA(mailSender, correo)
+						+ "\"}"))
+				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 		return json.readTree(respuesta).get("token").asText();
 	}

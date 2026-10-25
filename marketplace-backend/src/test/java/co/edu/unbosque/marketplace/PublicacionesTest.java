@@ -51,6 +51,71 @@ class PublicacionesTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void guardaHabitacionesBanosYHorasDeEntradaYSalida() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Map<String, Object> datos = datosAlojamiento("Cartagena", "Apartamento", 4, new BigDecimal("180000"),
+				Set.of("wifi"), "MODERADA");
+		datos.put("habitaciones", 3);
+		datos.put("banos", 2);
+		datos.put("horaEntrada", "14:30");
+
+		JsonNode creado = llamar(post("/alojamientos"), anfitrion.token(), datos, 201);
+		assertEquals(3, creado.get("habitaciones").asInt());
+		assertEquals(2, creado.get("banos").asInt());
+		assertEquals("14:30", creado.get("horaEntrada").asText());
+		assertEquals("11:00", creado.get("horaSalida").asText());
+		assertTrue(creado.hasNonNull("fechaActualizacion"));
+
+		Long id = creado.get("idAlojamiento").asLong();
+		JsonNode editado = actualizarAlojamiento(anfitrion, id, Map.of("banos", 3, "horaSalida", "12:00"), 200);
+		assertEquals(3, editado.get("banos").asInt());
+		assertEquals(3, editado.get("habitaciones").asInt());
+		assertEquals("12:00", editado.get("horaSalida").asText());
+
+		JsonNode error = actualizarAlojamiento(anfitrion, id, Map.of("habitaciones", -1), 400);
+		assertTrue(error.get("message").asText().contains("no pueden ser negativos"));
+	}
+
+	@Test
+	void paraEnviarARevisionFaltanHabitacionesBanosYHoras() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Map<String, Object> datos = datosAlojamiento("Pasto", "Casa", 4, new BigDecimal("80000"), Set.of(),
+				"FLEXIBLE");
+		datos.remove("habitaciones");
+		datos.remove("banos");
+		datos.remove("horaEntrada");
+		datos.remove("horaSalida");
+		Long id = crearBorrador(anfitrion, datos);
+
+		String mensaje = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 400)
+				.get("message").asText();
+
+		assertTrue(mensaje.contains("habitaciones") && mensaje.contains("baños") && mensaje.contains("hora de entrada")
+				&& mensaje.contains("hora de salida"), mensaje);
+	}
+
+	@Test
+	void elDetalleTraeCalificacionReservasYAnfitrionYSoloElAdminVeSuCorreo() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = crearAlojamientoActivo(anfitrion);
+		reservaConfirmada(registrar("HUESPED"), id, 3, 2);
+
+		JsonNode publico = llamar(get("/alojamientos/" + id), null, null, 200);
+		assertEquals("Usuario ANFITRION", publico.get("nombreAnfitrion").asText());
+		assertEquals(0, publico.get("cantidadResenas").asInt());
+		assertTrue(publico.get("promedioCalificacion").isNull());
+		assertEquals(1, publico.get("cantidadReservas").asInt());
+		assertTrue(publico.get("correoAnfitrion").isNull());
+
+		JsonNode admin = llamar(get("/alojamientos/" + id), tokenAdmin(), null, 200);
+		assertEquals(anfitrion.correo(), admin.get("correoAnfitrion").asText());
+		assertEquals("ACTIVO", admin.get("estadoAnfitrion").asText());
+
+		JsonNode busqueda = llamar(get("/alojamientos?ciudad=Bogotá"), null, null, 200);
+		assertTrue(busqueda.get("contenido").get(0).has("promedioCalificacion"));
+	}
+
+	@Test
 	void unHuespedNoPuedeCrearPublicaciones_CA131() throws Exception {
 		Sesion huesped = registrar("HUESPED");
 		llamar(post("/alojamientos"), huesped.token(), Map.of("titulo", "X"), 403);

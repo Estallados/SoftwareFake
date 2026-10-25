@@ -1,5 +1,7 @@
 package co.edu.unbosque.marketplace.configuration;
 
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +82,9 @@ public class AdminInicializador implements CommandLineRunner {
 		admin.setContrasenia(passwordEncoder.encode(contrasenia));
 		admin.setRol(Role.ADMIN);
 		admin.setEstado(EstadoUsuario.ACTIVO);
+		admin.setFechaRegistro(LocalDateTime.now());
+		// El correo lo configura quien despliega; no hay a quién pedirle el código
+		admin.setCorreoVerificado(true);
 		admin = usuarioRepo.save(admin);
 
 		auditoriaService.registrar(null, AuditoriaService.CREACION_ADMINISTRADOR, AuditoriaService.ENTIDAD_USUARIO,
