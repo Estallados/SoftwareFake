@@ -1,7 +1,7 @@
-<header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
+<header class="border-b border-slate-200/80 bg-white/95 backdrop-blur">
   <div class="mx-auto flex h-20 max-w-[1440px] items-center gap-8 px-8">
     <!-- Logo -->
-    <button type="button" (click)="navigate.emit(homeTarget())">
+    <a [routerLink]="homePath()" class="block shrink-0">
       <div class="flex items-center gap-3">
         <div class="grid size-10 place-items-center rounded-xl bg-emerald-700 text-white shadow-sm">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -14,14 +14,20 @@
           <div class="mt-1 text-[10px] font-bold tracking-[0.35em] text-emerald-700">LR</div>
         </div>
       </div>
-    </button>
+    </a>
 
     <!-- Opciones según el rol -->
-    <nav class="hidden h-full items-center gap-1 lg:flex">
+    <nav class="hidden h-full shrink-0 items-center gap-1 lg:flex">
       @for (item of items(); track item[1]) {
-        <button type="button" [class]="itemClass(item[1])" (click)="navigate.emit(item[1])">
+        <a
+          [routerLink]="item[1]"
+          routerLinkActive
+          #rla="routerLinkActive"
+          class="relative flex h-full items-center whitespace-nowrap px-4 text-sm font-semibold transition"
+          [class]="rla.isActive ? activeClass : inactiveClass"
+        >
           {{ item[0] }}
-        </button>
+        </a>
       }
     </nav>
 
@@ -30,35 +36,35 @@
         <button
           type="button"
           (click)="auth('register')"
-          class="hidden px-3 text-sm font-bold text-emerald-700 xl:block"
+          class="hidden whitespace-nowrap px-3 text-sm font-bold text-emerald-700 xl:block"
         >
           Crear cuenta
         </button>
-        <button
-          type="button"
-          (click)="switchRole.emit('Anfitrión')"
-          class="hidden items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 lg:flex"
+        <a
+          [routerLink]="roleHome['Anfitrión']"
+          class="hidden items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 lg:flex"
         >
           Publicar alojamiento
-        </button>
+        </a>
       }
 
-      <!-- Notificaciones -->
-      <button
-        type="button"
-        aria-label="Notificaciones"
-        (click)="navigate.emit('notificaciones')"
-        class="relative grid size-11 place-items-center rounded-full text-slate-600 transition hover:bg-slate-100"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
-        </svg>
-        @if (unread() > 0) {
-          <span class="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-emerald-700 text-[10px] font-bold text-white">
-            {{ unread() }}
-          </span>
-        }
-      </button>
+      <!-- Notificaciones (el admin no tiene ruta) -->
+      @if (notificationsPath(); as notifPath) {
+        <a
+          [routerLink]="notifPath"
+          aria-label="Notificaciones"
+          class="relative grid size-11 place-items-center rounded-full text-slate-600 transition hover:bg-slate-100"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+          </svg>
+          @if (unread() > 0) {
+            <span class="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-emerald-700 text-[10px] font-bold text-white">
+              {{ unread() }}
+            </span>
+          }
+        </a>
+      }
 
       <!-- Menú de usuario / selector de rol -->
       <div class="relative">
@@ -116,9 +122,9 @@
 
             <div class="my-2 border-t border-slate-100"></div>
 
-            <button type="button" (click)="goProfile()" class="w-full rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-50">
+            <a routerLink="/perfil" (click)="closeMenu()" class="block w-full rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-50">
               Mi perfil
-            </button>
+            </a>
             <button type="button" (click)="auth('login')" class="w-full rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-50">
               Cerrar sesión / Ingresar
             </button>

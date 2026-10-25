@@ -1,39 +1,53 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
 
 export type Role = 'Huésped' | 'Anfitrión' | 'Administrador';
 export type AuthMode = 'login' | 'register' | 'recovery';
-export type View =
-  | 'inicio' | 'explorar' | 'favoritos' | 'mensajes' | 'reservas' | 'resenas'
-  | 'dashboard' | 'alojamientos' | 'usuarios' | 'reportes' | 'auditoria'
-  | 'notificaciones' | 'perfil' | 'detalle' | 'detalle-reserva'
-  | 'detalle-usuario' | 'detalle-admin-alojamiento'
-  | (string & {}); // amplía con las vistas reales de tu app
 
-type NavItem = [label: string, target: View];
+/** [texto del menú, ruta] — rutas tomadas de tu app.routes.ts */
+type NavItem = [label: string, path: string];
 
 const GUEST_ITEMS: NavItem[] = [
-  ['Inicio', 'inicio'],
-  ['Explorar', 'explorar'],
-  ['Mis favoritos', 'favoritos'],
-  ['Mensajes', 'mensajes'],
-  ['Mis reservas', 'reservas'],
-  ['Mis reseñas', 'resenas'],
+  ['Inicio', '/home'],
+  ['Explorar', '/explorar'],
+  ['Mis favoritos', '/favoritos'],
+  ['Mensajes', '/mensajes'],
+  ['Mis reservas', '/reservas'],
+  ['Mis reseñas', '/resenas'],
 ];
 
 const HOST_ITEMS: NavItem[] = [
-  ['Resumen', 'dashboard'],
-  ['Mis alojamientos', 'alojamientos'],
-  ['Reservas', 'reservas'],
+  ['Resumen', '/host/dashboard'],
+  ['Mis alojamientos', '/host/alojamientos'],
+  ['Reservas', '/host/reservas'],
+  ['Reseñas', '/host/resenas'],
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  ['Dashboard', 'dashboard'],
-  ['Usuarios', 'usuarios'],
-  ['Alojamientos', 'alojamientos'],
-  ['Reseñas', 'resenas'],
-  ['Reportes', 'reportes'],
-  ['Auditoría', 'auditoria'],
+  ['Dashboard', '/admin/dashboard'],
+  ['Usuarios', '/admin/usuarios'],
+  ['Alojamientos', '/admin/alojamientos'],
+  ['Reservas', '/admin/reservas'],
+  ['Reseñas', '/admin/resenas'],
+  ['Reportes', '/admin/reportes'],
+  ['Auditoría', '/admin/auditoria'],
 ];
+
+/** Pantalla de inicio de cada rol (al cambiar de rol en el selector) */
+const ROLE_HOME: Record<Role, string> = {
+  Huésped: '/home',
+  Anfitrión: '/host/dashboard',
+  Administrador: '/admin/dashboard',
+};
+
+/** Ruta de notificaciones por rol (el admin no tiene en tus rutas) */
+const NOTIFICATIONS: Record<Role, string | null> = {
+  Huésped: '/notificaciones',
+  Anfitrión: '/host/notificaciones',
+  Administrador: null,
+};
 
 const USERS: Record<Role, { initials: string; name: string }> = {
   Huésped: { initials: 'MC', name: 'Mariana Cruz' },
@@ -44,23 +58,39 @@ const USERS: Record<Role, { initials: string; name: string }> = {
 @Component({
   selector: 'app-navbar',
   standalone: true,
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './navbar.component.html',
+  host: { class: 'sticky top-0 z-40 block' },
 })
 export class NavbarComponent {
-  // ---- Entradas (estado que en React vivía en App) ----
-  role = input<Role>('Huésped');
-  view = input<View>('inicio');
+  private router = inject(Router);
+
   /** Notificaciones sin leer del rol actual */
   unread = input(0);
-
-  // ---- Salidas (callbacks) ----
-  navigate = output<View>();
-  switchRole = output<Role>();
+  /** Abrir el modal de login / registro / recuperación */
   openAuth = output<AuthMode>();
 
-  // ---- Estado interno ----
   roleMenu = false;
   readonly roles: Role[] = ['Huésped', 'Anfitrión', 'Administrador'];
+  readonly roleHome = ROLE_HOME;
+
+  // URL actual como signal
+  private url = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  // El rol se deduce de la URL: /admin/** , /host/** o el resto (huésped)
+  role = computed<Role>(() => {
+    const u = this.url();
+    if (u.startsWith('/admin')) return 'Administrador';
+    if (u.startsWith('/host')) return 'Anfitrión';
+    return 'Huésped';
+  });
 
   items = computed(() => {
     switch (this.role()) {
@@ -71,26 +101,13 @@ export class NavbarComponent {
   });
 
   user = computed(() => USERS[this.role()]);
-  homeTarget = computed<View>(() => (this.role() === 'Huésped' ? 'inicio' : 'dashboard'));
+  homePath = computed(() => ROLE_HOME[this.role()]);
+  notificationsPath = computed(() => NOTIFICATIONS[this.role()]);
 
-  isActive(target: View): boolean {
-    const v = this.view();
-    return (
-      v === target ||
-      (v === 'detalle-reserva' && target === 'reservas') ||
-      (v === 'detalle-usuario' && target === 'usuarios') ||
-      (v === 'detalle-admin-alojamiento' && target === 'alojamientos')
-    );
-  }
-
-  itemClass(target: View): string {
-    return (
-      'relative h-full px-4 text-sm font-semibold transition ' +
-      (this.isActive(target)
-        ? 'text-emerald-700 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-0.5 after:bg-emerald-700'
-        : 'text-slate-500 hover:text-slate-900')
-    );
-  }
+  // Clases del enlace activo / inactivo (el estado lo da routerLinkActive)
+  readonly activeClass =
+    'text-emerald-700 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-0.5 after:bg-emerald-700';
+  readonly inactiveClass = 'text-slate-500 hover:text-slate-900';
 
   roleItemClass(r: Role): string {
     return (
@@ -103,10 +120,9 @@ export class NavbarComponent {
     return r === 'Administrador' ? 'shield' : r === 'Anfitrión' ? 'building' : 'users';
   }
 
-  // ---- Acciones ----
   pickRole(r: Role) {
     this.roleMenu = false;
-    this.switchRole.emit(r);
+    this.router.navigateByUrl(ROLE_HOME[r]);
   }
 
   auth(mode: AuthMode) {
@@ -114,8 +130,7 @@ export class NavbarComponent {
     this.openAuth.emit(mode);
   }
 
-  goProfile() {
+  closeMenu() {
     this.roleMenu = false;
-    this.navigate.emit('perfil');
   }
 }

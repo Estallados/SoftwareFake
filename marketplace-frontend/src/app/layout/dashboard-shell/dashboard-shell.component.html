@@ -7,7 +7,13 @@
 
     <nav class="mt-3 space-y-1">
       @for (item of items(); track item.label) {
-        <button type="button" [class]="itemClass(item.target)" (click)="navigate.emit(item.target)">
+        <a
+          [routerLink]="item.path"
+          routerLinkActive
+          #rla="routerLinkActive"
+          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition"
+          [class]="rla.isActive ? activeClass : inactiveClass"
+        >
           <svg
             width="19"
             height="19"
@@ -53,7 +59,7 @@
             }
           </svg>
           {{ item.label }}
-        </button>
+        </a>
       }
     </nav>
 

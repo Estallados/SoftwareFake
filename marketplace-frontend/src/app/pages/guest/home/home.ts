@@ -1,5 +1,6 @@
-import { Component, input, output } from '@angular/core';
-import { photos } from '../../../services/mockData';
+import { Component, inject, input, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { photos} from '../../../services/mockData';
 
 export interface Stay {
   name: string;
@@ -19,15 +20,11 @@ export interface Stay {
   templateUrl: './home.html',
 })
 export class Home {
-  // Entradas (props de React)
-  stays = input.required<Stay[]>();
-  favorites = input<string[]>([]);
+  private router = inject(Router);
 
-  // Salidas (callbacks de React)
-  search = output<void>();
-  open = output<string>();
-  host = output<void>();
-  favorite = output<string>();
+  // Al ser una página de ruta, ya no recibe props: usa los datos de mockData
+  stays = signal<Stay[]>([]);
+  favorites = signal<string[]>([]);
 
   readonly photos = photos;
 
@@ -55,8 +52,29 @@ export class Home {
     { title: 'Anfitriones', links: ['Publicar alojamiento', 'Administrar propiedades', 'Disponibilidad'] },
   ];
 
+  // ---- Navegación (antes eran outputs) ----
+  goSearch() {
+    this.router.navigateByUrl('/explorar');
+  }
+
+  goHost() {
+    this.router.navigateByUrl('/host/dashboard');
+  }
+
+  openStay(name: string) {
+    this.router.navigate(['/alojamiento', name]); // ajusta si tu :id es un número
+  }
+
+  // ---- Favoritos ----
   isFavorite(name: string): boolean {
     return this.favorites().includes(name);
+  }
+
+  toggleFavorite(event: Event, name: string) {
+    event.stopPropagation(); // evita abrir la tarjeta
+    this.favorites.update((f) =>
+      f.includes(name) ? f.filter((x) => x !== name) : [...f, name],
+    );
   }
 
   favClass(name: string): string {
@@ -68,10 +86,5 @@ export class Home {
 
   amenities(stay: Stay): string {
     return (stay.amenities ?? ['WiFi', 'Cocina']).slice(0, 2).join(' · ');
-  }
-
-  toggleFavorite(event: Event, name: string) {
-    event.stopPropagation(); // evita abrir la tarjeta
-    this.favorite.emit(name);
   }
 }
