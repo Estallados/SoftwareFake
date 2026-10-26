@@ -57,7 +57,7 @@ class ReservasPagosTest extends PruebaIntegracionBase {
 		assertEquals("Usuario HUESPED", reserva.get("nombreHuesped").asText());
 		assertEquals("Usuario ANFITRION", reserva.get("nombreAnfitrion").asText());
 		assertEquals(anfitrion.id(), reserva.get("idAnfitrion").asLong());
-		assertEquals("/img/foto1.jpg", reserva.get("imagenAlojamiento").asText());
+		assertTrue(reserva.get("imagenAlojamiento").asText().startsWith("/archivos/alojamientos/" + id + "/"));
 		assertFalse(reserva.get("tieneResena").asBoolean());
 		assertTrue(reserva.get("cancelacion").isNull());
 

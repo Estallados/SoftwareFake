@@ -172,8 +172,7 @@ class AdministracionTest extends PruebaIntegracionBase {
 	void unaOperacionRechazadaQuedaRegistradaConElRecursoAfectado_CA151_CA152() throws Exception {
 		Sesion propietario = registrar("ANFITRION");
 		Sesion intruso = registrar("ANFITRION");
-		Long id = llamar(post("/alojamientos"), propietario.token(), Map.of("titulo", "Mío"), 201).get("idAlojamiento")
-				.asLong();
+		Long id = crearBorrador(propietario, Map.of("titulo", "Mío"), 201).get("idAlojamiento").asLong();
 		llamar(put("/alojamientos/" + id), intruso.token(), Map.of("titulo", "X"), 403);
 
 		JsonNode eventos = llamar(get("/admin/auditoria?idActor=" + intruso.id()), tokenAdmin(), null, 200);
@@ -211,7 +210,7 @@ class AdministracionTest extends PruebaIntegracionBase {
 	@Test
 	void laColaDeRevisionListaLasPublicacionesPendientes() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
-		Long id = llamar(post("/alojamientos"), anfitrion.token(),
+		Long id = crearBorrador(anfitrion,
 				datosAlojamiento("Pasto", "Casa", 2, new BigDecimal("70000"), Set.of(), "FLEXIBLE"), 201)
 				.get("idAlojamiento").asLong();
 		llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);

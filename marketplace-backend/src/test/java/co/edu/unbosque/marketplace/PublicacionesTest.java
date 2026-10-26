@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,7 +30,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 	private AuditoriaRepository auditoriaRepo;
 
 	private Long crearBorrador(Sesion anfitrion, Map<String, Object> datos) throws Exception {
-		return llamar(post("/alojamientos"), anfitrion.token(), datos, 201).get("idAlojamiento").asLong();
+		return crearBorrador(anfitrion, datos, 201).get("idAlojamiento").asLong();
 	}
 
 	@Test
@@ -40,7 +41,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		datos.put("estado", "ACTIVA");
 		datos.put("idAnfitrion", 999);
 
-		JsonNode creado = llamar(post("/alojamientos"), anfitrion.token(), datos, 201);
+		JsonNode creado = crearBorrador(anfitrion, datos, 201);
 
 		assertEquals("BORRADOR", creado.get("estado").asText());
 		assertEquals(anfitrion.id(), creado.get("idAnfitrion").asLong());
@@ -59,7 +60,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		datos.put("banos", 2);
 		datos.put("horaEntrada", "14:30");
 
-		JsonNode creado = llamar(post("/alojamientos"), anfitrion.token(), datos, 201);
+		JsonNode creado = crearBorrador(anfitrion, datos, 201);
 		assertEquals(3, creado.get("habitaciones").asInt());
 		assertEquals(2, creado.get("banos").asInt());
 		assertEquals("14:30", creado.get("horaEntrada").asText());
@@ -118,14 +119,13 @@ class PublicacionesTest extends PruebaIntegracionBase {
 	@Test
 	void unHuespedNoPuedeCrearPublicaciones_CA131() throws Exception {
 		Sesion huesped = registrar("HUESPED");
-		llamar(post("/alojamientos"), huesped.token(), Map.of("titulo", "X"), 403);
+		crearBorrador(huesped, Map.of("titulo", "X"), 403);
 	}
 
 	@Test
 	void debeRechazarCapacidadMenorOIgualACero_CA098() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
-		JsonNode error = llamar(post("/alojamientos"), anfitrion.token(), Map.of("titulo", "X", "capacidad", 0),
-				400);
+		JsonNode error = crearBorrador(anfitrion, Map.of("titulo", "X", "capacidad", 0), 400);
 		assertTrue(error.get("message").asText().contains("capacidad debe ser mayor que cero"));
 	}
 
@@ -145,8 +145,9 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		JsonNode error = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 400);
 
 		String mensaje = error.get("message").asText();
-		assertTrue(mensaje.contains("descripción") && mensaje.contains("capacidad")
-				&& mensaje.contains("al menos una imagen"), mensaje);
+		assertTrue(mensaje.contains("descripción") && mensaje.contains("capacidad"), mensaje);
+		// La imagen ya se exigió al crear el borrador
+		assertFalse(mensaje.contains("imagen"), mensaje);
 	}
 
 	@Test

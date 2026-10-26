@@ -208,15 +208,23 @@ public class PublicacionService {
     // ----- creación y edición -----
 
     /**
-     * Crea una publicación en BORRADOR para el anfitrión autenticado. El id,
-     * el estado y el propietario enviados se ignoran.
+     * Crea una publicación en BORRADOR para el anfitrión autenticado con al
+     * menos una imagen: el borrador puede guardarse con otros datos
+     * incompletos, pero nunca sin imagen, la misma regla que se exige al
+     * enviarlo a revisión. La primera imagen queda como principal. El id, el
+     * estado y el propietario enviados se ignoran.
      *
-     * @return 0 con la publicación; 2 si los datos no son válidos.
+     * @param archivos Imágenes (JPG, PNG o WEBP de hasta 5 MB), entre 1 y
+     *                 {@link #MAXIMO_IMAGENES}.
+     * @return 0 con la publicación; 2 si los datos o las imágenes no son válidos.
      * @see "RF-017, CA-094, CA-095, CA-096, CA-098, CA-099"
      */
     @Transactional
-    public Resultado<AlojamientoDTO> crear(AlojamientoDTO datos, Long idAnfitrion) {
+    public Resultado<AlojamientoDTO> crear(AlojamientoDTO datos, List<MultipartFile> archivos, Long idAnfitrion) {
         String error = validar(datos, true);
+        if (error == null) {
+            error = errorArchivos(archivos, 0);
+        }
         if (error != null) {
             auditoriaService.registrar(idAnfitrion, AuditoriaService.ALOJAMIENTO_CREADO,
                     AuditoriaService.ENTIDAD_ALOJAMIENTO, null, ResultadoAuditoria.RECHAZADO, error);
@@ -230,7 +238,7 @@ public class PublicacionService {
         alojamiento.setFechaCreacion(LocalDateTime.now());
         alojamiento.setFechaActualizacion(alojamiento.getFechaCreacion());
         alojamiento = alojamientoRepo.save(alojamiento);
-        guardarImagenes(alojamiento.getIdAlojamiento(), datos.getImagenes());
+        guardarArchivos(alojamiento.getIdAlojamiento(), archivos, false);
         registrarHistorial(alojamiento.getIdAlojamiento(), null, EstadoAlojamiento.BORRADOR, idAnfitrion, null);
 
         auditoriaService.registrar(idAnfitrion, AuditoriaService.ALOJAMIENTO_CREADO,
@@ -241,11 +249,10 @@ public class PublicacionService {
 
     /**
      * Edita una publicación (propietario o administrador). Los campos en null
-     * se dejan como están; las listas enviadas (imágenes, amenidades)
-     * reemplazan a las anteriores: de las imágenes se conservan las que sigan
-     * en la lista y se borran las demás (con su archivo, si fue subido). El
-     * estado y el propietario no se cambian por esta vía. Para subir archivos
-     * se usa {@link #subirImagenes}.
+     * se dejan como están; las amenidades enviadas reemplazan a las
+     * anteriores. El estado, el propietario y las imágenes no se cambian por
+     * esta vía: las imágenes se gestionan con {@link #subirImagenes},
+     * {@link #eliminarImagen} y {@link #marcarPrincipal}.
      *
      * @return 0 con la publicación; 1 no existe; 2 datos inválidos; 3 sin permiso.
      * @see "RF-018, CA-100, CA-101, CA-113, CA-114"
@@ -267,9 +274,6 @@ public class PublicacionService {
         aplicar(datos, alojamiento);
         alojamiento.setFechaActualizacion(LocalDateTime.now());
         alojamiento = alojamientoRepo.save(alojamiento);
-        if (datos.getImagenes() != null) {
-            reemplazarImagenes(idAlojamiento, datos.getImagenes());
-        }
 
         auditoriaService.registrar(idActor, AuditoriaService.ALOJAMIENTO_ACTUALIZADO,
                 AuditoriaService.ENTIDAD_ALOJAMIENTO, idAlojamiento, ResultadoAuditoria.EXITOSO, null);
@@ -296,33 +300,14 @@ public class PublicacionService {
         if (!carga.esExito()) {
             return Resultado.error(carga.getCodigo(), carga.getMensaje());
         }
-        if (archivos == null || archivos.isEmpty()) {
-            return Resultado.error(Resultado.DATOS_INVALIDOS, "Debes enviar al menos una imagen.");
-        }
         List<Imagen> actuales = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
-        if (actuales.size() + archivos.size() > MAXIMO_IMAGENES) {
-            return Resultado.error(Resultado.DATOS_INVALIDOS,
-                    "Un alojamiento puede tener máximo " + MAXIMO_IMAGENES + " imágenes.");
-        }
-        for (MultipartFile archivo : archivos) {
-            String error = almacenamientoService.errorImagen(archivo);
-            if (error != null) {
-                String nombre = archivo == null ? "" : " (" + archivo.getOriginalFilename() + ")";
-                return Resultado.error(Resultado.DATOS_INVALIDOS, error + nombre);
-            }
+        String error = errorArchivos(archivos, actuales.size());
+        if (error != null) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, error);
         }
 
-        boolean tienePrincipal = actuales.stream().anyMatch(i -> Boolean.TRUE.equals(i.getPrincipal()));
-        for (MultipartFile archivo : archivos) {
-            String ruta = almacenamientoService.guardarImagen(archivo, "alojamientos/" + idAlojamiento);
-            Imagen imagen = new Imagen();
-            imagen.setIdAlojamiento(idAlojamiento);
-            imagen.setRutaArchivo(ruta);
-            imagen.setUrl(AlmacenamientoService.urlPublica(ruta));
-            imagen.setPrincipal(!tienePrincipal);
-            imagenRepo.save(imagen);
-            tienePrincipal = true;
-        }
+        guardarArchivos(idAlojamiento, archivos,
+                actuales.stream().anyMatch(i -> Boolean.TRUE.equals(i.getPrincipal())));
         marcarActualizado(carga.getDato());
         auditoriaService.registrar(idActor, AuditoriaService.IMAGEN_ALOJAMIENTO, AuditoriaService.ENTIDAD_ALOJAMIENTO,
                 idAlojamiento, ResultadoAuditoria.EXITOSO, "Subidas: " + archivos.size());
@@ -331,11 +316,11 @@ public class PublicacionService {
 
     /**
      * Elimina una imagen (y su archivo, si fue subido). Si era la principal,
-     * la siguiente pasa a serlo. Un alojamiento ACTIVA, PAUSADA o
-     * PENDIENTE_REVISION debe conservar al menos una imagen.
+     * la siguiente pasa a serlo. Todo alojamiento, también en BORRADOR, debe
+     * conservar al menos una imagen.
      *
      * @return 0 con las imágenes restantes; 1 no existe; 3 sin permiso;
-     *         4 es la última imagen de una publicación ya enviada.
+     *         4 es la última imagen.
      * @see "RF-018"
      */
     @Transactional
@@ -351,9 +336,9 @@ public class PublicacionService {
             return Resultado.error(Resultado.NO_ENCONTRADO, "La imagen no existe.");
         }
         List<Imagen> actuales = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
-        if (actuales.size() == 1 && carga.getDato().getEstado() != EstadoAlojamiento.BORRADOR) {
+        if (actuales.size() == 1) {
             return Resultado.error(Resultado.ESTADO_INVALIDO,
-                    "La publicación debe conservar al menos una imagen. Sube otra antes de borrar esta.");
+                    "El alojamiento debe conservar al menos una imagen. Sube otra antes de borrar esta.");
         }
 
         imagenRepo.delete(imagen.get());
@@ -881,57 +866,41 @@ public class PublicacionService {
         }
     }
 
-    /** Guarda imágenes por URL; si el alojamiento no tiene portada, la primera queda como principal. */
-    private void guardarImagenes(Long idAlojamiento, List<String> urls) {
-        if (urls == null) {
-            return;
-        }
-        boolean tienePrincipal = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento).stream()
-                .anyMatch(i -> Boolean.TRUE.equals(i.getPrincipal()));
-        for (String url : urls) {
-            if (url != null && !url.isBlank()) {
-                Imagen imagen = new Imagen();
-                imagen.setIdAlojamiento(idAlojamiento);
-                imagen.setUrl(url.trim());
-                imagen.setPrincipal(!tienePrincipal);
-                imagenRepo.save(imagen);
-                tienePrincipal = true;
-            }
-        }
-    }
-
     /**
-     * Deja exactamente las URL enviadas: conserva las imágenes que siguen en la
-     * lista (con su id y portada), borra las demás junto con su archivo y
-     * agrega las URL nuevas.
+     * Valida un lote de imágenes antes de guardar alguna: que venga al menos
+     * una, que no se supere {@link #MAXIMO_IMAGENES} y que cada archivo sea
+     * una imagen válida.
+     *
+     * @param actuales Imágenes que ya tiene el alojamiento.
+     * @return el mensaje de error o null si el lote es válido.
      */
-    private void reemplazarImagenes(Long idAlojamiento, List<String> urls) {
-        Set<String> enviadas = new HashSet<>();
-        for (String url : urls) {
-            if (url != null && !url.isBlank()) {
-                enviadas.add(url.trim());
+    private String errorArchivos(List<MultipartFile> archivos, int actuales) {
+        if (archivos == null || archivos.isEmpty()) {
+            return "Debes enviar al menos una imagen.";
+        }
+        if (actuales + archivos.size() > MAXIMO_IMAGENES) {
+            return "Un alojamiento puede tener máximo " + MAXIMO_IMAGENES + " imágenes.";
+        }
+        for (MultipartFile archivo : archivos) {
+            String error = almacenamientoService.errorImagen(archivo);
+            if (error != null) {
+                return archivo == null ? error : error + " (" + archivo.getOriginalFilename() + ")";
             }
         }
-        Set<String> conservadas = new HashSet<>();
-        for (Imagen imagen : imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento)) {
-            if (enviadas.contains(imagen.getUrl())) {
-                conservadas.add(imagen.getUrl());
-            } else {
-                imagenRepo.delete(imagen);
-                almacenamientoService.eliminar(imagen.getRutaArchivo());
-            }
-        }
-        imagenRepo.flush();
-        guardarImagenes(idAlojamiento, enviadas.stream().filter(u -> !conservadas.contains(u)).toList());
-        asegurarPrincipal(idAlojamiento);
+        return null;
     }
 
-    /** Si ninguna imagen es la principal (por ejemplo, se borró la portada), la primera pasa a serlo. */
-    private void asegurarPrincipal(Long idAlojamiento) {
-        List<Imagen> imagenes = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
-        if (!imagenes.isEmpty() && imagenes.stream().noneMatch(i -> Boolean.TRUE.equals(i.getPrincipal()))) {
-            imagenes.get(0).setPrincipal(true);
-            imagenRepo.save(imagenes.get(0));
+    /** Guarda los archivos ya validados; si el alojamiento no tenía portada, el primero queda como principal. */
+    private void guardarArchivos(Long idAlojamiento, List<MultipartFile> archivos, boolean tienePrincipal) {
+        for (MultipartFile archivo : archivos) {
+            String ruta = almacenamientoService.guardarImagen(archivo, "alojamientos/" + idAlojamiento);
+            Imagen imagen = new Imagen();
+            imagen.setIdAlojamiento(idAlojamiento);
+            imagen.setRutaArchivo(ruta);
+            imagen.setUrl(AlmacenamientoService.urlPublica(ruta));
+            imagen.setPrincipal(!tienePrincipal);
+            imagenRepo.save(imagen);
+            tienePrincipal = true;
         }
     }
 

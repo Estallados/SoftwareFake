@@ -29,8 +29,7 @@ class DisponibilidadBusquedaTest extends PruebaIntegracionBase {
 	@Test
 	void debeRegistrarUnPeriodoAsociadoAlAlojamiento_CA115_CA116() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
-		Long id = llamar(post("/alojamientos"), anfitrion.token(), Map.of("titulo", "Con calendario"), 201)
-				.get("idAlojamiento").asLong();
+		Long id = crearBorrador(anfitrion, Map.of("titulo", "Con calendario"), 201).get("idAlojamiento").asLong();
 
 		JsonNode periodo = llamar(post("/alojamientos/" + id + "/disponibilidad"), anfitrion.token(),
 				Map.of("fechaInicio", HOY.plusDays(1).toString(), "fechaFin", HOY.plusDays(30).toString()), 201);

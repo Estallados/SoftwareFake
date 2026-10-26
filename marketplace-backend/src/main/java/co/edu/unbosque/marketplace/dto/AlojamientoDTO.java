@@ -37,6 +37,10 @@ public class AlojamientoDTO {
     private String nombrePolitica;
     private LocalDateTime fechaCreacion;
     private Set<String> amenidades = new HashSet<>();
+    /**
+     * URL de las imágenes, la principal primero. Solo salida: las imágenes se
+     * suben como archivo al crear o con {@code POST /alojamientos/{id}/imagenes}.
+     */
     private List<String> imagenes;
     private List<ServicioAdicionalDTO> serviciosAdicionales;
     private Integer habitaciones;

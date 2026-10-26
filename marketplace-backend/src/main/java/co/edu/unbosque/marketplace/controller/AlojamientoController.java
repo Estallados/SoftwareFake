@@ -20,8 +20,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.edu.unbosque.marketplace.dto.AlojamientoDTO;
 import co.edu.unbosque.marketplace.dto.ServicioAdicionalDTO;
@@ -29,6 +33,7 @@ import co.edu.unbosque.marketplace.service.PublicacionService;
 import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -48,9 +53,11 @@ public class AlojamientoController {
     private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();
 
     private final PublicacionService publicacionService;
+    private final ObjectMapper objectMapper;
 
-    public AlojamientoController(PublicacionService publicacionService) {
+    public AlojamientoController(PublicacionService publicacionService, ObjectMapper objectMapper) {
         this.publicacionService = publicacionService;
+        this.objectMapper = objectMapper;
     }
 
     @Operation(summary = "Buscar alojamientos ACTIVA (público)",
@@ -102,16 +109,31 @@ public class AlojamientoController {
                 RespuestaUtil.esAdmin(authentication)));
     }
 
-    @Operation(summary = "Crear alojamiento en BORRADOR (ANFITRION)")
+    @Operation(summary = "Crear alojamiento en BORRADOR con sus imágenes (ANFITRION)",
+            description = "multipart/form-data con dos campos: 'datos', el JSON del alojamiento (solo el título es "
+                    + "obligatorio en el borrador), y 'archivos', de 1 a 15 imágenes JPG, PNG o WEBP de hasta 5 MB. "
+                    + "La primera imagen queda como principal.")
     @PreAuthorize("hasRole('ANFITRION')")
-    @PostMapping
-    public ResponseEntity<Object> crear(@RequestBody AlojamientoDTO datos, Authentication authentication) {
-        return RespuestaUtil.desde(publicacionService.crear(datos, RespuestaUtil.idUsuario(authentication)),
-                HttpStatus.CREATED);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Object> crear(
+            @Parameter(description = "JSON del alojamiento, por ejemplo {\"titulo\": \"Casa en Villa de Leyva\", "
+                    + "\"ciudad\": \"Villa de Leyva\", \"capacidad\": 4}") @RequestPart("datos") String datos,
+            @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
+            Authentication authentication) {
+        AlojamientoDTO alojamiento;
+        try {
+            alojamiento = objectMapper.readValue(datos, AlojamientoDTO.class);
+        } catch (JsonProcessingException e) {
+            return RespuestaUtil.mensaje(HttpStatus.BAD_REQUEST,
+                    "El campo 'datos' debe ser el JSON del alojamiento: " + e.getOriginalMessage());
+        }
+        return RespuestaUtil.desde(publicacionService.crear(alojamiento, archivos,
+                RespuestaUtil.idUsuario(authentication)), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Editar alojamiento (propietario o ADMIN)",
-            description = "Los campos en null no cambian; imágenes y amenidades enviadas reemplazan las anteriores.")
+            description = "Los campos en null no cambian; las amenidades enviadas reemplazan las anteriores. Las "
+                    + "imágenes se gestionan con los endpoints de /imagenes.")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Object> actualizar(@PathVariable Long id, @RequestBody AlojamientoDTO datos,
@@ -132,8 +154,8 @@ public class AlojamientoController {
     }
 
     @Operation(summary = "Eliminar una imagen (propietario o ADMIN)",
-            description = "Si era la principal, la siguiente pasa a serlo. Una publicación ya enviada debe conservar "
-                    + "al menos una imagen.")
+            description = "Si era la principal, la siguiente pasa a serlo. El alojamiento debe conservar al menos "
+                    + "una imagen (409 si es la última).")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
     @DeleteMapping("/{id}/imagenes/{idImagen}")
     public ResponseEntity<Object> eliminarImagen(@PathVariable Long id, @PathVariable Long idImagen,

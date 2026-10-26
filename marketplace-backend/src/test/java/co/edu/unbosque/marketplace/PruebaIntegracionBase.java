@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
@@ -19,9 +20,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,6 +47,9 @@ abstract class PruebaIntegracionBase {
 	protected static final String CLAVE_ADMIN = "Admin#Prueba1";
 	protected static final String CLAVE = "Segura#2026";
 	protected static final LocalDate HOY = LocalDate.now();
+	/** Cabecera mínima de un PNG: basta para que el back lo reconozca como imagen. */
+	protected static final byte[] PNG = { (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 13, 1, 2,
+			3 };
 
 	private static final AtomicInteger CONTADOR = new AtomicInteger();
 
@@ -128,10 +134,34 @@ abstract class PruebaIntegracionBase {
 		datos.put("reglas", "No fumar");
 		datos.put("idPolitica", idPolitica(politica));
 		datos.put("amenidades", amenidades);
-		datos.put("imagenes", List.of("/img/foto1.jpg"));
 		datos.put("latitud", 4.711);
 		datos.put("longitud", -74.072);
 		return datos;
+	}
+
+	/** Imagen para un campo 'archivos' multipart. */
+	protected static MockMultipartFile imagen(String nombre, byte[] contenido) {
+		return new MockMultipartFile("archivos", nombre, "image/png", contenido);
+	}
+
+	/** Crea un borrador con una imagen PNG; devuelve la respuesta. */
+	protected JsonNode crearBorrador(Sesion anfitrion, Map<String, Object> datos, int estado) throws Exception {
+		return crearBorrador(anfitrion, datos, estado, imagen("foto.png", PNG));
+	}
+
+	/**
+	 * Crea un borrador como lo hace el front: multipart con el JSON en 'datos'
+	 * y las imágenes en 'archivos'.
+	 */
+	protected JsonNode crearBorrador(Sesion anfitrion, Map<String, Object> datos, int estado,
+			MockMultipartFile... archivos) throws Exception {
+		MockMultipartHttpServletRequestBuilder peticion = multipart("/alojamientos");
+		peticion.file(new MockMultipartFile("datos", "", MediaType.APPLICATION_JSON_VALUE,
+				json.writeValueAsBytes(datos)));
+		for (MockMultipartFile archivo : archivos) {
+			peticion.file(archivo);
+		}
+		return llamar(peticion, anfitrion.token(), null, estado);
 	}
 
 	/**
@@ -140,9 +170,8 @@ abstract class PruebaIntegracionBase {
 	 */
 	protected Long crearAlojamientoActivo(Sesion anfitrion, String ciudad, String tipo, int capacidad,
 			BigDecimal precio, Set<String> amenidades, String politica) throws Exception {
-		Long id = llamar(post("/alojamientos"), anfitrion.token(),
-				datosAlojamiento(ciudad, tipo, capacidad, precio, amenidades, politica), 201).get("idAlojamiento")
-				.asLong();
+		Long id = crearBorrador(anfitrion, datosAlojamiento(ciudad, tipo, capacidad, precio, amenidades, politica),
+				201).get("idAlojamiento").asLong();
 		llamar(post("/alojamientos/" + id + "/disponibilidad"), anfitrion.token(),
 				Map.of("fechaInicio", HOY.toString(), "fechaFin", HOY.plusDays(120).toString()), 201);
 		llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);
