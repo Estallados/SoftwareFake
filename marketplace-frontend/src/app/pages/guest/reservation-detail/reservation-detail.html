@@ -1,1 +1,121 @@
-<p>reservation-detail works!</p>
+<main class="mx-auto max-w-[1100px] px-8 py-12">
+  <button type="button" (click)="back()" class="mb-7 flex items-center gap-2 text-sm font-bold text-emerald-700">
+    <span class="rotate-180">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </span>
+    Volver a mis reservas
+  </button>
+
+  <div class="flex items-end justify-between">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Detalle de reserva</p>
+      <h1 class="font-display mt-2 text-4xl font-bold">{{ reservation().name }}</h1>
+      <p class="mt-2 text-slate-500">{{ reservation().city }} · {{ reservation().code }}</p>
+    </div>
+    <span [class]="badgeClass()">{{ status() }}</span>
+  </div>
+
+  <div class="mt-8 grid grid-cols-[1.1fr_.9fr] gap-6">
+    <div class="space-y-6">
+      <section class="rounded-2xl border border-slate-200 bg-white p-7">
+        <h2 class="font-display text-xl font-bold">Información de la reserva</h2>
+        <div class="mt-6 grid grid-cols-3 gap-6 text-sm">
+          @for (i of info(); track i.label) {
+            <div>
+              <span class="block text-xs text-slate-500">{{ i.label }}</span>
+              <strong class="mt-1 block">{{ i.value }}</strong>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <img [src]="reservation().image" [alt]="reservation().name" class="h-64 w-full object-cover" />
+        <div class="p-7">
+          <h2 class="font-display text-xl font-bold">Información del alojamiento</h2>
+          <div class="mt-5 grid grid-cols-2 gap-5 text-sm">
+            <div>
+              <span class="text-slate-500">Tipo</span>
+              <strong class="block">{{ reservation().type }}</strong>
+            </div>
+            <div>
+              <span class="text-slate-500">Capacidad</span>
+              <strong class="block">{{ reservation().capacity }} huéspedes</strong>
+            </div>
+            <div class="col-span-2">
+              <span class="text-slate-500">Ubicación</span>
+              <strong class="block">{{ reservation().location }}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="space-y-6">
+      <section class="rounded-2xl border border-slate-200 bg-white p-7">
+        <h2 class="font-display text-xl font-bold">Resumen de la cotización</h2>
+        <div class="mt-6 space-y-4 text-sm">
+          <div class="flex justify-between"><span>Precio por noche</span><strong>{{ reservation().price }}</strong></div>
+          <div class="flex justify-between"><span>Noches</span><strong>{{ reservation().nights }}</strong></div>
+          <div class="flex justify-between"><span>Precio base</span><strong>{{ reservation().base }}</strong></div>
+          <div class="flex justify-between"><span>Costos adicionales</span><strong>{{ reservation().extras }}</strong></div>
+          <div class="flex justify-between text-emerald-700"><span>Descuentos</span><strong>{{ reservation().discount }}</strong></div>
+          <div class="flex justify-between border-t border-slate-200 pt-4 text-lg">
+            <strong>Total</strong>
+            <strong>{{ reservation().total }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-7">
+        <h2 class="font-display text-xl font-bold">Información adicional</h2>
+        <div class="mt-5 space-y-3 text-sm">
+          <p class="flex justify-between">
+            <span class="text-slate-500">Política de cancelación</span>
+            <strong>Flexible</strong>
+          </p>
+          <p class="flex justify-between">
+            <span class="text-slate-500">Anfitrión</span>
+            <strong>{{ reservation().host }}</strong>
+          </p>
+        </div>
+
+        <button
+          type="button"
+          (click)="message()"
+          class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50"
+        >
+          Contactar al anfitrión
+        </button>
+
+        @if (status() === 'Cancelada') {
+          <div class="mt-5 rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700">
+            Reserva cancelada · Devolución estimada $1.134.000
+          </div>
+        }
+
+        @if (status() === 'Confirmada') {
+          <button
+            type="button"
+            (click)="cancel()"
+            class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700 transition-all hover:bg-red-100"
+          >
+            Cancelar reserva
+          </button>
+        }
+
+        @if (status() === 'Finalizada') {
+          <button
+            type="button"
+            (click)="hasReview() ? viewReview() : review()"
+            class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
+          >
+            {{ hasReview() ? 'Ver reseña' : 'Calificar estancia' }}
+          </button>
+        }
+      </section>
+    </div>
+  </div>
+</main>
