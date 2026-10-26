@@ -51,11 +51,11 @@ export const routes: Routes = [
     component: Explore,
   },
   {
-    path: 'mapa',
+    path: 'mapa/:id',
     component: MapView,
   },
   {
-    path: 'alojamiento/:id',
+    path: 'alojamiento/:nombre',
     component: Detail,
   },
   {
