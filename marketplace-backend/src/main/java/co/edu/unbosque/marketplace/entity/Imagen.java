@@ -1,6 +1,11 @@
 package co.edu.unbosque.marketplace.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
@@ -21,7 +26,13 @@ public class Imagen {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idImagen;
     private String url;
+    @Column(name = "id_alojamiento")
     private Long idAlojamiento;
+    /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_imagen_alojamiento"))
+    private Alojamiento alojamiento;
     /** Portada del alojamiento; null en imágenes anteriores a este campo. */
     private Boolean principal;
     /** Ruta relativa del archivo en el almacenamiento; null si es una URL externa. */

@@ -19,6 +19,12 @@ import jakarta.persistence.Table;
  * Es de solo inserción: {@code @Immutable} hace que Hibernate ignore cualquier
  * actualización, y el repositorio no expone update ni delete.
  * </p>
+ * <p>
+ * A diferencia de las demás tablas, no tiene claves foráneas: la bitácora debe
+ * poder registrar intentos con usuarios o recursos que no existen (un login
+ * con un correo desconocido, una consulta a un id inválido), e
+ * {@code idEntidad} apunta a tablas distintas según {@code entidad}.
+ * </p>
  *
  * @see "RNF-023, RNF-026"
  */

@@ -16,7 +16,11 @@ import org.springframework.http.ResponseEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import co.edu.unbosque.marketplace.entity.EstadoUsuario;
+import co.edu.unbosque.marketplace.entity.Role;
+import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.RegistroIdempotenciaRepository;
+import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 
 /**
  * Pruebas de {@link IdempotenciaService} contra H2, porque dependen del índice
@@ -33,12 +37,33 @@ class IdempotenciaServiceTest {
 	@Autowired
 	private RegistroIdempotenciaRepository registroRepo;
 
+	@Autowired
+	private UsuarioRepository usuarioRepo;
+
 	private AtomicInteger ejecuciones;
+	private Long idUno;
+	private Long idDos;
 
 	@BeforeEach
 	void preparar() {
 		registroRepo.deleteAll();
+		// registroIdempotencia.id_usuario es clave foránea: los usuarios deben existir
+		idUno = usuario("uno");
+		idDos = usuario("dos");
 		ejecuciones = new AtomicInteger();
+	}
+
+	private Long usuario(String nombre) {
+		String hash = "idempotencia-" + nombre;
+		return usuarioRepo.findByCorreoHash(hash).orElseGet(() -> {
+			Usuario usuario = new Usuario();
+			usuario.setNombre(nombre);
+			usuario.setCorreo(nombre);
+			usuario.setCorreoHash(hash);
+			usuario.setRol(Role.HUESPED);
+			usuario.setEstado(EstadoUsuario.ACTIVO);
+			return usuarioRepo.save(usuario);
+		}).getIdUsuario();
 	}
 
 	private ResponseEntity<?> accionCreada() {
@@ -48,9 +73,9 @@ class IdempotenciaServiceTest {
 
 	@Test
 	void debeEjecutarUnaSolaVezYRepetirLaMismaRespuesta_CA140() {
-		ResponseEntity<Object> primera = idempotenciaService.ejecutar(1L, OPERACION, "clave-1", Map.of("a", 1),
+		ResponseEntity<Object> primera = idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", Map.of("a", 1),
 				this::accionCreada);
-		ResponseEntity<Object> segunda = idempotenciaService.ejecutar(1L, OPERACION, "clave-1", Map.of("a", 1),
+		ResponseEntity<Object> segunda = idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", Map.of("a", 1),
 				this::accionCreada);
 
 		assertEquals(1, ejecuciones.get());
@@ -62,9 +87,9 @@ class IdempotenciaServiceTest {
 	}
 
 	@Test
-	void debeRechazarLaMismaClaveConOtraPeticion_CA141() {		idempotenciaService.ejecutar(1L, OPERACION, "clave-1", Map.of("a", 1), this::accionCreada);
+	void debeRechazarLaMismaClaveConOtraPeticion_CA141() {		idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", Map.of("a", 1), this::accionCreada);
 
-		ResponseEntity<Object> respuesta = idempotenciaService.ejecutar(1L, OPERACION, "clave-1", Map.of("a", 2),
+		ResponseEntity<Object> respuesta = idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", Map.of("a", 2),
 				this::accionCreada);
 
 		assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, respuesta.getStatusCode());
@@ -73,31 +98,31 @@ class IdempotenciaServiceTest {
 
 	@Test
 	void debeExigirUnaClaveValida_CA141() {		assertEquals(HttpStatus.BAD_REQUEST,
-				idempotenciaService.ejecutar(1L, OPERACION, null, null, this::accionCreada).getStatusCode());
+				idempotenciaService.ejecutar(idUno, OPERACION, null, null, this::accionCreada).getStatusCode());
 		assertEquals(HttpStatus.BAD_REQUEST,
-				idempotenciaService.ejecutar(1L, OPERACION, " ", null, this::accionCreada).getStatusCode());
+				idempotenciaService.ejecutar(idUno, OPERACION, " ", null, this::accionCreada).getStatusCode());
 		assertEquals(HttpStatus.BAD_REQUEST, idempotenciaService
-				.ejecutar(1L, OPERACION, "x".repeat(101), null, this::accionCreada).getStatusCode());
+				.ejecutar(idUno, OPERACION, "x".repeat(101), null, this::accionCreada).getStatusCode());
 		assertEquals(0, ejecuciones.get());
 	}
 
 	@Test
 	void laClaveEsIndependientePorUsuarioYPorOperacion() {
-		idempotenciaService.ejecutar(1L, OPERACION, "clave-1", null, this::accionCreada);
-		idempotenciaService.ejecutar(2L, OPERACION, "clave-1", null, this::accionCreada);
-		idempotenciaService.ejecutar(1L, "OTRA_OPERACION", "clave-1", null, this::accionCreada);
+		idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", null, this::accionCreada);
+		idempotenciaService.ejecutar(idDos, OPERACION, "clave-1", null, this::accionCreada);
+		idempotenciaService.ejecutar(idUno, "OTRA_OPERACION", "clave-1", null, this::accionCreada);
 
 		assertEquals(3, ejecuciones.get());
 	}
 
 	@Test
 	void debeLiberarLaClaveSiLaAccionFallaParaPoderReintentar() {
-		assertThrows(IllegalStateException.class, () -> idempotenciaService.ejecutar(1L, OPERACION, "clave-1", null,
+		assertThrows(IllegalStateException.class, () -> idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", null,
 				() -> {
 					throw new IllegalStateException("falla simulada");
 				}));
 
-		ResponseEntity<Object> reintento = idempotenciaService.ejecutar(1L, OPERACION, "clave-1", null,
+		ResponseEntity<Object> reintento = idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", null,
 				this::accionCreada);
 		assertEquals(HttpStatus.CREATED, reintento.getStatusCode());
 		assertEquals(1, ejecuciones.get());
@@ -105,7 +130,7 @@ class IdempotenciaServiceTest {
 
 	@Test
 	void noDebeGuardarRespuestasDeErrorDelServidor() {
-		idempotenciaService.ejecutar(1L, OPERACION, "clave-1", null,
+		idempotenciaService.ejecutar(idUno, OPERACION, "clave-1", null,
 				() -> ResponseEntity.internalServerError().body(Map.of("message", "error")));
 
 		assertEquals(0, registroRepo.count());

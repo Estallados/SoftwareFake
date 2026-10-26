@@ -4,10 +4,14 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -28,7 +32,13 @@ public class Notificacion {
     private String mensaje;
     private LocalDateTime fecha;
     private Boolean leida;
+    @Column(name = "id_usuario")
     private Long idUsuario;
+    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_notificacion_usuario"))
+    private Usuario usuario;
 
     public Notificacion() {
     }

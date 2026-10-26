@@ -8,10 +8,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -40,9 +44,27 @@ public class Reserva {
     /** Desglose congelado en JSON (copia de la cotización usada). */
     @Column(columnDefinition = "TEXT")
     private String desglose;
+    @Column(name = "id_huesped")
     private Long idHuesped;
+    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idHuesped}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_huesped", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_reserva_huesped"))
+    private Usuario huesped;
+    @Column(name = "id_alojamiento")
     private Long idAlojamiento;
+    /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_reserva_alojamiento"))
+    private Alojamiento alojamiento;
+    @Column(name = "id_cotizacion")
     private Long idCotizacion;
+    /** Clave foránea hacia {@link Cotizacion}; el valor se asigna con {@code idCotizacion}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cotizacion", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_reserva_cotizacion"))
+    private Cotizacion cotizacion;
     private LocalDateTime fechaCreacion;
 
     public Reserva() {

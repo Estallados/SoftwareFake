@@ -13,11 +13,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -69,14 +71,28 @@ public class Alojamiento {
     private String reglas;
     @Enumerated(EnumType.STRING)
     private EstadoAlojamiento estado;
+    @Column(name = "id_anfitrion")
     private Long idAnfitrion;
+    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idAnfitrion}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_anfitrion", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_alojamiento_anfitrion"))
+    private Usuario anfitrion;
+    @Column(name = "id_politica")
     private Long idPolitica;
+    /** Clave foránea hacia {@link PoliticaCancelacion}; el valor se asigna con {@code idPolitica}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_politica", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_alojamiento_politica"))
+    private PoliticaCancelacion politica;
     private LocalDateTime fechaCreacion;
     /** Última edición de los datos o de las imágenes de la publicación. */
     private LocalDateTime fechaActualizacion;
+    /** Clave primaria (id_alojamiento, amenidad): un alojamiento no repite amenidades. */
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "alojamientoAmenidad", joinColumns = @JoinColumn(name = "id_alojamiento"))
-    @Column(name = "amenidad")
+    @CollectionTable(name = "alojamientoAmenidad", joinColumns = @JoinColumn(name = "id_alojamiento"),
+            foreignKey = @ForeignKey(name = "fk_alojamiento_amenidad_alojamiento"))
+    @Column(name = "amenidad", nullable = false)
     private Set<String> amenidades = new HashSet<>();
 
     public Alojamiento() {

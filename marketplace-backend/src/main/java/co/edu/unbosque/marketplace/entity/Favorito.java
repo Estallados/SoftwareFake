@@ -2,10 +2,15 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -23,8 +28,20 @@ public class Favorito {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idFavorito;
     private LocalDateTime fechaAgregado;
+    @Column(name = "id_usuario")
     private Long idUsuario;
+    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_favorito_usuario"))
+    private Usuario usuario;
+    @Column(name = "id_alojamiento")
     private Long idAlojamiento;
+    /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_favorito_alojamiento"))
+    private Alojamiento alojamiento;
 
     public Favorito() {
     }

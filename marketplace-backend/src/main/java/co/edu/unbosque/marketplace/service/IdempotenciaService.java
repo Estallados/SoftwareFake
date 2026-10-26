@@ -159,15 +159,20 @@ public class IdempotenciaService {
     }
 
     private void guardarRespuesta(RegistroIdempotencia registro, ResponseEntity<?> respuesta) {
-        registro.setEstado(EstadoIdempotencia.COMPLETADA);
-        registro.setCodigoRespuesta(respuesta.getStatusCode().value());
+        String cuerpo = null;
         try {
-            registro.setCuerpoRespuesta(respuesta.getBody() == null ? null
-                    : objectMapper.writeValueAsString(respuesta.getBody()));
+            cuerpo = respuesta.getBody() == null ? null : objectMapper.writeValueAsString(respuesta.getBody());
         } catch (JsonProcessingException e) {
             LOG.error("No se pudo guardar la respuesta de la operación {}", registro.getOperacion(), e);
         }
-        transaccionPropia.executeWithoutResult(estado -> registroRepo.save(registro));
+        String cuerpoRespuesta = cuerpo;
+        // Se actualiza la fila recién leída en esta transacción, no la copia de la transacción anterior
+        transaccionPropia.executeWithoutResult(estado -> registroRepo.findById(registro.getIdRegistro())
+                .ifPresent(guardado -> {
+                    guardado.setEstado(EstadoIdempotencia.COMPLETADA);
+                    guardado.setCodigoRespuesta(respuesta.getStatusCode().value());
+                    guardado.setCuerpoRespuesta(cuerpoRespuesta);
+                }));
     }
 
     private void liberar(RegistroIdempotencia registro) {

@@ -3,12 +3,17 @@ package co.edu.unbosque.marketplace.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -31,7 +36,13 @@ public class Pago {
     private EstadoPago estado;
     private String detalle;
     private LocalDateTime fecha;
+    @Column(name = "id_reserva")
     private Long idReserva;
+    /** Clave foránea hacia {@link Reserva}; el valor se asigna con {@code idReserva}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_reserva", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_pago_reserva"))
+    private Reserva reserva;
 
     public Pago() {
     }

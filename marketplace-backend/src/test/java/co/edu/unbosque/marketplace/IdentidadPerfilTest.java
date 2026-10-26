@@ -31,6 +31,7 @@ import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.TokenRecuperacion;
 import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.AuditoriaRepository;
+import co.edu.unbosque.marketplace.repository.CodigoVerificacionRepository;
 import co.edu.unbosque.marketplace.repository.TokenRecuperacionRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.service.AuditoriaService;
@@ -63,6 +64,9 @@ class IdentidadPerfilTest {
 	private TokenRecuperacionRepository tokenRepo;
 
 	@Autowired
+	private CodigoVerificacionRepository codigoRepo;
+
+	@Autowired
 	private AuditoriaRepository auditoriaRepo;
 
 	@MockBean
@@ -70,10 +74,11 @@ class IdentidadPerfilTest {
 
 	@BeforeEach
 	void limpiar() {
-		// Se conserva el admin inicial creado al arrancar
+		// Primero las tablas que referencian al usuario (claves foráneas); se conserva el admin inicial
+		tokenRepo.deleteAll();
+		codigoRepo.deleteAll();
 		usuarioRepo.findAll().stream().filter(u -> u.getRol() != Role.ADMIN)
 				.forEach(usuarioRepo::delete);
-		tokenRepo.deleteAll();
 	}
 
 	/** Registra y verifica el correo con el código enviado; devuelve el token de sesión. */

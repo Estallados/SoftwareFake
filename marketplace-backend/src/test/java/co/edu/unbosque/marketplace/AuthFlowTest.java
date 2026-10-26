@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
+import co.edu.unbosque.marketplace.repository.CodigoVerificacionRepository;
+import co.edu.unbosque.marketplace.repository.TokenRecuperacionRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.service.UsuarioService;
 
@@ -45,12 +47,21 @@ class AuthFlowTest {
 	@Autowired
 	private UsuarioRepository usuarioRepo;
 
+	@Autowired
+	private CodigoVerificacionRepository codigoRepo;
+
+	@Autowired
+	private TokenRecuperacionRepository tokenRepo;
+
 	/** Evita conectarse a un servidor SMTP real; de aquí se lee el código de verificación. */
 	@MockBean
 	private JavaMailSender mailSender;
 
 	@BeforeEach
 	void limpiar() {
+		// Primero las tablas que referencian al usuario (claves foráneas)
+		codigoRepo.deleteAll();
+		tokenRepo.deleteAll();
 		usuarioRepo.deleteAll();
 	}
 
