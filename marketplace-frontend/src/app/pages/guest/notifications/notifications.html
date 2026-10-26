@@ -1,1 +1,36 @@
-<p>notifications works!</p>
+<main class="mx-auto max-w-[900px] px-8 py-14">
+  <div class="flex items-end justify-between">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Centro de actividad</p>
+      <h1 class="font-display mt-3 text-4xl font-semibold text-slate-900">Notificaciones</h1>
+      <p class="mt-3 text-slate-500">Mantente al día con tus reservas y alojamientos.</p>
+    </div>
+    <button type="button" (click)="markAllRead()" class="text-sm font-bold text-emerald-700">
+      Marcar todas como leídas
+    </button>
+  </div>
+
+  <div class="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    @for (n of items(); track $index) {
+      <button type="button" [class]="itemClass(n)">
+        <span class="grid size-11 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+          </svg>
+        </span>
+        <span class="flex-1">
+          <span class="flex justify-between">
+            <strong>{{ n.title }}</strong>
+            <span class="text-xs text-slate-400">{{ n.time }}</span>
+          </span>
+          <span class="mt-1 block text-sm text-slate-500">{{ n.text }}</span>
+        </span>
+        @if (n.unread) {
+          <span class="mt-2 size-2 rounded-full bg-emerald-600"></span>
+        }
+      </button>
+    } @empty {
+      <p class="p-10 text-center text-sm text-slate-500">No tienes notificaciones por ahora.</p>
+    }
+  </div>
+</main>
