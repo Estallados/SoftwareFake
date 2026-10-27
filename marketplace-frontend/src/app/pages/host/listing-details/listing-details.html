@@ -1,1 +1,108 @@
-<p>listing-details works!</p>
+<div class="flex items-end justify-between">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
+    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Detalles del alojamiento</h1>
+    <p class="mt-2 text-sm text-slate-500">{{ listing().name }} · {{ listing().city }}</p>
+  </div>
+  <span [class]="badgeClass()">{{ listing().approvalStatus ?? listing().status }}</span>
+</div>
+
+@if (listing().status === 'Bloqueado') {
+  <div class="mt-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+    Esta publicación está bloqueada por la administración. Puedes consultar sus detalles,
+    pero no puedes volver a publicarla desde esta sección.
+  </div>
+}
+
+<!-- Galería -->
+<div class="mt-7 grid h-80 grid-cols-2 gap-3 overflow-hidden rounded-2xl">
+  <img [src]="gallery()[0]" [alt]="listing().name" class="h-full w-full object-cover" />
+  <div class="grid grid-cols-2 gap-3">
+    @for (photo of thumbs(); track $index) {
+      <img [src]="photo" [alt]="listing().name + ' ' + ($index + 2)" class="h-full min-h-0 w-full object-cover" />
+    }
+  </div>
+</div>
+
+<div class="mt-7 grid grid-cols-[1.2fr_.8fr] gap-6">
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-white p-7">
+      <h2 class="font-display text-xl font-bold">Información general</h2>
+      <h3 class="mt-5 text-lg font-bold">{{ listing().name }}</h3>
+      <p class="mt-2 leading-7 text-slate-600">{{ listing().description }}</p>
+      <div class="mt-6 grid grid-cols-3 gap-5 text-sm">
+        @for (g of general(); track g.label) {
+          <div>
+            <span class="block text-xs text-slate-500">{{ g.label }}</span>
+            <strong class="mt-1 block">{{ g.value }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-7">
+      <h2 class="font-display text-xl font-bold">Servicios</h2>
+      <div class="mt-5 flex flex-wrap gap-3">
+        @for (a of listing().amenities ?? []; track a) {
+          <span class="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m5 12 4 4L19 6" />
+            </svg>
+            {{ a }}
+          </span>
+        }
+      </div>
+    </section>
+  </div>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-white p-7">
+      <h2 class="font-display text-xl font-bold">Precio y condiciones</h2>
+      <dl class="mt-5 space-y-4 text-sm">
+        @for (c of conditions(); track c.label) {
+          <div class="border-b border-slate-100 pb-3 last:border-0">
+            <dt class="text-xs text-slate-500">{{ c.label }}</dt>
+            <dd class="mt-1 font-semibold">{{ c.value }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-7">
+      <h2 class="font-display text-xl font-bold">Estado y actividad</h2>
+      <div class="mt-5 grid grid-cols-2 gap-5 text-sm">
+        @for (a of activity(); track a.label) {
+          <div>
+            <span class="block text-xs text-slate-500">{{ a.label }}</span>
+            <strong class="mt-1 block">{{ a.value }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="mt-7 flex gap-3">
+  <button
+    type="button"
+    (click)="back()"
+    class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50"
+  >
+    Volver a mis alojamientos
+  </button>
+  <button
+    type="button"
+    (click)="edit()"
+    [disabled]="listing().status === 'Bloqueado'"
+    class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-45"
+  >
+    {{ listing().approvalStatus === 'Rechazado' ? 'Corregir y volver a enviar' : 'Editar alojamiento' }}
+  </button>
+  <button
+    type="button"
+    (click)="availability()"
+    class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
+  >
+    Ver disponibilidad
+  </button>
+</div>

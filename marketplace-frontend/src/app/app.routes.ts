@@ -12,7 +12,6 @@ import { Reservations as GuestReservations } from './pages/guest/reservations/re
 import { ReservationDetail as GuestReservationDetail } from './pages/guest/reservation-detail/reservation-detail';
 import { Reviews as GuestReviews } from './pages/guest/reviews/reviews';
 
-import { HostArea } from './pages/host/host-area/host-area';
 import { CreateListing } from './pages/host/create-listing/create-listing';
 import { EditListing } from './pages/host/edit-listing/edit-listing';
 import { ListingDetails } from './pages/host/listing-details/listing-details';
@@ -85,11 +84,6 @@ export const routes: Routes = [
   {
     path: 'resenas',
     component: GuestReviews,
-  },
-
-  {
-    path: 'host',
-    component: HostArea,
   },
   {
     path: 'host/dashboard',
