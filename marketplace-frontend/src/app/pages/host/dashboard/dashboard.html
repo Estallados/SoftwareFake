@@ -1,1 +1,85 @@
-<p>dashboard works!</p>
+<div class="flex items-end justify-between">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
+    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Buenos días, {{ hostName() }}</h1>
+    <p class="mt-2 text-sm text-slate-500">Aquí tienes el resumen de tus alojamientos.</p>
+  </div>
+  <button
+    type="button"
+    (click)="createListing()"
+    class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
+  >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+    Crear alojamiento
+  </button>
+</div>
+
+<!-- Métricas -->
+<div class="mt-8 grid grid-cols-4 gap-4">
+  @for (m of metrics(); track m.label) {
+    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+      <div class="flex items-start justify-between">
+        <span class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            @switch (m.icon) {
+              @case ('building') {
+                <rect x="4" y="3" width="16" height="18" rx="2" />
+                <path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M9 21v-3h6v3" />
+              }
+              @case ('calendar') {
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 10h18" />
+              }
+              @case ('chart') {
+                <path d="M3 3v18h18" />
+                <path d="m7 16 4-5 4 3 5-7" />
+              }
+              @case ('star') {
+                <path d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z" />
+              }
+            }
+          </svg>
+        </span>
+        <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ m.delta }}</span>
+      </div>
+      <p class="mt-5 text-sm text-slate-500">{{ m.label }}</p>
+      <p class="font-display mt-1 text-3xl font-bold text-slate-900">{{ m.value }}</p>
+    </div>
+  }
+</div>
+
+<div class="mt-6 grid grid-cols-[1.5fr_1fr] gap-6">
+  <!-- Rendimiento -->
+  <div class="rounded-2xl border border-slate-200 bg-white p-6">
+    <h2 class="font-display text-xl font-bold">Rendimiento de reservas</h2>
+    <p class="text-sm text-slate-500">Últimos 6 meses</p>
+    <div class="mt-8 flex h-48 items-end gap-5">
+      @for (p of performance(); track p.month) {
+        <div class="flex flex-1 flex-col items-center gap-2">
+          <div class="w-full rounded-t-lg bg-emerald-600" [style.height.%]="p.percent"></div>
+          <span class="text-[10px] text-slate-400">{{ p.month }}</span>
+        </div>
+      } @empty {
+        <p class="text-sm text-slate-500">Sin datos por mostrar.</p>
+      }
+    </div>
+  </div>
+
+  <!-- Próximas estancias -->
+  <div class="rounded-2xl border border-slate-200 bg-white p-6">
+    <h2 class="font-display text-xl font-bold">Próximas estancias</h2>
+    @for (s of upcomingStays(); track $index) {
+      <div class="mt-5 flex gap-4">
+        <span class="rounded-xl bg-emerald-50 p-3 text-center text-xs font-bold text-emerald-700">{{ s.date }}</span>
+        <div>
+          <strong class="text-sm">{{ s.accommodation }}</strong>
+          <p class="text-xs text-slate-500">{{ s.guest }}</p>
+        </div>
+      </div>
+    } @empty {
+      <p class="mt-5 text-sm text-slate-500">No tienes estancias próximas.</p>
+    }
+  </div>
+</div>
