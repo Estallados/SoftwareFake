@@ -75,7 +75,8 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/alojamientos/mios").hasRole("ANFITRION")
 						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;
 						// el detalle de una publicación no ACTIVA lo filtra PublicacionService
-						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/politicas",
+						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/disponibles",
+								"/alojamientos/politicas",
 								"/alojamientos/{id}", "/alojamientos/{id}/disponibilidad",
 								"/alojamientos/{id}/disponibilidad/consultar", "/alojamientos/{id}/resenas")
 						.permitAll().anyRequest().authenticated())

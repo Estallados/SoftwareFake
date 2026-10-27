@@ -13,7 +13,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,6 +79,15 @@ public class PublicacionService {
     public static final int MAXIMO_IMAGENES = 15;
     private static final List<EstadoReserva> RESERVAS_VIGENTES = List.of(EstadoReserva.CONFIRMADA,
             EstadoReserva.EN_REVISION);
+
+    /** Órdenes del catálogo y la búsqueda; son los de la página Explorar. */
+    public static final String ORDEN_RECOMENDADOS = "recomendados";
+    public static final String ORDEN_PRECIO_MENOR = "precio_menor";
+    public static final String ORDEN_PRECIO_MAYOR = "precio_mayor";
+    public static final String ORDEN_MEJOR_CALIFICADOS = "mejor_calificados";
+    private static final String ORDENES = String.join(", ", ORDEN_RECOMENDADOS, ORDEN_PRECIO_MENOR,
+            ORDEN_PRECIO_MAYOR, ORDEN_MEJOR_CALIFICADOS);
+    private static final String PRECIO_NOCHE = "precioNoche";
 
     private final AlojamientoRepository alojamientoRepo;
     private final ImagenRepository imagenRepo;
@@ -156,15 +167,35 @@ public class PublicacionService {
     }
 
     /**
+     * Catálogo público: todos los alojamientos que un visitante puede
+     * reservar, es decir, publicaciones ACTIVA con al menos una noche ofrecida
+     * desde hoy. Sin filtros; para filtrar se usa {@link #buscar}.
+     *
+     * @param orden {@link #ORDEN_RECOMENDADOS} (por defecto: más reseñas y
+     *              mejor promedio), {@link #ORDEN_PRECIO_MENOR},
+     *              {@link #ORDEN_PRECIO_MAYOR} o {@link #ORDEN_MEJOR_CALIFICADOS}.
+     * @return 0 con la página de alojamientos; 2 si el orden no existe.
+     * @see "RF-019, RF-024, CA-087"
+     */
+    public Resultado<PaginaDTO<AlojamientoDTO>> disponibles(String orden, Pageable pagina) {
+        return listarOrdenado(AlojamientoEspecificacion.conEstado(EstadoAlojamiento.ACTIVA)
+                .and(AlojamientoEspecificacion.conFechasDesde(LocalDate.now())),
+                orden == null || orden.isBlank() ? ORDEN_RECOMENDADOS : orden, pagina);
+    }
+
+    /**
      * Búsqueda pública: solo publicaciones ACTIVA que cumplan todos los filtros
      * enviados. Con fechas, excluye las que no estén libres en ese período.
+     * Sin orden, las más recientes primero.
      *
-     * @return 0 con la página de resultados; 2 si los filtros no son válidos.
+     * @param orden Opcional; los mismos valores de {@link #disponibles}.
+     * @return 0 con la página de resultados; 2 si los filtros o el orden no son
+     *         válidos.
      * @see "RF-024, CA-087 a CA-092, CA-055, CA-077, CA-190"
      */
     public Resultado<PaginaDTO<AlojamientoDTO>> buscar(String ciudad, LocalDate llegada, LocalDate salida,
             Integer huespedes, String tipo, BigDecimal precioMinimo, BigDecimal precioMaximo,
-            Collection<String> amenidades, Pageable pagina) {
+            Collection<String> amenidades, String orden, Pageable pagina) {
         if (llegada != null || salida != null) {
             String errorFechas = CalendarioService.validarFechas(llegada, salida);
             if (errorFechas != null) {
@@ -187,7 +218,46 @@ public class PublicacionService {
                 .and(AlojamientoEspecificacion.conAmenidades(amenidades))
                 .and(AlojamientoEspecificacion.libreEntre(llegada, salida, CalendarioService.ESTADOS_OCUPAN,
                         CalendarioService.limitePendiente()));
+        if (orden != null && !orden.isBlank()) {
+            return listarOrdenado(filtro, orden, pagina);
+        }
         return Resultado.exito(PaginaDTO.de(alojamientoRepo.findAll(filtro, pagina), this::convertirDTO));
+    }
+
+    /**
+     * Aplica uno de los órdenes del catálogo. El precio lo ordena la base de
+     * datos con la página; las reseñas, con subconsultas de
+     * {@link AlojamientoEspecificacion#ordenadoPorResenas}.
+     */
+    private Resultado<PaginaDTO<AlojamientoDTO>> listarOrdenado(Specification<Alojamiento> filtro, String orden,
+            Pageable pagina) {
+        Pageable sinOrden = PageRequest.of(pagina.getPageNumber(), pagina.getPageSize());
+        Specification<Alojamiento> consulta;
+        Pageable paginaOrdenada;
+        switch (orden.trim().toLowerCase()) {
+        case ORDEN_PRECIO_MENOR -> {
+            consulta = filtro;
+            paginaOrdenada = PageRequest.of(pagina.getPageNumber(), pagina.getPageSize(),
+                    Sort.by(PRECIO_NOCHE).ascending().and(Sort.by("idAlojamiento")));
+        }
+        case ORDEN_PRECIO_MAYOR -> {
+            consulta = filtro;
+            paginaOrdenada = PageRequest.of(pagina.getPageNumber(), pagina.getPageSize(),
+                    Sort.by(PRECIO_NOCHE).descending().and(Sort.by("idAlojamiento")));
+        }
+        case ORDEN_RECOMENDADOS -> {
+            consulta = filtro.and(AlojamientoEspecificacion.ordenadoPorResenas(true));
+            paginaOrdenada = sinOrden;
+        }
+        case ORDEN_MEJOR_CALIFICADOS -> {
+            consulta = filtro.and(AlojamientoEspecificacion.ordenadoPorResenas(false));
+            paginaOrdenada = sinOrden;
+        }
+        default -> {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, "El orden debe ser uno de: " + ORDENES + ".");
+        }
+        }
+        return Resultado.exito(PaginaDTO.de(alojamientoRepo.findAll(consulta, paginaOrdenada), this::convertirDTO));
     }
 
     /**

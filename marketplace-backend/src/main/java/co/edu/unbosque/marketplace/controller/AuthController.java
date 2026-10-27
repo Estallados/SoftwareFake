@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import co.edu.unbosque.marketplace.dto.InicioGoogleDTO;
 import co.edu.unbosque.marketplace.dto.LoginDTO;
 import co.edu.unbosque.marketplace.dto.RestablecerContraseniaDTO;
 import co.edu.unbosque.marketplace.dto.UsuarioDTO;
@@ -28,6 +29,7 @@ import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.security.JwtUtil;
 import co.edu.unbosque.marketplace.service.AuditoriaService;
 import co.edu.unbosque.marketplace.service.AuthService;
+import co.edu.unbosque.marketplace.service.InicioGoogleService;
 import co.edu.unbosque.marketplace.service.SegundoFactorService;
 import co.edu.unbosque.marketplace.service.UsuarioService;
 import co.edu.unbosque.marketplace.service.VerificacionCorreoService;
@@ -39,7 +41,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * Controlador REST de autenticación del marketplace. Ruta base: {@code /auth}.
  * Expone el registro con verificación del correo por código, el inicio de
  * sesión (devuelve un token JWT listo para usar), la recuperación de
- * contraseña simulada y la reactivación de una cuenta desactivada. Todas sus
+ * contraseña simulada, la reactivación de una cuenta desactivada y el inicio
+ * de sesión con Google. Todas sus
  * rutas son públicas.
  *
  * @see "RF-001"
@@ -77,6 +80,9 @@ public class AuthController {
 	/** Verificación del correo con código al registrarse. */
 	private final VerificacionCorreoService verificacionCorreoService;
 
+	/** Inicio de sesión y registro con una cuenta de Google. */
+	private final InicioGoogleService inicioGoogleService;
+
 	/**
 	 * Constructor con inyección de dependencias.
 	 *
@@ -88,11 +94,12 @@ public class AuthController {
 	 * @param auditoriaService          servicio de auditoría
 	 * @param segundoFactorService      servicio del segundo factor
 	 * @param verificacionCorreoService servicio de verificación del correo
+	 * @param inicioGoogleService       servicio de inicio de sesión con Google
 	 */
 	public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
 			UsuarioService usuarioService, UserDetailsService userDetailsService, AuthService authService,
 			AuditoriaService auditoriaService, SegundoFactorService segundoFactorService,
-			VerificacionCorreoService verificacionCorreoService) {
+			VerificacionCorreoService verificacionCorreoService, InicioGoogleService inicioGoogleService) {
 		this.authenticationManager = authenticationManager;
 		this.jwtUtil = jwtUtil;
 		this.usuarioService = usuarioService;
@@ -101,6 +108,7 @@ public class AuthController {
 		this.auditoriaService = auditoriaService;
 		this.segundoFactorService = segundoFactorService;
 		this.verificacionCorreoService = verificacionCorreoService;
+		this.inicioGoogleService = inicioGoogleService;
 	}
 
 	/**
@@ -165,6 +173,49 @@ public class AuthController {
 			// Mensaje genérico: no revela si el correo existe ni el detalle técnico del error
 			return mensaje(HttpStatus.UNAUTHORIZED, "Correo o contraseña inválidos.");
 		}
+	}
+
+	/**
+	 * Inicia sesión con Google. Ruta: {@code POST /auth/google}. Si el correo
+	 * no tiene cuenta, la crea ya verificada con el rol pedido.
+	 *
+	 * @param datos DTO con {@code idToken} (el credential del botón de Google) y,
+	 *              opcionalmente, {@code rol} y {@code codigo}
+	 * @return 200 con {message, token, rol, correo, cuentaNueva=false}; 201 igual
+	 *         con cuentaNueva=true si se creó la cuenta; 401 si el token no es
+	 *         válido o falta el código del segundo factor (con
+	 *         requiereSegundoFactor=true); 403 si la cuenta está restringida o se
+	 *         pide el rol ADMIN; 503 si no está configurado GOOGLE_CLIENT_ID
+	 */
+	@Operation(summary = "Iniciar sesión o registrarse con Google",
+			description = "Recibe el credential (ID token) del botón de Google. Si el correo ya tiene cuenta inicia "
+					+ "sesión; si no, la crea verificada con rol HUESPED o el rol enviado (ANFITRION). Devuelve el "
+					+ "token igual que /auth/login, más cuentaNueva.")
+	@PostMapping("/google")
+	public ResponseEntity<Object> google(@RequestBody InicioGoogleDTO datos) {
+		if (datos.getIdToken() == null || datos.getIdToken().isBlank()) {
+			return mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el idToken que entrega el botón de Google.");
+		}
+		InicioGoogleService.Inicio inicio = inicioGoogleService.iniciar(datos.getIdToken(), datos.getRol(),
+				datos.getCodigo());
+		return switch (inicio.codigo()) {
+		case InicioGoogleService.INICIADA -> {
+			Map<String, Object> respuesta = new LinkedHashMap<>(cuerpoConToken(inicio.usuario(),
+					inicio.cuentaNueva() ? "Cuenta creada con Google." : "Sesión iniciada con Google."));
+			respuesta.put("cuentaNueva", inicio.cuentaNueva());
+			yield ResponseEntity.status(inicio.cuentaNueva() ? HttpStatus.CREATED : HttpStatus.OK).body(respuesta);
+		}
+		case InicioGoogleService.NO_CONFIGURADO ->
+			mensaje(HttpStatus.SERVICE_UNAVAILABLE, "El inicio de sesión con Google no está configurado.");
+		case InicioGoogleService.CUENTA_RESTRINGIDA -> mensaje(HttpStatus.FORBIDDEN, "La cuenta está restringida.");
+		case InicioGoogleService.ROL_NO_PERMITIDO ->
+			mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");
+		case InicioGoogleService.REQUIERE_SEGUNDO_FACTOR -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+				"message", "Ingresa el código de tu aplicación autenticadora.", "requiereSegundoFactor", true));
+		case InicioGoogleService.SEGUNDO_FACTOR_INVALIDO -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+				"message", "El código de verificación no es válido.", "requiereSegundoFactor", true));
+		default -> mensaje(HttpStatus.UNAUTHORIZED, "No se pudo verificar tu cuenta de Google. Intenta de nuevo.");
+		};
 	}
 
 	/**

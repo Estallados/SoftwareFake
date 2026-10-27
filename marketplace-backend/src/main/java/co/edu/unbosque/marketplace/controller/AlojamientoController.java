@@ -60,8 +60,20 @@ public class AlojamientoController {
         this.objectMapper = objectMapper;
     }
 
+    @Operation(summary = "Catálogo: todos los alojamientos disponibles para reservar (público)",
+            description = "Publicaciones ACTIVA con fechas abiertas desde hoy, para la página Explorar o el inicio. "
+                    + "orden: recomendados (por defecto), precio_menor, precio_mayor o mejor_calificados.")
+    @GetMapping("/disponibles")
+    public ResponseEntity<Object> disponibles(@RequestParam(required = false) String orden,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
+        return RespuestaUtil.desde(publicacionService.disponibles(orden,
+                RespuestaUtil.pagina(pagina, tamanio, Sort.unsorted())));
+    }
+
     @Operation(summary = "Buscar alojamientos ACTIVA (público)",
-            description = "Filtros opcionales combinables: ciudad, fechas, huéspedes, tipo, rango de precio y amenidades.")
+            description = "Filtros opcionales combinables: ciudad, fechas, huéspedes, tipo, rango de precio y amenidades. "
+                    + "orden opcional como en /disponibles; sin él, los más recientes primero.")
     @GetMapping
     public ResponseEntity<Object> buscar(
             @RequestParam(required = false) String ciudad,
@@ -72,10 +84,11 @@ public class AlojamientoController {
             @RequestParam(required = false) BigDecimal precioMinimo,
             @RequestParam(required = false) BigDecimal precioMaximo,
             @RequestParam(required = false) List<String> amenidades,
+            @RequestParam(required = false) String orden,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "12") int tamanio) {
         return RespuestaUtil.desde(publicacionService.buscar(ciudad, llegada, salida, huespedes, tipo, precioMinimo,
-                precioMaximo, amenidades, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+                precioMaximo, amenidades, orden, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
     }
 
     @Operation(summary = "Políticas de cancelación disponibles (público)")

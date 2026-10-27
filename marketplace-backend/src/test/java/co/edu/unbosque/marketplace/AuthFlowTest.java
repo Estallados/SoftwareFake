@@ -297,4 +297,10 @@ class AuthFlowTest {
 				.content("{\"correo\":\"ana@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
 				.andExpect(status().isForbidden());
 	}
+
+	@Test
+	void sinClientIdDeGoogleElInicioConGoogleResponde503() throws Exception {
+		mvc.perform(post("/auth/google").contentType(MediaType.APPLICATION_JSON).content("{\"idToken\":\"x.y.z\"}"))
+				.andExpect(status().isServiceUnavailable());
+	}
 }
