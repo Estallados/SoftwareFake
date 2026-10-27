@@ -1,1 +1,95 @@
-<p>reviews works!</p>
+<div class="flex items-end justify-between">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
+    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Moderación de reseñas</h1>
+    <p class="mt-2 text-sm text-slate-500">Consulta y controla la visibilidad sin modificar el contenido original.</p>
+  </div>
+</div>
+
+<div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+  <table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+    <tr>
+      @for (h of headers; track h) {
+        <th class="px-5 py-4 font-bold">{{ h }}</th>
+      }
+    </tr>
+    </thead>
+    <tbody>
+      @for (r of reviews(); track r.id) {
+        <tr class="border-t border-slate-100 hover:bg-slate-50">
+          <td class="px-5 py-5"><strong>{{ r.guest }}</strong></td>
+          <td class="px-5 py-5">{{ r.accommodation }}</td>
+          <td class="px-5 py-5">{{ r.reservation }}</td>
+          <td class="px-5 py-5">
+            <div class="flex items-center gap-1" [attr.aria-label]="r.rating + ' de 5 estrellas'">
+              @for (s of starList; track s) {
+                <span [class]="s <= r.rating ? 'text-amber-500' : 'text-slate-200'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z" />
+                  </svg>
+                </span>
+              }
+            </div>
+          </td>
+          <td class="px-5 py-5">{{ r.published }}</td>
+          <td class="px-5 py-5"><p class="max-w-xs leading-5 text-slate-600">{{ r.comment }}</p></td>
+          <td class="px-5 py-5">
+            <span
+              class="inline-flex rounded-full px-3 py-1 text-xs font-bold"
+              [class]="r.status === 'Visible' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'"
+            >
+              {{ r.status }}
+            </span>
+          </td>
+          <td class="px-5 py-5">
+            @if (r.status === 'Visible') {
+              <button type="button" (click)="reviewToHide.set(r.id)" class="font-bold text-red-600">Ocultar reseña</button>
+            } @else {
+              <button type="button" (click)="show(r.id)" class="font-bold text-emerald-700">Mostrar reseña</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
+    <span>Mostrando {{ reviews().length }} resultados</span>
+    <div class="flex gap-2">
+      <span class="rounded-lg border px-3 py-2 text-slate-300">Anterior</span>
+      <span class="rounded-lg bg-emerald-700 px-3 py-2 text-white">1</span>
+      <span class="rounded-lg border px-3 py-2 text-slate-300">Siguiente</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: ocultar reseña -->
+@if (reviewToHide() !== null) {
+  <div class="fixed inset-0 z-[70] grid place-items-center bg-slate-950/55 p-6 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-[28px] bg-white p-8 shadow-2xl">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700">Moderación</span>
+          <h2 class="font-display mt-3 text-3xl font-bold">Ocultar reseña</h2>
+          <p class="mt-3 text-sm leading-6 text-slate-500">
+            La reseña dejará de ser visible para huéspedes y anfitriones. El
+            contenido original se conservará sin modificaciones.
+          </p>
+        </div>
+        <button type="button" (click)="reviewToHide.set(null)" aria-label="Cerrar" class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="mt-7 flex gap-3">
+        <button type="button" (click)="reviewToHide.set(null)" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50">
+          Cancelar
+        </button>
+        <button type="button" (click)="confirmHide()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700 transition-all hover:bg-red-100">
+          Ocultar reseña
+        </button>
+      </div>
+    </div>
+  </div>
+}
