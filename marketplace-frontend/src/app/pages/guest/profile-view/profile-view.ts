@@ -1,4 +1,5 @@
 import { Component, computed, signal } from '@angular/core';
+import {isValidEmail} from '../../../utils/validators';
 
 export interface Profile {
   firstName: string;
@@ -42,7 +43,7 @@ export class ProfileView {
 
   valid = computed(() => {
     const f = this.form();
-    return !!f.firstName.trim() && !!f.lastName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+    return !!f.firstName.trim() && !!f.lastName.trim() && isValidEmail(f.email);
   });
 
   initials = computed(
