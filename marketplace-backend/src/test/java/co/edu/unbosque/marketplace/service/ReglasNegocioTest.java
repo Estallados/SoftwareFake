@@ -2,6 +2,7 @@ package co.edu.unbosque.marketplace.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -120,9 +121,11 @@ class ReglasNegocioTest {
 
 	@Test
 	void coincideConElVectorDePruebaDelRfc6238() {
-		 // Vector de prueba público del RFC 6238: T = 59 segundos.
-		String secretoBase32Prueba = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+	    String secretoBase32Prueba = System.getenv("TOTP_TEST_SECRET");
 
-		assertEquals("287082", TotpUtil.codigo(secretoBase32Prueba, Instant.ofEpochSecond(59)));
+	    assertNotNull(secretoBase32Prueba, "Falta la variable TOTP_TEST_SECRET");
+
+	    assertEquals("287082",
+	            TotpUtil.codigo(secretoBase32Prueba, Instant.ofEpochSecond(59)));
 	}
 }
