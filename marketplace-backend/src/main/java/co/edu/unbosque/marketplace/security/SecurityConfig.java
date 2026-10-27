@@ -71,6 +71,8 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
 						// Imágenes subidas de los alojamientos (ArchivosConfig)
 						.requestMatchers(HttpMethod.GET, "/archivos/**").permitAll()
+						// Configuración de pagos (modo y clave publicable de Stripe) para el front
+						.requestMatchers(HttpMethod.GET, "/pagos/configuracion").permitAll()
 						.requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.GET, "/alojamientos/mios").hasRole("ANFITRION")
 						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;

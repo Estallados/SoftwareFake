@@ -34,7 +34,9 @@ import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
@@ -63,6 +65,10 @@ public class AlojamientoController {
     @Operation(summary = "Catálogo: todos los alojamientos disponibles para reservar (público)",
             description = "Publicaciones ACTIVA con fechas abiertas desde hoy, para la página Explorar o el inicio. "
                     + "orden: recomendados (por defecto), precio_menor, precio_mayor o mejor_calificados.")
+    @SecurityRequirements
+    @ApiResponse(responseCode = "200", description = "Página de alojamientos que se pueden reservar")
+    @ApiResponse(responseCode = "400", description = "El orden debe ser uno de: recomendados, precio_menor, "
+            + "precio_mayor, mejor_calificados.")
     @GetMapping("/disponibles")
     public ResponseEntity<Object> disponibles(@RequestParam(required = false) String orden,
             @RequestParam(defaultValue = "0") int pagina,
@@ -72,8 +78,15 @@ public class AlojamientoController {
     }
 
     @Operation(summary = "Buscar alojamientos ACTIVA (público)",
-            description = "Filtros opcionales combinables: ciudad, fechas, huéspedes, tipo, rango de precio y amenidades. "
-                    + "orden opcional como en /disponibles; sin él, los más recientes primero.")
+            description = "Filtros opcionales combinables: ciudad, fechas, huéspedes, tipo, rango de precio y "
+                    + "amenidades. orden opcional como en /disponibles; sin él, los más recientes primero.")
+    @SecurityRequirements
+    @ApiResponse(responseCode = "200", description = "Página de alojamientos ACTIVA que cumplen los filtros")
+    @ApiResponse(responseCode = "400", description = "Debes indicar la fecha de llegada y la de salida. | Las fechas "
+            + "son inválidas: la salida debe ser posterior a la llegada. | Las fechas son inválidas: la llegada no "
+            + "puede estar en el pasado. | La cantidad de huéspedes debe ser mayor que cero. | El precio mínimo no "
+            + "puede ser mayor que el máximo. | El orden debe ser uno de: recomendados, precio_menor, precio_mayor, "
+            + "mejor_calificados.")
     @GetMapping
     public ResponseEntity<Object> buscar(
             @RequestParam(required = false) String ciudad,
@@ -92,6 +105,8 @@ public class AlojamientoController {
     }
 
     @Operation(summary = "Políticas de cancelación disponibles (público)")
+    @SecurityRequirements
+    @ApiResponse(responseCode = "200", description = "Políticas de cancelación")
     @GetMapping("/politicas")
     public ResponseEntity<Object> politicas() {
         return ResponseEntity.ok(publicacionService.politicas());
@@ -99,6 +114,7 @@ public class AlojamientoController {
 
     @Operation(summary = "Mis alojamientos con su estado (ANFITRION)")
     @PreAuthorize("hasRole('ANFITRION')")
+    @ApiResponse(responseCode = "200", description = "Página de alojamientos del anfitrión con su estado")
     @GetMapping("/mios")
     public ResponseEntity<Object> mios(Authentication authentication,
             @RequestParam(defaultValue = "0") int pagina,
@@ -109,6 +125,8 @@ public class AlojamientoController {
 
     @Operation(summary = "Detalle de un alojamiento",
             description = "Público si está ACTIVA; en otro estado solo para su anfitrión o un administrador.")
+    @ApiResponse(responseCode = "200", description = "Alojamiento con imágenes, servicios, calificación y anfitrión")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
     @GetMapping("/{id}")
     public ResponseEntity<Object> detalle(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(publicacionService.obtener(id, RespuestaUtil.idUsuario(authentication),
@@ -116,6 +134,8 @@ public class AlojamientoController {
     }
 
     @Operation(summary = "Historial de estados (propietario o ADMIN)")
+    @ApiResponse(responseCode = "200", description = "Cambios de estado, del primero al último")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
     @GetMapping("/{id}/historial")
     public ResponseEntity<Object> historial(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(publicacionService.historial(id, RespuestaUtil.idUsuario(authentication),
@@ -127,6 +147,13 @@ public class AlojamientoController {
                     + "obligatorio en el borrador), y 'archivos', de 1 a 15 imágenes JPG, PNG o WEBP de hasta 5 MB. "
                     + "La primera imagen queda como principal.")
     @PreAuthorize("hasRole('ANFITRION')")
+    @ApiResponse(responseCode = "201", description = "Alojamiento creado en BORRADOR con sus imágenes")
+    @ApiResponse(responseCode = "400", description = "El título es obligatorio. | Debes enviar al menos una imagen. | "
+            + "Un alojamiento puede tener máximo 15 imágenes. | Solo se aceptan imágenes JPG, PNG o WEBP. "
+            + "(archivo.pdf) | El archivo está vacío. (foto.png) | El campo 'datos' debe ser el JSON del "
+            + "alojamiento: ... | La capacidad debe ser mayor que cero. | La política de cancelación no existe.")
+    @ApiResponse(responseCode = "413", description = "El archivo supera el tamaño permitido (5 MB por imagen).")
+    @ApiResponse(responseCode = "415", description = "El cuerpo debe enviarse como multipart/form-data.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> crear(
             @Parameter(description = "JSON del alojamiento, por ejemplo {\"titulo\": \"Casa en Villa de Leyva\", "
@@ -148,6 +175,13 @@ public class AlojamientoController {
             description = "Los campos en null no cambian; las amenidades enviadas reemplazan las anteriores. Las "
                     + "imágenes se gestionan con los endpoints de /imagenes.")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Alojamiento actualizado")
+    @ApiResponse(responseCode = "400", description = "La capacidad debe ser mayor que cero. | El precio por noche debe "
+            + "ser positivo. | Las habitaciones y los baños no pueden ser negativos. | La política de cancelación "
+            + "no existe.")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
     @PutMapping("/{id}")
     public ResponseEntity<Object> actualizar(@PathVariable Long id, @RequestBody AlojamientoDTO datos,
             Authentication authentication) {
@@ -159,6 +193,15 @@ public class AlojamientoController {
             description = "multipart/form-data con uno o varios archivos en el campo 'archivos'. JPG, PNG o WEBP de "
                     + "hasta 5 MB, máximo 15 por alojamiento. Si no había portada, la primera queda como principal.")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "201", description = "Todas las imágenes del alojamiento, la principal primero")
+    @ApiResponse(responseCode = "400", description = "Debes enviar al menos una imagen. | Un alojamiento puede tener "
+            + "máximo 15 imágenes. | Solo se aceptan imágenes JPG, PNG o WEBP. (archivo.pdf) | El archivo está "
+            + "vacío. (foto.png)")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
+    @ApiResponse(responseCode = "413", description = "El archivo supera el tamaño permitido (5 MB por imagen).")
+    @ApiResponse(responseCode = "415", description = "El cuerpo debe enviarse como multipart/form-data.")
     @PostMapping(value = "/{id}/imagenes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> subirImagenes(@PathVariable Long id,
             @RequestParam("archivos") List<MultipartFile> archivos, Authentication authentication) {
@@ -170,6 +213,12 @@ public class AlojamientoController {
             description = "Si era la principal, la siguiente pasa a serlo. El alojamiento debe conservar al menos "
                     + "una imagen (409 si es la última).")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Imágenes restantes, la principal primero")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe. | La imagen no existe.")
+    @ApiResponse(responseCode = "409", description = "El alojamiento debe conservar al menos una imagen. Sube otra "
+            + "antes de borrar esta.")
     @DeleteMapping("/{id}/imagenes/{idImagen}")
     public ResponseEntity<Object> eliminarImagen(@PathVariable Long id, @PathVariable Long idImagen,
             Authentication authentication) {
@@ -179,6 +228,10 @@ public class AlojamientoController {
 
     @Operation(summary = "Marcar una imagen como principal (propietario o ADMIN)")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Imágenes, la principal primero")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe. | La imagen no existe.")
     @PatchMapping("/{id}/imagenes/{idImagen}/principal")
     public ResponseEntity<Object> marcarPrincipal(@PathVariable Long id, @PathVariable Long idImagen,
             Authentication authentication) {
@@ -188,6 +241,13 @@ public class AlojamientoController {
 
     @Operation(summary = "Enviar a revisión: BORRADOR → PENDIENTE_REVISION (ANFITRION)")
     @PreAuthorize("hasRole('ANFITRION')")
+    @ApiResponse(responseCode = "200", description = "Alojamiento PENDIENTE_REVISION")
+    @ApiResponse(responseCode = "400", description = "Completa los datos antes de enviar a revisión. Falta: "
+            + "descripción, capacidad.")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
+    @ApiResponse(responseCode = "409", description = "No se puede pasar de ACTIVA a PENDIENTE_REVISION.")
     @PostMapping("/{id}/enviarrevision")
     public ResponseEntity<Object> enviarRevision(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(publicacionService.enviarRevision(id, RespuestaUtil.idUsuario(authentication)));
@@ -195,6 +255,11 @@ public class AlojamientoController {
 
     @Operation(summary = "Pausar: ACTIVA → PAUSADA (ANFITRION)")
     @PreAuthorize("hasRole('ANFITRION')")
+    @ApiResponse(responseCode = "200", description = "Alojamiento PAUSADA: no recibe reservas nuevas")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
+    @ApiResponse(responseCode = "409", description = "No se puede pasar de BORRADOR a PAUSADA.")
     @PostMapping("/{id}/pausar")
     public ResponseEntity<Object> pausar(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(publicacionService.pausar(id, RespuestaUtil.idUsuario(authentication)));
@@ -202,6 +267,11 @@ public class AlojamientoController {
 
     @Operation(summary = "Reanudar: PAUSADA → ACTIVA (ANFITRION)")
     @PreAuthorize("hasRole('ANFITRION')")
+    @ApiResponse(responseCode = "200", description = "Alojamiento ACTIVA")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
+    @ApiResponse(responseCode = "409", description = "No se puede pasar de BLOQUEADA a ACTIVA.")
     @PostMapping("/{id}/reanudar")
     public ResponseEntity<Object> reanudar(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(publicacionService.reanudar(id, RespuestaUtil.idUsuario(authentication)));
@@ -209,6 +279,11 @@ public class AlojamientoController {
 
     @Operation(summary = "Agregar servicio adicional con costo (propietario o ADMIN)")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "201", description = "Servicio adicional creado")
+    @ApiResponse(responseCode = "400", description = "El servicio adicional necesita un nombre y un costo positivo.")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
     @PostMapping("/{id}/servicios")
     public ResponseEntity<Object> agregarServicio(@PathVariable Long id, @RequestBody ServicioAdicionalDTO datos,
             Authentication authentication) {
@@ -218,6 +293,11 @@ public class AlojamientoController {
 
     @Operation(summary = "Modificar servicio adicional (propietario o ADMIN)")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Servicio adicional actualizado")
+    @ApiResponse(responseCode = "400", description = "El servicio adicional necesita un nombre y un costo positivo.")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe. | El servicio adicional no existe.")
     @PutMapping("/{id}/servicios/{idServicio}")
     public ResponseEntity<Object> actualizarServicio(@PathVariable Long id, @PathVariable Long idServicio,
             @RequestBody ServicioAdicionalDTO datos, Authentication authentication) {
@@ -227,6 +307,10 @@ public class AlojamientoController {
 
     @Operation(summary = "Eliminar servicio adicional (propietario o ADMIN)")
     @PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Servicio adicional eliminado.")
+    @ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
+            + "este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe. | El servicio adicional no existe.")
     @DeleteMapping("/{id}/servicios/{idServicio}")
     public ResponseEntity<Object> eliminarServicio(@PathVariable Long id, @PathVariable Long idServicio,
             Authentication authentication) {

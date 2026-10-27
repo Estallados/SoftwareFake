@@ -22,6 +22,7 @@ import co.edu.unbosque.marketplace.service.IdempotenciaService;
 import co.edu.unbosque.marketplace.service.ReservaService;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -54,6 +55,14 @@ public class ReservaController {
     @Operation(summary = "Cotizar una estancia",
             description = "Devuelve noches, precio base, descuento, limpieza, servicio, adicionales y total. "
                     + "La cotización sirve 30 minutos para reservar.")
+    @ApiResponse(responseCode = "201", description = "Cotización con el desglose; sirve 30 minutos para reservar")
+    @ApiResponse(responseCode = "400", description = "Debes indicar el alojamiento a cotizar. | Debes indicar la fecha "
+            + "de llegada y la de salida. | Las fechas son inválidas: la salida debe ser posterior a la llegada. | "
+            + "Las fechas son inválidas: la llegada no puede estar en el pasado. | La cantidad de huéspedes (9) "
+            + "supera la capacidad del alojamiento (4). | El servicio adicional 7 no pertenece a este alojamiento.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
+    @ApiResponse(responseCode = "409", description = "El alojamiento no está disponible para reservas (estado "
+            + "PAUSADA). | El alojamiento no está disponible en esas fechas.")
     @PostMapping("/cotizaciones")
     public ResponseEntity<Object> cotizar(@RequestBody CotizacionDTO solicitud, Authentication authentication) {
         return RespuestaUtil.desde(cotizacionService.cotizar(solicitud, RespuestaUtil.idUsuario(authentication)),
@@ -61,9 +70,24 @@ public class ReservaController {
     }
 
     @Operation(summary = "Crear y pagar una reserva (HUESPED)",
-            description = "Requiere la cabecera Idempotency-Key. Métodos de pago de prueba: pm_card_visa (aprobado), "
-                    + "pm_card_chargeDeclined (rechazado), pm_card_error (error).")
+            description = "Requiere la cabecera Idempotency-Key. metodoPago es un PaymentMethod de Stripe: uno de "
+                    + "prueba (pm_card_visa aprueba, pm_card_chargeDeclinedInsufficientFunds rechaza; la lista está "
+                    + "en GET /pagos/configuracion) o el que crea Stripe Elements con una tarjeta de prueba. Con "
+                    + "STRIPE_SECRET_KEY el cobro va al modo de prueba de Stripe; sin ella, al simulador.")
     @PreAuthorize("hasRole('HUESPED')")
+    @ApiResponse(responseCode = "201", description = "Reserva CONFIRMADA y pagada (incluye el pago)")
+    @ApiResponse(responseCode = "400", description = "Debes indicar la cotización a reservar. | El método de pago debe "
+            + "ser un PaymentMethod de Stripe (pm_...), por ejemplo pm_card_visa. | La cabecera Idempotency-Key es "
+            + "obligatoria y debe tener entre 1 y 100 caracteres.")
+    @ApiResponse(responseCode = "402", description = "El pago fue rechazado: La tarjeta no tiene fondos suficientes. "
+            + "La reserva no quedó pagada.")
+    @ApiResponse(responseCode = "403", description = "No puedes reservar tu propio alojamiento.")
+    @ApiResponse(responseCode = "404", description = "La cotización no existe.")
+    @ApiResponse(responseCode = "409", description = "La cotización venció o ya se usó; solicita una cotización nueva. "
+            + "| El período ya no está disponible: otra reserva lo tomó. | Esta Idempotency-Key ya se usó con una "
+            + "petición diferente. | La petición con esta Idempotency-Key todavía está en proceso.")
+    @ApiResponse(responseCode = "502", description = "No se pudo confirmar el pago: No se pudo comunicar con la "
+            + "pasarela de pago. La reserva no quedó pagada.")
     @PostMapping("/reservas")
     public ResponseEntity<Object> crear(@RequestBody SolicitudReservaDTO solicitud,
             @RequestHeader(value = IdempotenciaService.CABECERA, required = false) String clave,
@@ -74,6 +98,7 @@ public class ReservaController {
     }
 
     @Operation(summary = "Mis reservas como huésped")
+    @ApiResponse(responseCode = "200", description = "Página de reservas del huésped")
     @GetMapping("/reservas/mias")
     public ResponseEntity<Object> mias(Authentication authentication,
             @RequestParam(defaultValue = "0") int pagina,
@@ -84,6 +109,7 @@ public class ReservaController {
 
     @Operation(summary = "Reservas de mis alojamientos (ANFITRION)")
     @PreAuthorize("hasRole('ANFITRION')")
+    @ApiResponse(responseCode = "200", description = "Página de reservas de los alojamientos del anfitrión")
     @GetMapping("/reservas/anfitrion")
     public ResponseEntity<Object> deAnfitrion(Authentication authentication,
             @RequestParam(defaultValue = "0") int pagina,
@@ -93,6 +119,8 @@ public class ReservaController {
     }
 
     @Operation(summary = "Detalle de una reserva (huésped, anfitrión o ADMIN)")
+    @ApiResponse(responseCode = "200", description = "Reserva con pago, alojamiento y cancelación")
+    @ApiResponse(responseCode = "404", description = "La reserva no existe.")
     @GetMapping("/reservas/{id}")
     public ResponseEntity<Object> detalle(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(reservaService.obtener(id, RespuestaUtil.idUsuario(authentication),
@@ -103,6 +131,10 @@ public class ReservaController {
             description = "Devuelve la política, los días de anticipación, el porcentaje y el valor que se "
                     + "devolvería si se cancelara hoy. No cancela nada.")
     @PreAuthorize("hasRole('HUESPED')")
+    @ApiResponse(responseCode = "200", description = "Devolución que recibiría si cancela hoy")
+    @ApiResponse(responseCode = "404", description = "La reserva no existe.")
+    @ApiResponse(responseCode = "409", description = "La reserva no se puede cancelar en estado CANCELADA. | Solo se "
+            + "pueden cancelar reservas futuras.")
     @GetMapping("/reservas/{id}/simularcancelacion")
     public ResponseEntity<Object> simularCancelacion(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(cancelacionService.simular(id, RespuestaUtil.idUsuario(authentication)));
@@ -111,6 +143,13 @@ public class ReservaController {
     @Operation(summary = "Cancelar una reserva futura (HUESPED)",
             description = "Aplica la política de cancelación del alojamiento. Requiere Idempotency-Key y motivo.")
     @PreAuthorize("hasRole('HUESPED')")
+    @ApiResponse(responseCode = "200", description = "Cancelación con la devolución según la política")
+    @ApiResponse(responseCode = "400", description = "El motivo de la cancelación es obligatorio. | La cabecera "
+            + "Idempotency-Key es obligatoria y debe tener entre 1 y 100 caracteres.")
+    @ApiResponse(responseCode = "404", description = "La reserva no existe.")
+    @ApiResponse(responseCode = "409", description = "La reserva no se puede cancelar en estado CANCELADA. | Solo se "
+            + "pueden cancelar reservas futuras. | Esta Idempotency-Key ya se usó con una petición diferente. | La "
+            + "petición con esta Idempotency-Key todavía está en proceso.")
     @PostMapping("/reservas/{id}/cancelar")
     public ResponseEntity<Object> cancelar(@PathVariable Long id, @RequestBody MotivoDTO datos,
             @RequestHeader(value = IdempotenciaService.CABECERA, required = false) String clave,

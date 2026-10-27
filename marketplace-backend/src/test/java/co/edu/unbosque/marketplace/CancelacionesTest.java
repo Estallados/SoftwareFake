@@ -172,7 +172,10 @@ class CancelacionesTest extends PruebaIntegracionBase {
 		assertEquals(primera.get("idCancelacion").asLong(), segunda.get("idCancelacion").asLong());
 		assertTrue(llamar(get("/notificaciones"), anfitrion.token(), null, 200).toString()
 				.contains("RESERVA_CANCELADA"));
-		assertEquals("REEMBOLSADO", llamar(get("/reservas/" + idReserva), huesped.token(), null, 200).get("pago")
-				.get("estado").asText());
+		JsonNode pago = llamar(get("/reservas/" + idReserva), huesped.token(), null, 200).get("pago");
+		assertEquals("REEMBOLSADO", pago.get("estado").asText());
+		assertEquals(0, pago.get("valorReembolsado").decimalValue().compareTo(primera.get("valorReembolso")
+				.decimalValue()));
+		assertTrue(pago.get("referenciaReembolso").asText().startsWith("sim_re_"));
 	}
 }

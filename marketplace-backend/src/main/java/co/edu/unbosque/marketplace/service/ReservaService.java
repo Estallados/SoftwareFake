@@ -134,6 +134,10 @@ public class ReservaService {
         if (solicitud == null || solicitud.getIdCotizacion() == null) {
             return Resultado.error(Resultado.DATOS_INVALIDOS, "Debes indicar la cotización a reservar.");
         }
+        if (!PagoService.metodoValido(solicitud.getMetodoPago())) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS,
+                    "El método de pago debe ser un PaymentMethod de Stripe (pm_...), por ejemplo pm_card_visa.");
+        }
 
         Resultado<Reserva> pendiente = transaccion.execute(estado -> reservarPendiente(solicitud.getIdCotizacion(),
                 idHuesped));

@@ -226,6 +226,22 @@ class ReservasPagosTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void elRechazoDiceElMotivoYUnMetodoQueNoEsDeStripeNiSeIntenta_CA162() throws Exception {
+		Long id = crearAlojamientoActivo(registrar("ANFITRION"));
+		Sesion huesped = registrar("HUESPED");
+		Long idCotizacion = cotizar(huesped, id, 10, 2, 1, List.of(), 201).get("idCotizacion").asLong();
+
+		JsonNode error = reservar(huesped, idCotizacion, "4242424242424242", 400);
+		assertTrue(error.get("message").asText().contains("pm_"));
+		assertEquals(0, reservaRepo.findAll().stream().filter(r -> r.getIdAlojamiento().equals(id)).count());
+
+		JsonNode rechazo = reservar(huesped, idCotizacion, "pm_card_chargeDeclinedInsufficientFunds", 402);
+		assertTrue(rechazo.get("message").asText().contains("fondos suficientes"));
+		assertEquals("pm_card_chargeDeclinedInsufficientFunds", rechazo.get("dato").get("pago").get("metodo")
+				.asText());
+	}
+
+	@Test
 	void unErrorDePagoInformaQueNoSeConfirmo_CA163() throws Exception {
 		Long id = crearAlojamientoActivo(registrar("ANFITRION"));
 		Sesion huesped = registrar("HUESPED");

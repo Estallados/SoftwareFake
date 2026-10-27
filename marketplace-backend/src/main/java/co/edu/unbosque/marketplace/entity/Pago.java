@@ -36,6 +36,12 @@ public class Pago {
     private EstadoPago estado;
     private String detalle;
     private LocalDateTime fecha;
+    /** PaymentMethod de Stripe con el que se cobró (por ejemplo pm_card_visa). */
+    private String metodo;
+    /** Valor devuelto al cancelar; null si no hubo devolución. */
+    private BigDecimal valorReembolsado;
+    /** Id de la devolución en Stripe (re_...) o del simulador. */
+    private String referenciaReembolso;
     @Column(name = "id_reserva")
     private Long idReserva;
     /** Clave foránea hacia {@link Reserva}; el valor se asigna con {@code idReserva}. */
@@ -94,6 +100,27 @@ public class Pago {
     }
     public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
+    }
+
+    public String getMetodo() {
+        return metodo;
+    }
+    public void setMetodo(String metodo) {
+        this.metodo = metodo;
+    }
+
+    public BigDecimal getValorReembolsado() {
+        return valorReembolsado;
+    }
+    public void setValorReembolsado(BigDecimal valorReembolsado) {
+        this.valorReembolsado = valorReembolsado;
+    }
+
+    public String getReferenciaReembolso() {
+        return referenciaReembolso;
+    }
+    public void setReferenciaReembolso(String referenciaReembolso) {
+        this.referenciaReembolso = referenciaReembolso;
     }
 
     public Long getIdReserva() {

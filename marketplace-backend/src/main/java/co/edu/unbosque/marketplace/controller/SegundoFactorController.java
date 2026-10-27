@@ -13,6 +13,7 @@ import co.edu.unbosque.marketplace.service.SegundoFactorService;
 import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -36,12 +37,17 @@ public class SegundoFactorController {
 
     @Operation(summary = "Generar el secreto TOTP (paso 1)",
             description = "Devuelve el secreto y la URI otpauth para registrarlo en la app autenticadora.")
+    @ApiResponse(responseCode = "200", description = "{secreto, uri}: la URI otpauth se muestra como código QR")
+    @ApiResponse(responseCode = "409", description = "El segundo factor ya está habilitado.")
     @PostMapping("/activar")
     public ResponseEntity<Object> activar(Authentication authentication) {
         return RespuestaUtil.desde(segundoFactorService.activar(RespuestaUtil.idUsuario(authentication)));
     }
 
     @Operation(summary = "Confirmar la activación con un código (paso 2)")
+    @ApiResponse(responseCode = "200", description = "Segundo factor habilitado.")
+    @ApiResponse(responseCode = "400", description = "El código no es válido.")
+    @ApiResponse(responseCode = "409", description = "Primero solicita la activación del segundo factor.")
     @PostMapping("/confirmar")
     public ResponseEntity<Object> confirmar(@RequestBody SegundoFactorDTO datos, Authentication authentication) {
         Resultado<Void> resultado = segundoFactorService.confirmar(RespuestaUtil.idUsuario(authentication),
@@ -51,6 +57,9 @@ public class SegundoFactorController {
     }
 
     @Operation(summary = "Deshabilitar el segundo factor con un código actual")
+    @ApiResponse(responseCode = "200", description = "Segundo factor deshabilitado.")
+    @ApiResponse(responseCode = "400", description = "El código no es válido.")
+    @ApiResponse(responseCode = "409", description = "El segundo factor no está habilitado.")
     @PostMapping("/desactivar")
     public ResponseEntity<Object> desactivar(@RequestBody SegundoFactorDTO datos, Authentication authentication) {
         Resultado<Void> resultado = segundoFactorService.desactivar(RespuestaUtil.idUsuario(authentication),

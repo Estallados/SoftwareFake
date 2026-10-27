@@ -16,6 +16,7 @@ import co.edu.unbosque.marketplace.service.FavoritoService;
 import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -37,6 +38,7 @@ public class FavoritoController {
     }
 
     @Operation(summary = "Mis favoritos")
+    @ApiResponse(responseCode = "200", description = "Página de favoritos")
     @GetMapping
     public ResponseEntity<Object> listar(Authentication authentication,
             @RequestParam(defaultValue = "0") int pagina,
@@ -46,12 +48,16 @@ public class FavoritoController {
     }
 
     @Operation(summary = "Agregar a favoritos (sin duplicados)")
+    @ApiResponse(responseCode = "200", description = "Favorito guardado (si ya estaba, el mismo)")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
     @PostMapping("/{idAlojamiento}")
     public ResponseEntity<Object> agregar(@PathVariable Long idAlojamiento, Authentication authentication) {
         return RespuestaUtil.desde(favoritoService.agregar(RespuestaUtil.idUsuario(authentication), idAlojamiento));
     }
 
     @Operation(summary = "Quitar de favoritos")
+    @ApiResponse(responseCode = "200", description = "Alojamiento quitado de favoritos.")
+    @ApiResponse(responseCode = "404", description = "El alojamiento no está en tus favoritos.")
     @DeleteMapping("/{idAlojamiento}")
     public ResponseEntity<Object> eliminar(@PathVariable Long idAlojamiento, Authentication authentication) {
         Resultado<Void> resultado = favoritoService.eliminar(RespuestaUtil.idUsuario(authentication), idAlojamiento);

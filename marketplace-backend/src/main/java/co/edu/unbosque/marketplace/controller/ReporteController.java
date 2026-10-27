@@ -18,6 +18,7 @@ import co.edu.unbosque.marketplace.util.ArchivoReporte;
 import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -40,12 +41,14 @@ public class ReporteController {
     }
 
     @Operation(summary = "Indicadores: usuarios, alojamientos activos, reservas por estado, ingresos y demanda")
+    @ApiResponse(responseCode = "200", description = "Indicadores del dashboard")
     @GetMapping("/dashboard")
     public ResponseEntity<Object> dashboard() {
         return ResponseEntity.ok(reporteService.dashboard());
     }
 
     @Operation(summary = "Historial de exportaciones (quién, qué, formato y cuándo)")
+    @ApiResponse(responseCode = "200", description = "Página de exportaciones con quién las hizo")
     @GetMapping("/reportes/historial")
     public ResponseEntity<Object> historial(@RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanio) {
@@ -55,6 +58,9 @@ public class ReporteController {
 
     @Operation(summary = "Exportar un reporte",
             description = "tipo: usuarios, alojamientos, reservas, ingresos o demanda; formato: pdf o excel.")
+    @ApiResponse(responseCode = "200", description = "Archivo PDF o Excel")
+    @ApiResponse(responseCode = "400", description = "Reporte no válido. Tipos: usuarios, alojamientos, reservas, "
+            + "ingresos, demanda; formatos: pdf, excel.")
     @GetMapping("/reportes/{tipo}")
     public ResponseEntity<Object> exportar(@PathVariable String tipo,
             @RequestParam(defaultValue = "pdf") String formato, Authentication authentication) {

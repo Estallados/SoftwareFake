@@ -94,16 +94,16 @@ class ReglasNegocioTest {
 
 	@Test
 	void elSimuladorUsaLosMetodosDePruebaDeStripe_CA161_CA162_CA163() {
-		PagoService pagos = new PagoService(mock(PagoRepository.class), "");
-		assertEquals(EstadoPago.APROBADO, pagos.cobrar(BigDecimal.TEN, "pm_card_visa", "x").estado());
-		assertEquals(EstadoPago.RECHAZADO, pagos.cobrar(BigDecimal.TEN, "pm_card_chargeDeclined", "x").estado());
-		assertEquals(EstadoPago.ERROR, pagos.cobrar(BigDecimal.TEN, "pm_card_error", "x").estado());
+		PagoService pagos = new PagoService(mock(PagoRepository.class), "", "");
+		assertEquals(EstadoPago.APROBADO, pagos.cobrar(BigDecimal.TEN, "pm_card_visa", 1L).estado());
+		assertEquals(EstadoPago.RECHAZADO, pagos.cobrar(BigDecimal.TEN, "pm_card_chargeDeclined", 1L).estado());
+		assertEquals(EstadoPago.ERROR, pagos.cobrar(BigDecimal.TEN, "pm_card_error", 1L).estado());
 	}
 
 	@Test
 	void nuncaSeCobraConUnaClaveQueNoSeaDePrueba_CA160() {
-		PagoService pagos = new PagoService(mock(PagoRepository.class), "sk_live_clave_real");
-		PagoService.ResultadoPago resultado = pagos.cobrar(BigDecimal.TEN, "pm_card_visa", "x");
+		PagoService pagos = new PagoService(mock(PagoRepository.class), "sk_live_clave_real", "");
+		PagoService.ResultadoPago resultado = pagos.cobrar(BigDecimal.TEN, "pm_card_visa", 1L);
 		assertEquals(EstadoPago.ERROR, resultado.estado());
 		assertTrue(resultado.detalle().contains("prueba"));
 	}

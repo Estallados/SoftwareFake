@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import co.edu.unbosque.marketplace.service.NotificacionService;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -37,6 +38,7 @@ public class NotificacionController {
     }
 
     @Operation(summary = "Mis notificaciones, de la más reciente a la más antigua")
+    @ApiResponse(responseCode = "200", description = "Página de notificaciones, las más recientes primero")
     @GetMapping
     public ResponseEntity<Object> listar(Authentication authentication,
             @RequestParam(defaultValue = "0") int pagina,
@@ -48,6 +50,7 @@ public class NotificacionController {
 
     @Operation(summary = "Cantidad de notificaciones sin leer (contador de la campana)",
             description = "Devuelve {cantidad}.")
+    @ApiResponse(responseCode = "200", description = "{cantidad}: notificaciones sin leer")
     @GetMapping("/noleidas")
     public ResponseEntity<Object> noLeidas(Authentication authentication) {
         return ResponseEntity.ok(Map.of("cantidad",
@@ -55,6 +58,7 @@ public class NotificacionController {
     }
 
     @Operation(summary = "Marcar todas mis notificaciones como leídas", description = "Devuelve {actualizadas}.")
+    @ApiResponse(responseCode = "200", description = "{actualizadas}: cuántas se marcaron")
     @PatchMapping("/leidas")
     public ResponseEntity<Object> marcarTodasLeidas(Authentication authentication) {
         return ResponseEntity.ok(Map.of("actualizadas",
@@ -62,6 +66,8 @@ public class NotificacionController {
     }
 
     @Operation(summary = "Marcar una notificación propia como leída")
+    @ApiResponse(responseCode = "200", description = "Notificación marcada como leída")
+    @ApiResponse(responseCode = "404", description = "La notificación no existe.")
     @PatchMapping("/{id}/leida")
     public ResponseEntity<Object> marcarLeida(@PathVariable Long id, Authentication authentication) {
         return RespuestaUtil.desde(notificacionService.marcarLeida(id, RespuestaUtil.idUsuario(authentication)));

@@ -17,6 +17,9 @@ public class PagoDTO {
     private EstadoPago estado;
     private String detalle;
     private LocalDateTime fecha;
+    private String metodo;
+    private BigDecimal valorReembolsado;
+    private String referenciaReembolso;
     private Long idReserva;
 
     public PagoDTO() {
@@ -76,5 +79,26 @@ public class PagoDTO {
     }
     public void setIdReserva(Long idReserva) {
         this.idReserva = idReserva;
+    }
+
+    public String getMetodo() {
+        return metodo;
+    }
+    public void setMetodo(String metodo) {
+        this.metodo = metodo;
+    }
+
+    public BigDecimal getValorReembolsado() {
+        return valorReembolsado;
+    }
+    public void setValorReembolsado(BigDecimal valorReembolsado) {
+        this.valorReembolsado = valorReembolsado;
+    }
+
+    public String getReferenciaReembolso() {
+        return referenciaReembolso;
+    }
+    public void setReferenciaReembolso(String referenciaReembolso) {
+        this.referenciaReembolso = referenciaReembolso;
     }
 }

@@ -22,7 +22,8 @@ import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.service.UsuarioService;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
-import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -50,6 +51,8 @@ public class UsuarioController {
 
     // Consultar el perfil propio
     @Operation(summary = "Consultar el perfil propio")
+    @ApiResponse(responseCode = "200", description = "Perfil del usuario autenticado")
+    @ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
     @GetMapping("/perfil")
     public ResponseEntity<Object> miPerfil(Authentication authentication) {
         UsuarioDTO usuario = usuarioService.obtenerUsuarioPorCorreo(authentication.getName());
@@ -64,6 +67,9 @@ public class UsuarioController {
     // Actualizar el perfil propio: solo nombre y teléfono
     @Operation(summary = "Actualizar el perfil propio",
             description = "Solo cambia nombre y teléfono; los demás campos enviados se ignoran.")
+    @ApiResponse(responseCode = "200", description = "Perfil actualizado correctamente.")
+    @ApiResponse(responseCode = "400", description = "Envía un nombre no vacío y/o un teléfono de 7 a 15 dígitos.")
+    @ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
     @PutMapping("/perfil")
     public ResponseEntity<Object> actualizarPerfil(
             @RequestBody UsuarioDTO cambios,
@@ -81,6 +87,9 @@ public class UsuarioController {
     // Desactivar la cuenta propia; la respuesta trae el nuevo estado (CA-052)
     @Operation(summary = "Desactivar la cuenta propia",
             description = "Responde {message, estado}. Se puede reactivar luego con POST /auth/reactivar.")
+    @ApiResponse(responseCode = "200", description = "Cuenta desactivada correctamente: {message, estado}")
+    @ApiResponse(responseCode = "403", description = "Esta cuenta no se puede desactivar.")
+    @ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
     @PatchMapping("/perfil/desactivar")
     public ResponseEntity<Object> desactivarCuenta(Authentication authentication) {
         return switch (usuarioService.desactivarCuenta(authentication.getName())) {
@@ -95,6 +104,11 @@ public class UsuarioController {
     @Operation(summary = "Crear un administrador (solo ADMIN)",
             description = "El registro público nunca crea administradores; el rol enviado se ignora.")
     @PreAuthorize("hasRole('ADMIN')")
+    @ApiResponse(responseCode = "201", description = "Administrador creado correctamente.")
+    @ApiResponse(responseCode = "400", description = "Datos incompletos o inválidos. | La contraseña debe tener al "
+            + "menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.")
+    @ApiResponse(responseCode = "409", description = "Ya existe un usuario con ese correo electrónico.")
+    @ApiResponse(responseCode = "500", description = "No se pudo crear el administrador.")
     @PostMapping("/crearadministrador")
     public ResponseEntity<Object> crearAdministrador(
             @RequestBody UsuarioDTO datos,
@@ -117,6 +131,7 @@ public class UsuarioController {
     // Listar todos los usuarios: solo administradores
     @Operation(summary = "Listar usuarios (solo ADMIN)")
     @PreAuthorize("hasRole('ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Todos los usuarios")
     @GetMapping("/listar")
     public ResponseEntity<List<UsuarioDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.getAll());
@@ -124,6 +139,9 @@ public class UsuarioController {
 
     // Consultar usuario por ID: propio usuario o administrador
     @Operation(summary = "Consultar un usuario por id (el propio o, si eres ADMIN, cualquiera)")
+    @ApiResponse(responseCode = "200", description = "Usuario")
+    @ApiResponse(responseCode = "403", description = "No tienes permisos para consultar este usuario.")
+    @ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
     @GetMapping("/obtener/{id}")
     public ResponseEntity<Object> obtenerUsuarioPorId(
             @PathVariable Long id,
@@ -155,6 +173,8 @@ public class UsuarioController {
     // Consultar usuario por correo: solo administradores
     @Operation(summary = "Consultar un usuario por correo (solo ADMIN)")
     @PreAuthorize("hasRole('ADMIN')")
+    @ApiResponse(responseCode = "200", description = "Usuario")
+    @ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
     @GetMapping("/obtenercorreo")
     public ResponseEntity<Object> obtenerUsuarioPorCorreo(@RequestParam String correo) {
         UsuarioDTO usuario = usuarioService.obtenerUsuarioPorCorreo(correo.trim().toLowerCase());
