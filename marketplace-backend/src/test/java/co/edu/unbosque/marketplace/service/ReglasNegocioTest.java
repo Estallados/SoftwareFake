@@ -120,8 +120,9 @@ class ReglasNegocioTest {
 
 	@Test
 	void coincideConElVectorDePruebaDelRfc6238() {
-		// Secreto ASCII "12345678901234567890" en Base32; RFC 6238, T = 59 s -> 94287082 (8 dígitos)
-		String secreto = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
-		assertEquals("287082", TotpUtil.codigo(secreto, Instant.ofEpochSecond(59)));
+		 // Vector de prueba público del RFC 6238: T = 59 segundos.
+		String secretoBase32Prueba = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+
+		assertEquals("287082", TotpUtil.codigo(secretoBase32Prueba, Instant.ofEpochSecond(59)));
 	}
 }

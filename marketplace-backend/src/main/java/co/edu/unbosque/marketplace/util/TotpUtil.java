@@ -67,6 +67,7 @@ public final class TotpUtil {
         try {
             byte[] clave = new Base32().decode(secreto);
             Mac mac = Mac.getInstance("HmacSHA1");
+            // HMAC-SHA1 se utiliza para mantener la compatibilidad con RFC 6238.
             mac.init(new SecretKeySpec(clave, "HmacSHA1"));
             byte[] hash = mac.doFinal(ByteBuffer.allocate(Long.BYTES).putLong(paso).array());
             int desplazamiento = hash[hash.length - 1] & 0x0f;
