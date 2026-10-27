@@ -1,1 +1,42 @@
-<p>reservations works!</p>
+<div class="flex items-end justify-between">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
+    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Reservas</h1>
+    <p class="mt-2 text-sm text-slate-500">Consulta las próximas estancias en tus propiedades.</p>
+  </div>
+</div>
+
+<div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+  <table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+    <tr>
+      @for (h of headers; track h) {
+        <th class="px-5 py-4 font-bold">{{ h }}</th>
+      }
+    </tr>
+    </thead>
+    <tbody>
+      @for (r of reservations(); track r.code) {
+        <tr class="border-t border-slate-100 hover:bg-slate-50">
+          <td class="px-5 py-5">
+            <button type="button" (click)="open(r.code)" class="font-bold text-emerald-700">{{ r.code }}</button>
+          </td>
+          <td class="px-5 py-5">{{ r.guest }}</td>
+          <td class="px-5 py-5">{{ r.accommodation }}</td>
+          <td class="px-5 py-5">{{ r.checkin }}</td>
+          <td class="px-5 py-5">{{ r.checkout }}</td>
+          <td class="px-5 py-5">{{ r.total }}</td>
+          <td class="px-5 py-5"><span [class]="badgeClass(r.status)">{{ r.status }}</span></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
+    <span>Mostrando {{ reservations().length }} resultados</span>
+    <div class="flex gap-2">
+      <span class="rounded-lg border px-3 py-2 text-slate-300">Anterior</span>
+      <span class="rounded-lg bg-emerald-700 px-3 py-2 text-white">1</span>
+      <span class="rounded-lg border px-3 py-2 text-slate-300">Siguiente</span>
+    </div>
+  </div>
+</div>
