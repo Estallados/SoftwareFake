@@ -1,1 +1,41 @@
-<p>audit works!</p>
+<div class="flex items-end justify-between">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
+    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Auditoría</h1>
+    <p class="mt-2 text-sm text-slate-500">Trazabilidad de acciones realizadas en la plataforma.</p>
+  </div>
+</div>
+
+<div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+  <table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+    <tr>
+      @for (h of headers; track h) {
+        <th class="px-5 py-4 font-bold">{{ h }}</th>
+      }
+    </tr>
+    </thead>
+    <tbody>
+      @for (e of auditEvents(); track $index) {
+        <tr class="border-t border-slate-100 hover:bg-slate-50">
+          <td class="px-5 py-5"><strong>{{ e.date }}</strong></td>
+          <td class="px-5 py-5">{{ e.user }}</td>
+          <td class="px-5 py-5">{{ e.role }}</td>
+          <td class="px-5 py-5">{{ e.action }}</td>
+          <td class="px-5 py-5">{{ e.entity }}</td>
+          <td class="px-5 py-5">
+            <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ e.result }}</span>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
+    <span>Mostrando {{ auditEvents().length }} resultados</span>
+    <div class="flex gap-2">
+      <span class="rounded-lg border px-3 py-2 text-slate-300">Anterior</span>
+      <span class="rounded-lg bg-emerald-700 px-3 py-2 text-white">1</span>
+      <span class="rounded-lg border px-3 py-2 text-slate-300">Siguiente</span>
+    </div>
+  </div>
+</div>
