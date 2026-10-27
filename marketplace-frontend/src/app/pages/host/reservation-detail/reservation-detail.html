@@ -1,1 +1,43 @@
-<p>reservation-detail works!</p>
+<button type="button" (click)="back()" class="mb-6 flex items-center gap-2 text-sm font-bold text-emerald-700">
+  <span class="rotate-180">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  </span>
+  Volver
+</button>
+
+<div class="flex items-end justify-between">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
+    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Detalle de la reserva</h1>
+    <p class="mt-2 text-sm text-slate-500">{{ reservation().code }} · {{ listing().name }}</p>
+  </div>
+  <span [class]="badgeClass()">{{ reservation().status }}</span>
+</div>
+
+<div class="mt-8 grid grid-cols-[1fr_340px] gap-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-7">
+    <h2 class="font-display text-xl font-bold">Resumen de la estancia</h2>
+    <div class="mt-6 grid grid-cols-2 gap-6 text-sm">
+      @for (s of summary(); track s.label) {
+        <div>
+          <span class="block text-xs text-slate-500">{{ s.label }}</span>
+          <strong class="mt-1 block">{{ s.value }}</strong>
+        </div>
+      }
+    </div>
+    <div class="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+      Por privacidad, esta vista muestra únicamente los datos necesarios para gestionar la estancia.
+    </div>
+  </section>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <img [src]="listing().image" [alt]="listing().name" class="h-48 w-full object-cover" />
+    <div class="p-6">
+      <p class="text-xs text-slate-500">Valor total</p>
+      <p class="font-display mt-1 text-2xl font-bold">{{ reservation().total }}</p>
+      <p class="mt-4 text-sm text-slate-500">{{ listing().city }} · {{ listing().location }}</p>
+    </div>
+  </section>
+</div>

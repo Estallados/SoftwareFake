@@ -45,8 +45,8 @@ const ROLE_HOME: Record<Role, string> = {
 /** Ruta de notificaciones por rol (el admin no tiene en tus rutas) */
 const NOTIFICATIONS: Record<Role, string | null> = {
   Huésped: '/notificaciones',
-  Anfitrión: '/host/notificaciones',
-  Administrador: null,
+  Anfitrión: '/notificaciones',
+  Administrador: '/notificaciones',
 };
 
 const USERS: Record<Role, { initials: string; name: string }> = {

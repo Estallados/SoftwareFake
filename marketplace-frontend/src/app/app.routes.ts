@@ -18,7 +18,6 @@ import { ListingDetails } from './pages/host/listing-details/listing-details';
 import { Availability } from './pages/host/availability/availability';
 import { Dashboard as HostDashboard } from './pages/host/dashboard/dashboard';
 import { Listings as HostListings } from './pages/host/listings/listings';
-import { Notifications as HostNotifications } from './pages/host/notifications/notifications';
 import { Reservations as HostReservations } from './pages/host/reservations/reservations';
 import { ReservationDetail as HostReservationDetail } from './pages/host/reservation-detail/reservation-detail';
 import { Reviews as HostReviews } from './pages/host/reviews/reviews';
@@ -120,10 +119,6 @@ export const routes: Routes = [
   {
     path: 'host/resenas',
     component: HostReviews,
-  },
-  {
-    path: 'host/notificaciones',
-    component: HostNotifications,
   },
 
   {
