@@ -6,12 +6,12 @@ package co.edu.unbosque.marketplace.entity;
  */
 public enum Role {
 
-    /** Rol de administrador, con permisos completos en el sistema. */
-    ADMIN,
+	/** Rol de administrador, con permisos completos en el sistema. */
+	ADMIN,
 
-    /** Rol de usuario estándar, con permisos limitados. */
-    HUESPED,
-    
-    /** Rol de anfitrión, con permisos limitados. */
-    ANFITRION
+	/** Rol de usuario estándar, con permisos limitados. */
+	HUESPED,
+
+	/** Rol de anfitrión, con permisos limitados. */
+	ANFITRION
 }

@@ -4,94 +4,105 @@ import java.time.LocalDateTime;
 import co.edu.unbosque.marketplace.entity.EstadoResena;
 
 /**
- * Reseña de una estancia. De entrada se usan idReserva, calificacion y comentario.
+ * Reseña de una estancia. De entrada se usan idReserva, calificacion y
+ * comentario.
  *
  * @see "RF-004"
  */
 public class ResenaDTO {
-    private Long idResena;
-    private Integer calificacion;
-    private String comentario;
-    private EstadoResena estado;
-    private LocalDateTime fecha;
-    private Long idUsuario;
-    private Long idReserva;
-    private Long idAlojamiento;
-    /** Nombre del huésped que escribió la reseña. Solo salida. */
-    private String nombreUsuario;
-    /** Solo salida. */
-    private String tituloAlojamiento;
+	private Long idResena;
+	private Integer calificacion;
+	private String comentario;
+	private EstadoResena estado;
+	private LocalDateTime fecha;
+	private Long idUsuario;
+	private Long idReserva;
+	private Long idAlojamiento;
+	/** Nombre del huésped que escribió la reseña. Solo salida. */
+	private String nombreUsuario;
+	/** Solo salida. */
+	private String tituloAlojamiento;
 
-    public ResenaDTO() {
-    }
+	public ResenaDTO() {
+	}
 
-    public Long getIdResena() {
-        return idResena;
-    }
-    public void setIdResena(Long idResena) {
-        this.idResena = idResena;
-    }
+	public Long getIdResena() {
+		return idResena;
+	}
 
-    public Integer getCalificacion() {
-        return calificacion;
-    }
-    public void setCalificacion(Integer calificacion) {
-        this.calificacion = calificacion;
-    }
+	public void setIdResena(Long idResena) {
+		this.idResena = idResena;
+	}
 
-    public String getComentario() {
-        return comentario;
-    }
-    public void setComentario(String comentario) {
-        this.comentario = comentario;
-    }
+	public Integer getCalificacion() {
+		return calificacion;
+	}
 
-    public EstadoResena getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoResena estado) {
-        this.estado = estado;
-    }
+	public void setCalificacion(Integer calificacion) {
+		this.calificacion = calificacion;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public String getComentario() {
+		return comentario;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public void setComentario(String comentario) {
+		this.comentario = comentario;
+	}
 
-    public Long getIdReserva() {
-        return idReserva;
-    }
-    public void setIdReserva(Long idReserva) {
-        this.idReserva = idReserva;
-    }
+	public EstadoResena getEstado() {
+		return estado;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setEstado(EstadoResena estado) {
+		this.estado = estado;
+	}
 
-    public String getNombreUsuario() {
-        return nombreUsuario;
-    }
-    public void setNombreUsuario(String nombreUsuario) {
-        this.nombreUsuario = nombreUsuario;
-    }
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
 
-    public String getTituloAlojamiento() {
-        return tituloAlojamiento;
-    }
-    public void setTituloAlojamiento(String tituloAlojamiento) {
-        this.tituloAlojamiento = tituloAlojamiento;
-    }
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public Long getIdReserva() {
+		return idReserva;
+	}
+
+	public void setIdReserva(Long idReserva) {
+		this.idReserva = idReserva;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
+
+	public String getNombreUsuario() {
+		return nombreUsuario;
+	}
+
+	public void setNombreUsuario(String nombreUsuario) {
+		this.nombreUsuario = nombreUsuario;
+	}
+
+	public String getTituloAlojamiento() {
+		return tituloAlojamiento;
+	}
+
+	public void setTituloAlojamiento(String tituloAlojamiento) {
+		this.tituloAlojamiento = tituloAlojamiento;
+	}
 }

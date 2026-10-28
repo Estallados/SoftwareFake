@@ -1,8 +1,8 @@
 package co.edu.unbosque.marketplace.exception;
 
 /**
- * Clase la cual es publica para ser llamada dentro de otras clases
- * la cual es heredada de Exception
+ * Clase la cual es publica para ser llamada dentro de otras clases la cual es
+ * heredada de Exception
  *
  * @see "RNF-008"
  */

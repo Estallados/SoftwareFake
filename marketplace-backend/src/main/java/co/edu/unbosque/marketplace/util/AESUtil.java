@@ -22,175 +22,159 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public final class AESUtil {
 
-    private static final String ALGORITMO = "AES";
-    private static final String TIPO_CIFRADO = "AES/GCM/NoPadding";
-    private static final String ALGORITMO_HASH = "HmacSHA256";
-    private static final int TAMANO_IV = 12;
-    private static final int TAMANO_TAG = 128;
-    private static final int TAMANO_MINIMO = TAMANO_IV + 16;
+	private static final String ALGORITMO = "AES";
+	private static final String TIPO_CIFRADO = "AES/GCM/NoPadding";
+	private static final String ALGORITMO_HASH = "HmacSHA256";
+	private static final int TAMANO_IV = 12;
+	private static final int TAMANO_TAG = 128;
+	private static final int TAMANO_MINIMO = TAMANO_IV + 16;
 
-    private static final SecureRandom RANDOM = new SecureRandom();
+	private static final SecureRandom RANDOM = new SecureRandom();
 
-    private AESUtil() {
-        throw new IllegalStateException("Clase utilitaria");
-    }
+	private AESUtil() {
+		throw new IllegalStateException("Clase utilitaria");
+	}
 
-    private static SecretKeySpec obtenerClave() {
-        String valor = System.getenv("AES_SECRET_KEY");
+	private static SecretKeySpec obtenerClave() {
+		String valor = System.getenv("AES_SECRET_KEY");
 
-        if (valor == null || valor.isBlank()) {
-            throw new IllegalStateException(
-                    "No se ha configurado AES_SECRET_KEY");
-        }
+		if (valor == null || valor.isBlank()) {
+			throw new IllegalStateException("No se ha configurado AES_SECRET_KEY");
+		}
 
-        byte[] clave;
+		byte[] clave;
 
-        try {
-            clave = Base64.getDecoder().decode(valor);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException(
-                    "AES_SECRET_KEY debe estar codificada en Base64", e);
-        }
+		try {
+			clave = Base64.getDecoder().decode(valor);
+		} catch (IllegalArgumentException e) {
+			throw new IllegalStateException("AES_SECRET_KEY debe estar codificada en Base64", e);
+		}
 
-        if (clave.length != 16 && clave.length != 24
-                && clave.length != 32) {
-            throw new IllegalStateException(
-                    "La clave AES debe tener 16, 24 o 32 bytes");
-        }
+		if (clave.length != 16 && clave.length != 24 && clave.length != 32) {
+			throw new IllegalStateException("La clave AES debe tener 16, 24 o 32 bytes");
+		}
 
-        return new SecretKeySpec(clave, ALGORITMO);
-    }
+		return new SecretKeySpec(clave, ALGORITMO);
+	}
 
-    private static byte[] generarIV() {
-        byte[] iv = new byte[TAMANO_IV];
-        RANDOM.nextBytes(iv);
-        return iv;
-    }
+	private static byte[] generarIV() {
+		byte[] iv = new byte[TAMANO_IV];
+		RANDOM.nextBytes(iv);
+		return iv;
+	}
 
-    private static Cipher crearCipher(int modo, byte[] iv)
-            throws GeneralSecurityException {
+	private static Cipher crearCipher(int modo, byte[] iv) throws GeneralSecurityException {
 
-        Cipher cipher = Cipher.getInstance(TIPO_CIFRADO);
-        GCMParameterSpec parametros = new GCMParameterSpec(TAMANO_TAG, iv);
-        cipher.init(modo, obtenerClave(), parametros);
-        return cipher;
-    }
+		Cipher cipher = Cipher.getInstance(TIPO_CIFRADO);
+		GCMParameterSpec parametros = new GCMParameterSpec(TAMANO_TAG, iv);
+		cipher.init(modo, obtenerClave(), parametros);
+		return cipher;
+	}
 
-    private static byte[] cifrarBytes(byte[] datos)
-            throws GeneralSecurityException {
+	private static byte[] cifrarBytes(byte[] datos) throws GeneralSecurityException {
 
-        byte[] iv = generarIV();
-        Cipher cipher = crearCipher(Cipher.ENCRYPT_MODE, iv);
-        byte[] cifrado = cipher.doFinal(datos);
+		byte[] iv = generarIV();
+		Cipher cipher = crearCipher(Cipher.ENCRYPT_MODE, iv);
+		byte[] cifrado = cipher.doFinal(datos);
 
-        return ByteBuffer.allocate(iv.length + cifrado.length)
-                .put(iv)
-                .put(cifrado)
-                .array();
-    }
+		return ByteBuffer.allocate(iv.length + cifrado.length).put(iv).put(cifrado).array();
+	}
 
-    private static byte[] descifrarBytes(byte[] datos)
-            throws GeneralSecurityException {
+	private static byte[] descifrarBytes(byte[] datos) throws GeneralSecurityException {
 
-        if (datos.length < TAMANO_MINIMO) {
-            throw new IllegalArgumentException(
-                    "Los datos cifrados no tienen un formato válido");
-        }
+		if (datos.length < TAMANO_MINIMO) {
+			throw new IllegalArgumentException("Los datos cifrados no tienen un formato válido");
+		}
 
-        ByteBuffer buffer = ByteBuffer.wrap(datos);
-        byte[] iv = new byte[TAMANO_IV];
-        buffer.get(iv);
+		ByteBuffer buffer = ByteBuffer.wrap(datos);
+		byte[] iv = new byte[TAMANO_IV];
+		buffer.get(iv);
 
-        byte[] cifrado = new byte[buffer.remaining()];
-        buffer.get(cifrado);
+		byte[] cifrado = new byte[buffer.remaining()];
+		buffer.get(cifrado);
 
-        Cipher cipher = crearCipher(Cipher.DECRYPT_MODE, iv);
-        return cipher.doFinal(cifrado);
-    }
+		Cipher cipher = crearCipher(Cipher.DECRYPT_MODE, iv);
+		return cipher.doFinal(cifrado);
+	}
 
-    public static String encrypt(String texto) {
-        Objects.requireNonNull(texto, "El texto no puede ser null");
+	public static String encrypt(String texto) {
+		Objects.requireNonNull(texto, "El texto no puede ser null");
 
-        try {
-            byte[] datos = texto.getBytes(StandardCharsets.UTF_8);
-            return Base64.getEncoder()
-                    .encodeToString(cifrarBytes(datos));
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Error al cifrar el texto", e);
-        }
-    }
+		try {
+			byte[] datos = texto.getBytes(StandardCharsets.UTF_8);
+			return Base64.getEncoder().encodeToString(cifrarBytes(datos));
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException("Error al cifrar el texto", e);
+		}
+	}
 
-    public static String decrypt(String encrypted) {
-        Objects.requireNonNull(
-                encrypted, "El texto cifrado no puede ser null");
+	public static String decrypt(String encrypted) {
+		Objects.requireNonNull(encrypted, "El texto cifrado no puede ser null");
 
-        try {
-            byte[] datos = Base64.getDecoder().decode(encrypted);
-            byte[] descifrados = descifrarBytes(datos);
+		try {
+			byte[] datos = Base64.getDecoder().decode(encrypted);
+			byte[] descifrados = descifrarBytes(datos);
 
-            return new String(descifrados, StandardCharsets.UTF_8);
-        } catch (GeneralSecurityException | IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "No fue posible descifrar el texto", e);
-        }
-    }
+			return new String(descifrados, StandardCharsets.UTF_8);
+		} catch (GeneralSecurityException | IllegalArgumentException e) {
+			throw new IllegalArgumentException("No fue posible descifrar el texto", e);
+		}
+	}
 
-    /**
-     * Calcula un HMAC-SHA256 determinista del texto. A diferencia de
-     * {@link #encrypt(String)}, el mismo texto siempre produce el mismo
-     * resultado, por eso sirve para buscar en la base de datos (por ejemplo,
-     * el correo) sin guardar el valor en claro.
-     */
-    public static String hash(String texto) {
-        Objects.requireNonNull(texto, "El texto no puede ser null");
+	/**
+	 * Calcula un HMAC-SHA256 determinista del texto. A diferencia de
+	 * {@link #encrypt(String)}, el mismo texto siempre produce el mismo resultado,
+	 * por eso sirve para buscar en la base de datos (por ejemplo, el correo) sin
+	 * guardar el valor en claro.
+	 */
+	public static String hash(String texto) {
+		Objects.requireNonNull(texto, "El texto no puede ser null");
 
-        try {
-            Mac mac = Mac.getInstance(ALGORITMO_HASH);
-            mac.init(new SecretKeySpec(obtenerClave().getEncoded(), ALGORITMO_HASH));
-            byte[] resultado = mac.doFinal(texto.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(resultado);
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Error al calcular el hash", e);
-        }
-    }
+		try {
+			Mac mac = Mac.getInstance(ALGORITMO_HASH);
+			mac.init(new SecretKeySpec(obtenerClave().getEncoded(), ALGORITMO_HASH));
+			byte[] resultado = mac.doFinal(texto.getBytes(StandardCharsets.UTF_8));
+			return Base64.getEncoder().encodeToString(resultado);
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException("Error al calcular el hash", e);
+		}
+	}
 
-    /**
-     * Deriva una clave secundaria de 32 bytes a partir de AES_SECRET_KEY, para
-     * no tener que configurar otra variable de entorno. El propósito separa las
-     * claves: con propósitos distintos se obtienen claves distintas, y ninguna
-     * permite recuperar la clave AES original.
-     *
-     * @param proposito para qué se usará la clave, por ejemplo "jwt"
-     */
-    public static byte[] derivarClave(String proposito) {
-        Objects.requireNonNull(proposito, "El propósito no puede ser null");
+	/**
+	 * Deriva una clave secundaria de 32 bytes a partir de AES_SECRET_KEY, para no
+	 * tener que configurar otra variable de entorno. El propósito separa las
+	 * claves: con propósitos distintos se obtienen claves distintas, y ninguna
+	 * permite recuperar la clave AES original.
+	 *
+	 * @param proposito para qué se usará la clave, por ejemplo "jwt"
+	 */
+	public static byte[] derivarClave(String proposito) {
+		Objects.requireNonNull(proposito, "El propósito no puede ser null");
 
-        try {
-            Mac mac = Mac.getInstance(ALGORITMO_HASH);
-            mac.init(new SecretKeySpec(obtenerClave().getEncoded(), ALGORITMO_HASH));
-            return mac.doFinal(("clave-derivada:" + proposito).getBytes(StandardCharsets.UTF_8));
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Error al derivar la clave", e);
-        }
-    }
+		try {
+			Mac mac = Mac.getInstance(ALGORITMO_HASH);
+			mac.init(new SecretKeySpec(obtenerClave().getEncoded(), ALGORITMO_HASH));
+			return mac.doFinal(("clave-derivada:" + proposito).getBytes(StandardCharsets.UTF_8));
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException("Error al derivar la clave", e);
+		}
+	}
 
-    public static void encryptFile(String inputPath, String outputPath)
-            throws IOException, GeneralSecurityException {
+	public static void encryptFile(String inputPath, String outputPath) throws IOException, GeneralSecurityException {
 
-        Path entrada = Paths.get(inputPath);
-        Path salida = Paths.get(outputPath);
-        byte[] datos = Files.readAllBytes(entrada);
+		Path entrada = Paths.get(inputPath);
+		Path salida = Paths.get(outputPath);
+		byte[] datos = Files.readAllBytes(entrada);
 
-        Files.write(salida, cifrarBytes(datos));
-    }
+		Files.write(salida, cifrarBytes(datos));
+	}
 
-    public static void decryptFile(String inputPath, String outputPath)
-            throws IOException, GeneralSecurityException {
+	public static void decryptFile(String inputPath, String outputPath) throws IOException, GeneralSecurityException {
 
-        Path entrada = Paths.get(inputPath);
-        Path salida = Paths.get(outputPath);
-        byte[] datos = Files.readAllBytes(entrada);
+		Path entrada = Paths.get(inputPath);
+		Path salida = Paths.get(outputPath);
+		byte[] datos = Files.readAllBytes(entrada);
 
-        Files.write(salida, descifrarBytes(datos));
-    }
+		Files.write(salida, descifrarBytes(datos));
+	}
 }

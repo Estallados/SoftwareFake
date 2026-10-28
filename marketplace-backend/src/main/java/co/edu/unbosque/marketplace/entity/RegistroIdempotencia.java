@@ -27,89 +27,104 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "registroIdempotencia")
 public class RegistroIdempotencia {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idRegistro;
-    private String clave;
-    @Column(name = "id_usuario")
-    private Long idUsuario;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
-    private Usuario usuario;
-    /** Nombre de la operación protegida, por ejemplo CREAR_RESERVA. */
-    private String operacion;
-    /** SHA-256 del cuerpo de la petición: detecta si la clave se reusa con otros datos. */
-    private String huellaPeticion;
-    @Enumerated(EnumType.STRING)
-    private EstadoIdempotencia estado;
-    private Integer codigoRespuesta;
-    private String cuerpoRespuesta;
-    private LocalDateTime fechaCreacion;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idRegistro;
+	private String clave;
+	@Column(name = "id_usuario")
+	private Long idUsuario;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idUsuario}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_usuario", insertable = false, updatable = false)
+	private Usuario usuario;
+	/** Nombre de la operación protegida, por ejemplo CREAR_RESERVA. */
+	private String operacion;
+	/**
+	 * SHA-256 del cuerpo de la petición: detecta si la clave se reusa con otros
+	 * datos.
+	 */
+	private String huellaPeticion;
+	@Enumerated(EnumType.STRING)
+	private EstadoIdempotencia estado;
+	private Integer codigoRespuesta;
+	private String cuerpoRespuesta;
+	private LocalDateTime fechaCreacion;
 
-    public RegistroIdempotencia() {
-    }
+	public RegistroIdempotencia() {
+	}
 
-    public Long getIdRegistro() {
-        return idRegistro;
-    }
-    public void setIdRegistro(Long idRegistro) {
-        this.idRegistro = idRegistro;
-    }
+	public Long getIdRegistro() {
+		return idRegistro;
+	}
 
-    public String getClave() {
-        return clave;
-    }
-    public void setClave(String clave) {
-        this.clave = clave;
-    }
+	public void setIdRegistro(Long idRegistro) {
+		this.idRegistro = idRegistro;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public String getClave() {
+		return clave;
+	}
 
-    public String getOperacion() {
-        return operacion;
-    }
-    public void setOperacion(String operacion) {
-        this.operacion = operacion;
-    }
+	public void setClave(String clave) {
+		this.clave = clave;
+	}
 
-    public String getHuellaPeticion() {
-        return huellaPeticion;
-    }
-    public void setHuellaPeticion(String huellaPeticion) {
-        this.huellaPeticion = huellaPeticion;
-    }
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
 
-    public EstadoIdempotencia getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoIdempotencia estado) {
-        this.estado = estado;
-    }
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
 
-    public Integer getCodigoRespuesta() {
-        return codigoRespuesta;
-    }
-    public void setCodigoRespuesta(Integer codigoRespuesta) {
-        this.codigoRespuesta = codigoRespuesta;
-    }
+	public String getOperacion() {
+		return operacion;
+	}
 
-    public String getCuerpoRespuesta() {
-        return cuerpoRespuesta;
-    }
-    public void setCuerpoRespuesta(String cuerpoRespuesta) {
-        this.cuerpoRespuesta = cuerpoRespuesta;
-    }
+	public void setOperacion(String operacion) {
+		this.operacion = operacion;
+	}
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+	public String getHuellaPeticion() {
+		return huellaPeticion;
+	}
+
+	public void setHuellaPeticion(String huellaPeticion) {
+		this.huellaPeticion = huellaPeticion;
+	}
+
+	public EstadoIdempotencia getEstado() {
+		return estado;
+	}
+
+	public void setEstado(EstadoIdempotencia estado) {
+		this.estado = estado;
+	}
+
+	public Integer getCodigoRespuesta() {
+		return codigoRespuesta;
+	}
+
+	public void setCodigoRespuesta(Integer codigoRespuesta) {
+		this.codigoRespuesta = codigoRespuesta;
+	}
+
+	public String getCuerpoRespuesta() {
+		return cuerpoRespuesta;
+	}
+
+	public void setCuerpoRespuesta(String cuerpoRespuesta) {
+		this.cuerpoRespuesta = cuerpoRespuesta;
+	}
+
+	public LocalDateTime getFechaCreacion() {
+		return fechaCreacion;
+	}
+
+	public void setFechaCreacion(LocalDateTime fechaCreacion) {
+		this.fechaCreacion = fechaCreacion;
+	}
 }

@@ -13,5 +13,5 @@ import co.edu.unbosque.marketplace.entity.Mensaje;
  */
 public interface MensajeRepository extends JpaRepository<Mensaje, Long> {
 
-    public Page<Mensaje> findByIdConversacion(Long idConversacion, Pageable pageable);
+	public Page<Mensaje> findByIdConversacion(Long idConversacion, Pageable pageable);
 }

@@ -9,63 +9,70 @@ import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
  * @see "RF-027, CA-153"
  */
 public class HistorialEstadoAlojamientoDTO {
-    private Long idHistorial;
-    private Long idAlojamiento;
-    private EstadoAlojamiento estadoAnterior;
-    private EstadoAlojamiento estadoNuevo;
-    private String motivo;
-    private Long idUsuario;
-    private LocalDateTime fecha;
+	private Long idHistorial;
+	private Long idAlojamiento;
+	private EstadoAlojamiento estadoAnterior;
+	private EstadoAlojamiento estadoNuevo;
+	private String motivo;
+	private Long idUsuario;
+	private LocalDateTime fecha;
 
-    public HistorialEstadoAlojamientoDTO() {
-    }
+	public HistorialEstadoAlojamientoDTO() {
+	}
 
-    public Long getIdHistorial() {
-        return idHistorial;
-    }
-    public void setIdHistorial(Long idHistorial) {
-        this.idHistorial = idHistorial;
-    }
+	public Long getIdHistorial() {
+		return idHistorial;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setIdHistorial(Long idHistorial) {
+		this.idHistorial = idHistorial;
+	}
 
-    public EstadoAlojamiento getEstadoAnterior() {
-        return estadoAnterior;
-    }
-    public void setEstadoAnterior(EstadoAlojamiento estadoAnterior) {
-        this.estadoAnterior = estadoAnterior;
-    }
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
 
-    public EstadoAlojamiento getEstadoNuevo() {
-        return estadoNuevo;
-    }
-    public void setEstadoNuevo(EstadoAlojamiento estadoNuevo) {
-        this.estadoNuevo = estadoNuevo;
-    }
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
 
-    public String getMotivo() {
-        return motivo;
-    }
-    public void setMotivo(String motivo) {
-        this.motivo = motivo;
-    }
+	public EstadoAlojamiento getEstadoAnterior() {
+		return estadoAnterior;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public void setEstadoAnterior(EstadoAlojamiento estadoAnterior) {
+		this.estadoAnterior = estadoAnterior;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public EstadoAlojamiento getEstadoNuevo() {
+		return estadoNuevo;
+	}
+
+	public void setEstadoNuevo(EstadoAlojamiento estadoNuevo) {
+		this.estadoNuevo = estadoNuevo;
+	}
+
+	public String getMotivo() {
+		return motivo;
+	}
+
+	public void setMotivo(String motivo) {
+		this.motivo = motivo;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
+
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
 }

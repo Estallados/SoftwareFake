@@ -17,9 +17,12 @@ import co.edu.unbosque.marketplace.entity.Conversacion;
  */
 public interface ConversacionRepository extends JpaRepository<Conversacion, Long> {
 
-    public Optional<Conversacion> findByIdUsuarioAndIdAlojamiento(Long idUsuario, Long idAlojamiento);
+	public Optional<Conversacion> findByIdUsuarioAndIdAlojamiento(Long idUsuario, Long idAlojamiento);
 
-    /** Conversaciones en las que participa el usuario, como huésped o como anfitrión. */
-    @Query("select c from Conversacion c where c.idUsuario = :id or c.idAnfitrion = :id")
-    public Page<Conversacion> buscarDeParticipante(@Param("id") Long idUsuario, Pageable pageable);
+	/**
+	 * Conversaciones en las que participa el usuario, como huésped o como
+	 * anfitrión.
+	 */
+	@Query("select c from Conversacion c where c.idUsuario = :id or c.idAnfitrion = :id")
+	public Page<Conversacion> buscarDeParticipante(@Param("id") Long idUsuario, Pageable pageable);
 }

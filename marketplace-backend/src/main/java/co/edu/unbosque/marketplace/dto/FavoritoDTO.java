@@ -8,47 +8,52 @@ import java.time.LocalDateTime;
  * @see "RF-007"
  */
 public class FavoritoDTO {
-    private Long idFavorito;
-    private LocalDateTime fechaAgregado;
-    private Long idUsuario;
-    private Long idAlojamiento;
-    private AlojamientoDTO alojamiento;
+	private Long idFavorito;
+	private LocalDateTime fechaAgregado;
+	private Long idUsuario;
+	private Long idAlojamiento;
+	private AlojamientoDTO alojamiento;
 
-    public FavoritoDTO() {
-    }
+	public FavoritoDTO() {
+	}
 
-    public Long getIdFavorito() {
-        return idFavorito;
-    }
-    public void setIdFavorito(Long idFavorito) {
-        this.idFavorito = idFavorito;
-    }
+	public Long getIdFavorito() {
+		return idFavorito;
+	}
 
-    public LocalDateTime getFechaAgregado() {
-        return fechaAgregado;
-    }
-    public void setFechaAgregado(LocalDateTime fechaAgregado) {
-        this.fechaAgregado = fechaAgregado;
-    }
+	public void setIdFavorito(Long idFavorito) {
+		this.idFavorito = idFavorito;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public LocalDateTime getFechaAgregado() {
+		return fechaAgregado;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setFechaAgregado(LocalDateTime fechaAgregado) {
+		this.fechaAgregado = fechaAgregado;
+	}
 
-    public AlojamientoDTO getAlojamiento() {
-        return alojamiento;
-    }
-    public void setAlojamiento(AlojamientoDTO alojamiento) {
-        this.alojamiento = alojamiento;
-    }
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
+
+	public AlojamientoDTO getAlojamiento() {
+		return alojamiento;
+	}
+
+	public void setAlojamiento(AlojamientoDTO alojamiento) {
+		this.alojamiento = alojamiento;
+	}
 }

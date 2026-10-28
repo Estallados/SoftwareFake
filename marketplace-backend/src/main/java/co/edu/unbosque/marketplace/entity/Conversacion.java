@@ -23,73 +23,88 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "conversacion")
 public class Conversacion {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idConversacion;
-    private LocalDateTime fechaCreacion;
-    @Enumerated(EnumType.STRING)
-    private EstadoConversacion estado;
-    @Column(name = "id_usuario")
-    private Long idUsuario;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
-    private Usuario huesped;
-    @Column(name = "id_anfitrion")
-    private Long idAnfitrion;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idAnfitrion}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_anfitrion", insertable = false, updatable = false)
-    private Usuario anfitrion;
-    @Column(name = "id_alojamiento")
-    private Long idAlojamiento;
-    /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
-    private Alojamiento alojamiento;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idConversacion;
+	private LocalDateTime fechaCreacion;
+	@Enumerated(EnumType.STRING)
+	private EstadoConversacion estado;
+	@Column(name = "id_usuario")
+	private Long idUsuario;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idUsuario}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_usuario", insertable = false, updatable = false)
+	private Usuario huesped;
+	@Column(name = "id_anfitrion")
+	private Long idAnfitrion;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idAnfitrion}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_anfitrion", insertable = false, updatable = false)
+	private Usuario anfitrion;
+	@Column(name = "id_alojamiento")
+	private Long idAlojamiento;
+	/**
+	 * Clave foránea hacia {@link Alojamiento}; el valor se asigna con
+	 * {@code idAlojamiento}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
+	private Alojamiento alojamiento;
 
-    public Conversacion() {
-    }
+	public Conversacion() {
+	}
 
-    public Long getIdConversacion() {
-        return idConversacion;
-    }
-    public void setIdConversacion(Long idConversacion) {
-        this.idConversacion = idConversacion;
-    }
+	public Long getIdConversacion() {
+		return idConversacion;
+	}
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+	public void setIdConversacion(Long idConversacion) {
+		this.idConversacion = idConversacion;
+	}
 
-    public EstadoConversacion getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoConversacion estado) {
-        this.estado = estado;
-    }
+	public LocalDateTime getFechaCreacion() {
+		return fechaCreacion;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public void setFechaCreacion(LocalDateTime fechaCreacion) {
+		this.fechaCreacion = fechaCreacion;
+	}
 
-    public Long getIdAnfitrion() {
-        return idAnfitrion;
-    }
-    public void setIdAnfitrion(Long idAnfitrion) {
-        this.idAnfitrion = idAnfitrion;
-    }
+	public EstadoConversacion getEstado() {
+		return estado;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setEstado(EstadoConversacion estado) {
+		this.estado = estado;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public Long getIdAnfitrion() {
+		return idAnfitrion;
+	}
+
+	public void setIdAnfitrion(Long idAnfitrion) {
+		this.idAnfitrion = idAnfitrion;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
 }

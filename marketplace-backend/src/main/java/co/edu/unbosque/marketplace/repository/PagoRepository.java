@@ -18,8 +18,8 @@ import co.edu.unbosque.marketplace.entity.Pago;
  */
 public interface PagoRepository extends JpaRepository<Pago, Long> {
 
-    public Optional<Pago> findTopByIdReservaOrderByFechaDescIdPagoDesc(Long idReserva);
+	public Optional<Pago> findTopByIdReservaOrderByFechaDescIdPagoDesc(Long idReserva);
 
-    @Query("select coalesce(sum(p.valor), 0) from Pago p where p.estado in :estados")
-    public BigDecimal sumarValores(@Param("estados") Collection<EstadoPago> estados);
+	@Query("select coalesce(sum(p.valor), 0) from Pago p where p.estado in :estados")
+	public BigDecimal sumarValores(@Param("estados") Collection<EstadoPago> estados);
 }

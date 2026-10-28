@@ -6,39 +6,43 @@ package co.edu.unbosque.marketplace.dto;
  * @see "RF-017"
  */
 public class ImagenDTO {
-    private Long idImagen;
-    private String url;
-    private Long idAlojamiento;
-    private Boolean principal;
+	private Long idImagen;
+	private String url;
+	private Long idAlojamiento;
+	private Boolean principal;
 
-    public ImagenDTO() {
-    }
+	public ImagenDTO() {
+	}
 
-    public Long getIdImagen() {
-        return idImagen;
-    }
-    public void setIdImagen(Long idImagen) {
-        this.idImagen = idImagen;
-    }
+	public Long getIdImagen() {
+		return idImagen;
+	}
 
-    public String getUrl() {
-        return url;
-    }
-    public void setUrl(String url) {
-        this.url = url;
-    }
+	public void setIdImagen(Long idImagen) {
+		this.idImagen = idImagen;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public String getUrl() {
+		return url;
+	}
 
-    public Boolean getPrincipal() {
-        return principal;
-    }
-    public void setPrincipal(Boolean principal) {
-        this.principal = principal;
-    }
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
+
+	public Boolean getPrincipal() {
+		return principal;
+	}
+
+	public void setPrincipal(Boolean principal) {
+		this.principal = principal;
+	}
 }

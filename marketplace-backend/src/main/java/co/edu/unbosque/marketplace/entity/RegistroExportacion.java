@@ -20,62 +20,71 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "registroExportacion")
 public class RegistroExportacion {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idRegistro;
-    private String tipoReporte;
-    private String formato;
-    private Integer cantidadRegistros;
-    @Column(name = "id_usuario")
-    private Long idUsuario;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
-    private Usuario usuario;
-    private LocalDateTime fecha;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idRegistro;
+	private String tipoReporte;
+	private String formato;
+	private Integer cantidadRegistros;
+	@Column(name = "id_usuario")
+	private Long idUsuario;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idUsuario}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_usuario", insertable = false, updatable = false)
+	private Usuario usuario;
+	private LocalDateTime fecha;
 
-    public RegistroExportacion() {
-    }
+	public RegistroExportacion() {
+	}
 
-    public Long getIdRegistro() {
-        return idRegistro;
-    }
-    public void setIdRegistro(Long idRegistro) {
-        this.idRegistro = idRegistro;
-    }
+	public Long getIdRegistro() {
+		return idRegistro;
+	}
 
-    public String getTipoReporte() {
-        return tipoReporte;
-    }
-    public void setTipoReporte(String tipoReporte) {
-        this.tipoReporte = tipoReporte;
-    }
+	public void setIdRegistro(Long idRegistro) {
+		this.idRegistro = idRegistro;
+	}
 
-    public String getFormato() {
-        return formato;
-    }
-    public void setFormato(String formato) {
-        this.formato = formato;
-    }
+	public String getTipoReporte() {
+		return tipoReporte;
+	}
 
-    public Integer getCantidadRegistros() {
-        return cantidadRegistros;
-    }
-    public void setCantidadRegistros(Integer cantidadRegistros) {
-        this.cantidadRegistros = cantidadRegistros;
-    }
+	public void setTipoReporte(String tipoReporte) {
+		this.tipoReporte = tipoReporte;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public String getFormato() {
+		return formato;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public void setFormato(String formato) {
+		this.formato = formato;
+	}
+
+	public Integer getCantidadRegistros() {
+		return cantidadRegistros;
+	}
+
+	public void setCantidadRegistros(Integer cantidadRegistros) {
+		this.cantidadRegistros = cantidadRegistros;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
+
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
 }

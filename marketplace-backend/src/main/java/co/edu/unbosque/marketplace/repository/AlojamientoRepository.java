@@ -20,25 +20,24 @@ import jakarta.persistence.LockModeType;
  *
  * @see "RF-017, RF-019, RF-024"
  */
-public interface AlojamientoRepository extends JpaRepository<Alojamiento, Long>,
-        JpaSpecificationExecutor<Alojamiento> {
+public interface AlojamientoRepository extends JpaRepository<Alojamiento, Long>, JpaSpecificationExecutor<Alojamiento> {
 
-    /** Publicaciones de un anfitrión. */
-    public Page<Alojamiento> findByIdAnfitrion(Long idAnfitrion, Pageable pageable);
+	/** Publicaciones de un anfitrión. */
+	public Page<Alojamiento> findByIdAnfitrion(Long idAnfitrion, Pageable pageable);
 
-    /** Publicaciones en un estado (cola de revisión del administrador). */
-    public Page<Alojamiento> findByEstado(EstadoAlojamiento estado, Pageable pageable);
+	/** Publicaciones en un estado (cola de revisión del administrador). */
+	public Page<Alojamiento> findByEstado(EstadoAlojamiento estado, Pageable pageable);
 
-    /** Cantidad de publicaciones en un estado (dashboard). */
-    public long countByEstado(EstadoAlojamiento estado);
+	/** Cantidad de publicaciones en un estado (dashboard). */
+	public long countByEstado(EstadoAlojamiento estado);
 
-    /**
-     * Lee el alojamiento con bloqueo pesimista de escritura: dos reservas
-     * simultáneas sobre el mismo alojamiento se procesan una después de la otra.
-     *
-     * @see "RNF-028, RNF-029, CA-073"
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select a from Alojamiento a where a.idAlojamiento = :id")
-    public Optional<Alojamiento> buscarParaReservar(@Param("id") Long id);
+	/**
+	 * Lee el alojamiento con bloqueo pesimista de escritura: dos reservas
+	 * simultáneas sobre el mismo alojamiento se procesan una después de la otra.
+	 *
+	 * @see "RNF-028, RNF-029, CA-073"
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select a from Alojamiento a where a.idAlojamiento = :id")
+	public Optional<Alojamiento> buscarParaReservar(@Param("id") Long id);
 }

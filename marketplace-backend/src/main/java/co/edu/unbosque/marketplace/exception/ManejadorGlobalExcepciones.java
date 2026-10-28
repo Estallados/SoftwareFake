@@ -32,8 +32,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * Manejador global de errores técnicos. Las reglas de negocio se resuelven con
  * los códigos int de los services; aquí llega lo que los controllers no
  * controlan (JSON mal formado, parámetros faltantes, permisos, errores
- * inesperados) y siempre se responde con el mismo formato
- * {@code {"message": "..."}}.
+ * inesperados) y siempre se responde con el mismo formato {@code {"message":
+ * "..."}}.
  * <p>
  * Los accesos denegados y los errores inesperados quedan en la auditoría.
  * </p>
@@ -79,7 +79,8 @@ public class ManejadorGlobalExcepciones {
 	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
 	public ResponseEntity<Map<String, String>> tipoContenidoNoSoportado(HttpMediaTypeNotSupportedException e) {
 		String esperado = e.getSupportedMediaTypes().stream().anyMatch(MediaType.MULTIPART_FORM_DATA::includes)
-				? "multipart/form-data" : "application/json";
+				? "multipart/form-data"
+				: "application/json";
 		return mensaje(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "El cuerpo debe enviarse como " + esperado + ".");
 	}
 

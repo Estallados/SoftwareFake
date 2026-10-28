@@ -21,59 +21,70 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "mensaje")
 public class Mensaje {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idMensaje;
-    private String contenido;
-    private LocalDateTime fechaEnvio;
-    @Column(name = "id_conversacion")
-    private Long idConversacion;
-    /** Clave foránea hacia {@link Conversacion}; el valor se asigna con {@code idConversacion}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversacion", insertable = false, updatable = false)
-    private Conversacion conversacion;
-    @Column(name = "id_usuario")
-    private Long idUsuario;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
-    private Usuario usuario;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idMensaje;
+	private String contenido;
+	private LocalDateTime fechaEnvio;
+	@Column(name = "id_conversacion")
+	private Long idConversacion;
+	/**
+	 * Clave foránea hacia {@link Conversacion}; el valor se asigna con
+	 * {@code idConversacion}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_conversacion", insertable = false, updatable = false)
+	private Conversacion conversacion;
+	@Column(name = "id_usuario")
+	private Long idUsuario;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idUsuario}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_usuario", insertable = false, updatable = false)
+	private Usuario usuario;
 
-    public Mensaje() {
-    }
+	public Mensaje() {
+	}
 
-    public Long getIdMensaje() {
-        return idMensaje;
-    }
-    public void setIdMensaje(Long idMensaje) {
-        this.idMensaje = idMensaje;
-    }
+	public Long getIdMensaje() {
+		return idMensaje;
+	}
 
-    public String getContenido() {
-        return contenido;
-    }
-    public void setContenido(String contenido) {
-        this.contenido = contenido;
-    }
+	public void setIdMensaje(Long idMensaje) {
+		this.idMensaje = idMensaje;
+	}
 
-    public LocalDateTime getFechaEnvio() {
-        return fechaEnvio;
-    }
-    public void setFechaEnvio(LocalDateTime fechaEnvio) {
-        this.fechaEnvio = fechaEnvio;
-    }
+	public String getContenido() {
+		return contenido;
+	}
 
-    public Long getIdConversacion() {
-        return idConversacion;
-    }
-    public void setIdConversacion(Long idConversacion) {
-        this.idConversacion = idConversacion;
-    }
+	public void setContenido(String contenido) {
+		this.contenido = contenido;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public LocalDateTime getFechaEnvio() {
+		return fechaEnvio;
+	}
+
+	public void setFechaEnvio(LocalDateTime fechaEnvio) {
+		this.fechaEnvio = fechaEnvio;
+	}
+
+	public Long getIdConversacion() {
+		return idConversacion;
+	}
+
+	public void setIdConversacion(Long idConversacion) {
+		this.idConversacion = idConversacion;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
 }

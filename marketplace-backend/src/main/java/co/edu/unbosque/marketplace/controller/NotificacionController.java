@@ -21,8 +21,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de notificaciones. Ruta base: {@code /notificaciones}.
- * Cada usuario ve y marca solo las suyas.
+ * Controlador REST de notificaciones. Ruta base: {@code /notificaciones}. Cada
+ * usuario ve y marca solo las suyas.
  *
  * @see "RF-003, CA-013"
  */
@@ -33,45 +33,42 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class NotificacionController {
 
-    private final NotificacionService notificacionService;
+	private final NotificacionService notificacionService;
 
-    public NotificacionController(NotificacionService notificacionService) {
-        this.notificacionService = notificacionService;
-    }
+	public NotificacionController(NotificacionService notificacionService) {
+		this.notificacionService = notificacionService;
+	}
 
-    @Operation(summary = "Mis notificaciones, de la más reciente a la más antigua")
-    @ApiResponse(responseCode = "200", description = "Página de notificaciones, las más recientes primero")
-    @GetMapping
-    public ResponseEntity<Object> listar(Authentication authentication,
-            @RequestParam(defaultValue = "0") int pagina,
-            @RequestParam(defaultValue = "20") int tamanio) {
-        return ResponseEntity.ok(notificacionService.listar(RespuestaUtil.idUsuario(authentication),
-                RespuestaUtil.pagina(pagina, tamanio, Sort.by("fecha").descending().and(Sort.by("idNotificacion")
-                        .descending()))));
-    }
+	@Operation(summary = "Mis notificaciones, de la más reciente a la más antigua")
+	@ApiResponse(responseCode = "200", description = "Página de notificaciones, las más recientes primero")
+	@GetMapping
+	public ResponseEntity<Object> listar(Authentication authentication, @RequestParam(defaultValue = "0") int pagina,
+			@RequestParam(defaultValue = "20") int tamanio) {
+		return ResponseEntity.ok(notificacionService.listar(RespuestaUtil.idUsuario(authentication), RespuestaUtil
+				.pagina(pagina, tamanio, Sort.by("fecha").descending().and(Sort.by("idNotificacion").descending()))));
+	}
 
-    @Operation(summary = "Cantidad de notificaciones sin leer (contador de la campana)",
-            description = "Devuelve {cantidad}.")
-    @ApiResponse(responseCode = "200", description = "{cantidad}: notificaciones sin leer")
-    @GetMapping("/noleidas")
-    public ResponseEntity<Object> noLeidas(Authentication authentication) {
-        return ResponseEntity.ok(Map.of("cantidad",
-                notificacionService.contarNoLeidas(RespuestaUtil.idUsuario(authentication))));
-    }
+	@Operation(summary = "Cantidad de notificaciones sin leer (contador de la campana)", description = "Devuelve {cantidad}.")
+	@ApiResponse(responseCode = "200", description = "{cantidad}: notificaciones sin leer")
+	@GetMapping("/noleidas")
+	public ResponseEntity<Object> noLeidas(Authentication authentication) {
+		return ResponseEntity
+				.ok(Map.of("cantidad", notificacionService.contarNoLeidas(RespuestaUtil.idUsuario(authentication))));
+	}
 
-    @Operation(summary = "Marcar todas mis notificaciones como leídas", description = "Devuelve {actualizadas}.")
-    @ApiResponse(responseCode = "200", description = "{actualizadas}: cuántas se marcaron")
-    @PatchMapping("/leidas")
-    public ResponseEntity<Object> marcarTodasLeidas(Authentication authentication) {
-        return ResponseEntity.ok(Map.of("actualizadas",
-                notificacionService.marcarTodasLeidas(RespuestaUtil.idUsuario(authentication))));
-    }
+	@Operation(summary = "Marcar todas mis notificaciones como leídas", description = "Devuelve {actualizadas}.")
+	@ApiResponse(responseCode = "200", description = "{actualizadas}: cuántas se marcaron")
+	@PatchMapping("/leidas")
+	public ResponseEntity<Object> marcarTodasLeidas(Authentication authentication) {
+		return ResponseEntity.ok(
+				Map.of("actualizadas", notificacionService.marcarTodasLeidas(RespuestaUtil.idUsuario(authentication))));
+	}
 
-    @Operation(summary = "Marcar una notificación propia como leída")
-    @ApiResponse(responseCode = "200", description = "Notificación marcada como leída")
-    @ApiResponse(responseCode = "404", description = "La notificación no existe.")
-    @PatchMapping("/{id}/leida")
-    public ResponseEntity<Object> marcarLeida(@PathVariable Long id, Authentication authentication) {
-        return RespuestaUtil.desde(notificacionService.marcarLeida(id, RespuestaUtil.idUsuario(authentication)));
-    }
+	@Operation(summary = "Marcar una notificación propia como leída")
+	@ApiResponse(responseCode = "200", description = "Notificación marcada como leída")
+	@ApiResponse(responseCode = "404", description = "La notificación no existe.")
+	@PatchMapping("/{id}/leida")
+	public ResponseEntity<Object> marcarLeida(@PathVariable Long id, Authentication authentication) {
+		return RespuestaUtil.desde(notificacionService.marcarLeida(id, RespuestaUtil.idUsuario(authentication)));
+	}
 }

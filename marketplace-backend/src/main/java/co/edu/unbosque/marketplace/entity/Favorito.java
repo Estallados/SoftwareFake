@@ -21,51 +21,61 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "favorito")
 public class Favorito {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idFavorito;
-    private LocalDateTime fechaAgregado;
-    @Column(name = "id_usuario")
-    private Long idUsuario;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
-    private Usuario usuario;
-    @Column(name = "id_alojamiento")
-    private Long idAlojamiento;
-    /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
-    private Alojamiento alojamiento;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idFavorito;
+	private LocalDateTime fechaAgregado;
+	@Column(name = "id_usuario")
+	private Long idUsuario;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idUsuario}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_usuario", insertable = false, updatable = false)
+	private Usuario usuario;
+	@Column(name = "id_alojamiento")
+	private Long idAlojamiento;
+	/**
+	 * Clave foránea hacia {@link Alojamiento}; el valor se asigna con
+	 * {@code idAlojamiento}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
+	private Alojamiento alojamiento;
 
-    public Favorito() {
-    }
+	public Favorito() {
+	}
 
-    public Long getIdFavorito() {
-        return idFavorito;
-    }
-    public void setIdFavorito(Long idFavorito) {
-        this.idFavorito = idFavorito;
-    }
+	public Long getIdFavorito() {
+		return idFavorito;
+	}
 
-    public LocalDateTime getFechaAgregado() {
-        return fechaAgregado;
-    }
-    public void setFechaAgregado(LocalDateTime fechaAgregado) {
-        this.fechaAgregado = fechaAgregado;
-    }
+	public void setIdFavorito(Long idFavorito) {
+		this.idFavorito = idFavorito;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public LocalDateTime getFechaAgregado() {
+		return fechaAgregado;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setFechaAgregado(LocalDateTime fechaAgregado) {
+		this.fechaAgregado = fechaAgregado;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
 }
