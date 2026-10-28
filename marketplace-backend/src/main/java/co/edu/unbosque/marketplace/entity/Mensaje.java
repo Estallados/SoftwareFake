@@ -2,10 +2,8 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,22 +23,19 @@ public class Mensaje {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idMensaje;
-    @Column(length = 2000)
     private String contenido;
     private LocalDateTime fechaEnvio;
     @Column(name = "id_conversacion")
     private Long idConversacion;
     /** Clave foránea hacia {@link Conversacion}; el valor se asigna con {@code idConversacion}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversacion", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_mensaje_conversacion"))
+    @JoinColumn(name = "id_conversacion", insertable = false, updatable = false)
     private Conversacion conversacion;
     @Column(name = "id_usuario")
     private Long idUsuario;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_mensaje_usuario"))
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
     private Usuario usuario;
 
     public Mensaje() {

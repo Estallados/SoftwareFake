@@ -2,17 +2,14 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 /**
  * Entidad que representa favorito en el marketplace. Un alojamiento aparece una
@@ -21,8 +18,7 @@ import jakarta.persistence.UniqueConstraint;
  * @see "RF-007, CA-172"
  */
 @Entity
-@Table(name = "favorito", uniqueConstraints = @UniqueConstraint(name = "uk_favorito_usuario_alojamiento",
-        columnNames = { "id_usuario", "id_alojamiento" }))
+@Table(name = "favorito")
 public class Favorito {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,15 +28,13 @@ public class Favorito {
     private Long idUsuario;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_favorito_usuario"))
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
     private Usuario usuario;
     @Column(name = "id_alojamiento")
     private Long idAlojamiento;
     /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_favorito_alojamiento"))
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
     private Alojamiento alojamiento;
 
     public Favorito() {

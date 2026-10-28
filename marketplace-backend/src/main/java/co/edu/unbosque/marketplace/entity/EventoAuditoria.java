@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Immutable;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -35,11 +34,11 @@ public class EventoAuditoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idEvento;
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private String accion;
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private LocalDateTime fecha;
-    @Column(length = 1000, updatable = false)
+    @Column(updatable = false)
     private String detalle;
     /** Usuario que hizo la acción; null si no se conoce (por ejemplo, un login fallido). */
     @Column(updatable = false)
@@ -50,7 +49,7 @@ public class EventoAuditoria {
     @Column(updatable = false)
     private Long idEntidad;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private ResultadoAuditoria resultado;
 
     public EventoAuditoria() {

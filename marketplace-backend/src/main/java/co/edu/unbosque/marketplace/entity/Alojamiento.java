@@ -7,17 +7,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -28,25 +25,18 @@ import jakarta.persistence.Table;
  * entidades ({@link Imagen}, {@link ServicioAdicional}); las amenidades
  * (servicios del alojamiento como wifi o piscina) son una colección de textos.
  * <p>
- * Tiene índices en las columnas que filtra la búsqueda (RNF-015).
+ * Las columnas que filtra la búsqueda deben tener índices en la base de datos (RNF-015).
  * </p>
  *
  * @see "RF-017, RF-018, RF-019, RF-023, RF-024, RNF-032"
  */
 @Entity
-@Table(name = "alojamiento", indexes = {
-        @Index(name = "idx_alojamiento_estado", columnList = "estado"),
-        @Index(name = "idx_alojamiento_ciudad", columnList = "ciudad"),
-        @Index(name = "idx_alojamiento_tipo", columnList = "tipo"),
-        @Index(name = "idx_alojamiento_precio", columnList = "precio_noche"),
-        @Index(name = "idx_alojamiento_capacidad", columnList = "capacidad"),
-        @Index(name = "idx_alojamiento_anfitrion", columnList = "id_anfitrion") })
+@Table(name = "alojamiento")
 public class Alojamiento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idAlojamiento;
     private String titulo;
-    @Column(length = 2000)
     private String descripcion;
     /** Dirección o referencia textual de la ubicación. */
     private String ubicacion;
@@ -67,7 +57,6 @@ public class Alojamiento {
     private BigDecimal porcentajeLimpieza;
     /** Porcentaje propio de servicio; si es null se usa el global de ConfiguracionTarifa. */
     private BigDecimal porcentajeServicio;
-    @Column(length = 2000)
     private String reglas;
     @Enumerated(EnumType.STRING)
     private EstadoAlojamiento estado;
@@ -75,24 +64,21 @@ public class Alojamiento {
     private Long idAnfitrion;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idAnfitrion}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_anfitrion", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_alojamiento_anfitrion"))
+    @JoinColumn(name = "id_anfitrion", insertable = false, updatable = false)
     private Usuario anfitrion;
     @Column(name = "id_politica")
     private Long idPolitica;
     /** Clave foránea hacia {@link PoliticaCancelacion}; el valor se asigna con {@code idPolitica}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_politica", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_alojamiento_politica"))
+    @JoinColumn(name = "id_politica", insertable = false, updatable = false)
     private PoliticaCancelacion politica;
     private LocalDateTime fechaCreacion;
     /** Última edición de los datos o de las imágenes de la publicación. */
     private LocalDateTime fechaActualizacion;
-    /** Clave primaria (id_alojamiento, amenidad): un alojamiento no repite amenidades. */
+    /** En la base de datos la clave primaria es (id_alojamiento, amenidad): un alojamiento no repite amenidades. */
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "alojamientoAmenidad", joinColumns = @JoinColumn(name = "id_alojamiento"),
-            foreignKey = @ForeignKey(name = "fk_alojamiento_amenidad_alojamiento"))
-    @Column(name = "amenidad", nullable = false)
+    @CollectionTable(name = "alojamientoAmenidad", joinColumns = @JoinColumn(name = "id_alojamiento"))
+    @Column(name = "amenidad")
     private Set<String> amenidades = new HashSet<>();
 
     public Alojamiento() {

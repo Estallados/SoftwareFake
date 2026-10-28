@@ -9,7 +9,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import co.edu.unbosque.marketplace.util.AESUtil;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
@@ -31,7 +30,6 @@ public class Usuario implements UserDetails{
     private String nombre;
     private String correo;
     /** HMAC del correo normalizado: permite buscar por correo aunque esté cifrado. */
-    @Column(unique = true)
     private String correoHash;
     private String telefono;
     @Enumerated(EnumType.STRING)
@@ -40,7 +38,6 @@ public class Usuario implements UserDetails{
     private EstadoUsuario estado;
     private String contrasenia;
     /** Motivo que dio el administrador al restringir la cuenta (RF-014). */
-    @Column(length = 1000)
     private String motivoRestriccion;
     /** Secreto TOTP cifrado con AES; null si nunca se activó el segundo factor (RNF-033). */
     private String secretoTotp;

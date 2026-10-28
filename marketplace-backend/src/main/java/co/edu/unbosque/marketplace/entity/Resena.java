@@ -2,16 +2,13 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -23,13 +20,12 @@ import jakarta.persistence.Table;
  * @see "RF-004, RF-016"
  */
 @Entity
-@Table(name = "resena", indexes = @Index(name = "idx_resena_alojamiento", columnList = "id_alojamiento"))
+@Table(name = "resena")
 public class Resena {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idResena;
     private Integer calificacion;
-    @Column(length = 2000)
     private String comentario;
     @Enumerated(EnumType.STRING)
     private EstadoResena estado;
@@ -38,22 +34,19 @@ public class Resena {
     private Long idUsuario;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_resena_usuario"))
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
     private Usuario usuario;
-    @Column(name = "id_reserva", unique = true)
+    @Column(name = "id_reserva")
     private Long idReserva;
     /** Clave foránea hacia {@link Reserva}; el valor se asigna con {@code idReserva}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_reserva", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_resena_reserva"))
+    @JoinColumn(name = "id_reserva", insertable = false, updatable = false)
     private Reserva reserva;
     @Column(name = "id_alojamiento")
     private Long idAlojamiento;
     /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_resena_alojamiento"))
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
     private Alojamiento alojamiento;
 
     public Resena() {

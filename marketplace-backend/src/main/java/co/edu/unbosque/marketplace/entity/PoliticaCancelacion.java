@@ -1,6 +1,5 @@
 package co.edu.unbosque.marketplace.entity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,9 +24,7 @@ public class PoliticaCancelacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPolitica;
-    @Column(unique = true, nullable = false)
     private String nombre;
-    @Column(length = 1000)
     private String condiciones;
     private Integer diasReembolsoTotal;
     private Integer diasReembolsoParcial;

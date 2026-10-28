@@ -3,12 +3,10 @@ package co.edu.unbosque.marketplace.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,7 +26,6 @@ public class Cancelacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idCancelacion;
-    @Column(length = 1000)
     private String motivo;
     /** Nombre de la política aplicada (FLEXIBLE, MODERADA, ESTRICTA). */
     private String politica;
@@ -43,15 +40,13 @@ public class Cancelacion {
     private Long idUsuario;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_cancelacion_usuario"))
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
     private Usuario usuario;
     @Column(name = "id_reserva")
     private Long idReserva;
     /** Clave foránea hacia {@link Reserva}; el valor se asigna con {@code idReserva}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_reserva", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_cancelacion_reserva"))
+    @JoinColumn(name = "id_reserva", insertable = false, updatable = false)
     private Reserva reserva;
 
     public Cancelacion() {

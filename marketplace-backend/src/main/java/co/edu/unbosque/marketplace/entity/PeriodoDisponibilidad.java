@@ -2,14 +2,11 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDate;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -23,22 +20,18 @@ import jakarta.persistence.Table;
  * @see "RF-025, RF-026"
  */
 @Entity
-@Table(name = "periodoDisponibilidad", indexes = @Index(name = "idx_periodo_alojamiento",
-        columnList = "id_alojamiento, fecha_inicio, fecha_fin"))
+@Table(name = "periodoDisponibilidad")
 public class PeriodoDisponibilidad {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPeriodo;
-    @Column(name = "id_alojamiento", nullable = false)
+    @Column(name = "id_alojamiento")
     private Long idAlojamiento;
     /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_periodo_alojamiento"))
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
     private Alojamiento alojamiento;
-    @Column(nullable = false)
     private LocalDate fechaInicio;
-    @Column(nullable = false)
     private LocalDate fechaFin;
 
     public PeriodoDisponibilidad() {

@@ -2,19 +2,16 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 /**
  * Entidad que guarda una petición hecha con la cabecera Idempotency-Key y la
@@ -27,35 +24,26 @@ import jakarta.persistence.UniqueConstraint;
  * @see "RNF-013, RNF-014"
  */
 @Entity
-@Table(name = "registroIdempotencia", uniqueConstraints = @UniqueConstraint(
-        name = "uk_idempotencia_usuario_operacion_clave",
-        columnNames = { "id_usuario", "operacion", "clave" }))
+@Table(name = "registroIdempotencia")
 public class RegistroIdempotencia {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idRegistro;
-    @Column(nullable = false, length = 100)
     private String clave;
-    @Column(name = "id_usuario", nullable = false)
+    @Column(name = "id_usuario")
     private Long idUsuario;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_registro_idempotencia_usuario"))
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
     private Usuario usuario;
     /** Nombre de la operación protegida, por ejemplo CREAR_RESERVA. */
-    @Column(nullable = false)
     private String operacion;
     /** SHA-256 del cuerpo de la petición: detecta si la clave se reusa con otros datos. */
-    @Column(nullable = false, length = 64)
     private String huellaPeticion;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private EstadoIdempotencia estado;
     private Integer codigoRespuesta;
-    @Column(columnDefinition = "TEXT")
     private String cuerpoRespuesta;
-    @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
     public RegistroIdempotencia() {

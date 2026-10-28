@@ -1,10 +1,8 @@
 package co.edu.unbosque.marketplace.entity;
 
 import java.math.BigDecimal;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -25,8 +23,7 @@ public class ServicioAdicional {
     private Long idAlojamiento;
     /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_servicio_alojamiento"))
+    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
     private Alojamiento alojamiento;
 
     public ServicioAdicional() {

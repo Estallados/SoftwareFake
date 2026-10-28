@@ -2,10 +2,8 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,18 +24,14 @@ public class TokenRecuperacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idToken;
-    @Column(name = "id_usuario", nullable = false)
+    @Column(name = "id_usuario")
     private Long idUsuario;
     /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idUsuario}. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_token_recuperacion_usuario"))
+    @JoinColumn(name = "id_usuario", insertable = false, updatable = false)
     private Usuario usuario;
-    @Column(nullable = false, unique = true)
     private String tokenHash;
-    @Column(nullable = false)
     private LocalDateTime fechaExpiracion;
-    @Column(nullable = false)
     private Boolean usado;
 
     public TokenRecuperacion() {
