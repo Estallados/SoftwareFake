@@ -6,7 +6,5 @@ package co.edu.unbosque.marketplace.entity;
  * @see "RNF-025"
  */
 public enum ResultadoAuditoria {
-    EXITOSO,
-    RECHAZADO,
-    ERROR
+	EXITOSO, RECHAZADO, ERROR
 }

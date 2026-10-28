@@ -16,34 +16,34 @@ import co.edu.unbosque.marketplace.entity.Resena;
  */
 public interface ResenaRepository extends JpaRepository<Resena, Long> {
 
-    /** Reseñas de los alojamientos de un anfitrión, opcionalmente de uno solo. */
-    String DE_ANFITRION = "r.estado = :estado and r.idAlojamiento in (select a.idAlojamiento from Alojamiento a "
-            + "where a.idAnfitrion = :idAnfitrion) and (:idAlojamiento is null or r.idAlojamiento = :idAlojamiento)";
+	/** Reseñas de los alojamientos de un anfitrión, opcionalmente de uno solo. */
+	String DE_ANFITRION = "r.estado = :estado and r.idAlojamiento in (select a.idAlojamiento from Alojamiento a "
+			+ "where a.idAnfitrion = :idAnfitrion) and (:idAlojamiento is null or r.idAlojamiento = :idAlojamiento)";
 
-    public boolean existsByIdReserva(Long idReserva);
+	public boolean existsByIdReserva(Long idReserva);
 
-    public Page<Resena> findByIdAlojamientoAndEstado(Long idAlojamiento, EstadoResena estado, Pageable pageable);
+	public Page<Resena> findByIdAlojamientoAndEstado(Long idAlojamiento, EstadoResena estado, Pageable pageable);
 
-    @Query("select avg(r.calificacion) from Resena r where r.idAlojamiento = :id and r.estado = :estado")
-    public Double promedio(@Param("id") Long idAlojamiento, @Param("estado") EstadoResena estado);
+	@Query("select avg(r.calificacion) from Resena r where r.idAlojamiento = :id and r.estado = :estado")
+	public Double promedio(@Param("id") Long idAlojamiento, @Param("estado") EstadoResena estado);
 
-    public long countByIdAlojamientoAndEstado(Long idAlojamiento, EstadoResena estado);
+	public long countByIdAlojamientoAndEstado(Long idAlojamiento, EstadoResena estado);
 
-    /** Reseñas escritas por un huésped, en cualquier estado. */
-    public Page<Resena> findByIdUsuario(Long idUsuario, Pageable pageable);
+	/** Reseñas escritas por un huésped, en cualquier estado. */
+	public Page<Resena> findByIdUsuario(Long idUsuario, Pageable pageable);
 
-    /** Reseñas en un estado (moderación del administrador). */
-    public Page<Resena> findByEstado(EstadoResena estado, Pageable pageable);
+	/** Reseñas en un estado (moderación del administrador). */
+	public Page<Resena> findByEstado(EstadoResena estado, Pageable pageable);
 
-    @Query("select r from Resena r where " + DE_ANFITRION)
-    public Page<Resena> buscarDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion,
-            @Param("idAlojamiento") Long idAlojamiento, @Param("estado") EstadoResena estado, Pageable pageable);
+	@Query("select r from Resena r where " + DE_ANFITRION)
+	public Page<Resena> buscarDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion,
+			@Param("idAlojamiento") Long idAlojamiento, @Param("estado") EstadoResena estado, Pageable pageable);
 
-    @Query("select avg(r.calificacion) from Resena r where " + DE_ANFITRION)
-    public Double promedioDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion,
-            @Param("idAlojamiento") Long idAlojamiento, @Param("estado") EstadoResena estado);
+	@Query("select avg(r.calificacion) from Resena r where " + DE_ANFITRION)
+	public Double promedioDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion,
+			@Param("idAlojamiento") Long idAlojamiento, @Param("estado") EstadoResena estado);
 
-    @Query("select count(r) from Resena r where " + DE_ANFITRION)
-    public long contarDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion,
-            @Param("idAlojamiento") Long idAlojamiento, @Param("estado") EstadoResena estado);
+	@Query("select count(r) from Resena r where " + DE_ANFITRION)
+	public long contarDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion, @Param("idAlojamiento") Long idAlojamiento,
+			@Param("estado") EstadoResena estado);
 }

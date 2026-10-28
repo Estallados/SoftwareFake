@@ -9,63 +9,70 @@ import java.time.LocalDateTime;
  * @see "RF-006, CA-029"
  */
 public class RegistroExportacionDTO {
-    private Long idRegistro;
-    private String tipoReporte;
-    private String formato;
-    private Integer cantidadRegistros;
-    private Long idUsuario;
-    private String nombreUsuario;
-    private LocalDateTime fecha;
+	private Long idRegistro;
+	private String tipoReporte;
+	private String formato;
+	private Integer cantidadRegistros;
+	private Long idUsuario;
+	private String nombreUsuario;
+	private LocalDateTime fecha;
 
-    public RegistroExportacionDTO() {
-    }
+	public RegistroExportacionDTO() {
+	}
 
-    public Long getIdRegistro() {
-        return idRegistro;
-    }
-    public void setIdRegistro(Long idRegistro) {
-        this.idRegistro = idRegistro;
-    }
+	public Long getIdRegistro() {
+		return idRegistro;
+	}
 
-    public String getTipoReporte() {
-        return tipoReporte;
-    }
-    public void setTipoReporte(String tipoReporte) {
-        this.tipoReporte = tipoReporte;
-    }
+	public void setIdRegistro(Long idRegistro) {
+		this.idRegistro = idRegistro;
+	}
 
-    public String getFormato() {
-        return formato;
-    }
-    public void setFormato(String formato) {
-        this.formato = formato;
-    }
+	public String getTipoReporte() {
+		return tipoReporte;
+	}
 
-    public Integer getCantidadRegistros() {
-        return cantidadRegistros;
-    }
-    public void setCantidadRegistros(Integer cantidadRegistros) {
-        this.cantidadRegistros = cantidadRegistros;
-    }
+	public void setTipoReporte(String tipoReporte) {
+		this.tipoReporte = tipoReporte;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public String getFormato() {
+		return formato;
+	}
 
-    public String getNombreUsuario() {
-        return nombreUsuario;
-    }
-    public void setNombreUsuario(String nombreUsuario) {
-        this.nombreUsuario = nombreUsuario;
-    }
+	public void setFormato(String formato) {
+		this.formato = formato;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public Integer getCantidadRegistros() {
+		return cantidadRegistros;
+	}
+
+	public void setCantidadRegistros(Integer cantidadRegistros) {
+		this.cantidadRegistros = cantidadRegistros;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public String getNombreUsuario() {
+		return nombreUsuario;
+	}
+
+	public void setNombreUsuario(String nombreUsuario) {
+		this.nombreUsuario = nombreUsuario;
+	}
+
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
+
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
 }

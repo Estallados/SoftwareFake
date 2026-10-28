@@ -6,31 +6,34 @@ package co.edu.unbosque.marketplace.dto;
  * @see "RNF-033"
  */
 public class SegundoFactorDTO {
-    private String secreto;
-    private String uri;
-    private String codigo;
+	private String secreto;
+	private String uri;
+	private String codigo;
 
-    public SegundoFactorDTO() {
-    }
+	public SegundoFactorDTO() {
+	}
 
-    public String getSecreto() {
-        return secreto;
-    }
-    public void setSecreto(String secreto) {
-        this.secreto = secreto;
-    }
+	public String getSecreto() {
+		return secreto;
+	}
 
-    public String getUri() {
-        return uri;
-    }
-    public void setUri(String uri) {
-        this.uri = uri;
-    }
+	public void setSecreto(String secreto) {
+		this.secreto = secreto;
+	}
 
-    public String getCodigo() {
-        return codigo;
-    }
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+	public String getUri() {
+		return uri;
+	}
+
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+
+	public String getCodigo() {
+		return codigo;
+	}
+
+	public void setCodigo(String codigo) {
+		this.codigo = codigo;
+	}
 }

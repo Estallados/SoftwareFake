@@ -26,122 +26,143 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "reserva")
 public class Reserva {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idReserva;
-    private LocalDate fechaEntrada;
-    private LocalDate fechaSalida;
-    private Integer noches;
-    private Integer huespedes;
-    @Enumerated(EnumType.STRING)
-    private EstadoReserva estado;
-    private BigDecimal total;
-    /** Desglose congelado en JSON (copia de la cotización usada). */
-    private String desglose;
-    @Column(name = "id_huesped")
-    private Long idHuesped;
-    /** Clave foránea hacia {@link Usuario}; el valor se asigna con {@code idHuesped}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_huesped", insertable = false, updatable = false)
-    private Usuario huesped;
-    @Column(name = "id_alojamiento")
-    private Long idAlojamiento;
-    /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
-    private Alojamiento alojamiento;
-    @Column(name = "id_cotizacion")
-    private Long idCotizacion;
-    /** Clave foránea hacia {@link Cotizacion}; el valor se asigna con {@code idCotizacion}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_cotizacion", insertable = false, updatable = false)
-    private Cotizacion cotizacion;
-    private LocalDateTime fechaCreacion;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idReserva;
+	private LocalDate fechaEntrada;
+	private LocalDate fechaSalida;
+	private Integer noches;
+	private Integer huespedes;
+	@Enumerated(EnumType.STRING)
+	private EstadoReserva estado;
+	private BigDecimal total;
+	/** Desglose congelado en JSON (copia de la cotización usada). */
+	private String desglose;
+	@Column(name = "id_huesped")
+	private Long idHuesped;
+	/**
+	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
+	 * {@code idHuesped}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_huesped", insertable = false, updatable = false)
+	private Usuario huesped;
+	@Column(name = "id_alojamiento")
+	private Long idAlojamiento;
+	/**
+	 * Clave foránea hacia {@link Alojamiento}; el valor se asigna con
+	 * {@code idAlojamiento}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
+	private Alojamiento alojamiento;
+	@Column(name = "id_cotizacion")
+	private Long idCotizacion;
+	/**
+	 * Clave foránea hacia {@link Cotizacion}; el valor se asigna con
+	 * {@code idCotizacion}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_cotizacion", insertable = false, updatable = false)
+	private Cotizacion cotizacion;
+	private LocalDateTime fechaCreacion;
 
-    public Reserva() {
-    }
+	public Reserva() {
+	}
 
-    public Long getIdReserva() {
-        return idReserva;
-    }
-    public void setIdReserva(Long idReserva) {
-        this.idReserva = idReserva;
-    }
+	public Long getIdReserva() {
+		return idReserva;
+	}
 
-    public LocalDate getFechaEntrada() {
-        return fechaEntrada;
-    }
-    public void setFechaEntrada(LocalDate fechaEntrada) {
-        this.fechaEntrada = fechaEntrada;
-    }
+	public void setIdReserva(Long idReserva) {
+		this.idReserva = idReserva;
+	}
 
-    public LocalDate getFechaSalida() {
-        return fechaSalida;
-    }
-    public void setFechaSalida(LocalDate fechaSalida) {
-        this.fechaSalida = fechaSalida;
-    }
+	public LocalDate getFechaEntrada() {
+		return fechaEntrada;
+	}
 
-    public Integer getNoches() {
-        return noches;
-    }
-    public void setNoches(Integer noches) {
-        this.noches = noches;
-    }
+	public void setFechaEntrada(LocalDate fechaEntrada) {
+		this.fechaEntrada = fechaEntrada;
+	}
 
-    public Integer getHuespedes() {
-        return huespedes;
-    }
-    public void setHuespedes(Integer huespedes) {
-        this.huespedes = huespedes;
-    }
+	public LocalDate getFechaSalida() {
+		return fechaSalida;
+	}
 
-    public EstadoReserva getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoReserva estado) {
-        this.estado = estado;
-    }
+	public void setFechaSalida(LocalDate fechaSalida) {
+		this.fechaSalida = fechaSalida;
+	}
 
-    public BigDecimal getTotal() {
-        return total;
-    }
-    public void setTotal(BigDecimal total) {
-        this.total = total;
-    }
+	public Integer getNoches() {
+		return noches;
+	}
 
-    public String getDesglose() {
-        return desglose;
-    }
-    public void setDesglose(String desglose) {
-        this.desglose = desglose;
-    }
+	public void setNoches(Integer noches) {
+		this.noches = noches;
+	}
 
-    public Long getIdHuesped() {
-        return idHuesped;
-    }
-    public void setIdHuesped(Long idHuesped) {
-        this.idHuesped = idHuesped;
-    }
+	public Integer getHuespedes() {
+		return huespedes;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setHuespedes(Integer huespedes) {
+		this.huespedes = huespedes;
+	}
 
-    public Long getIdCotizacion() {
-        return idCotizacion;
-    }
-    public void setIdCotizacion(Long idCotizacion) {
-        this.idCotizacion = idCotizacion;
-    }
+	public EstadoReserva getEstado() {
+		return estado;
+	}
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+	public void setEstado(EstadoReserva estado) {
+		this.estado = estado;
+	}
+
+	public BigDecimal getTotal() {
+		return total;
+	}
+
+	public void setTotal(BigDecimal total) {
+		this.total = total;
+	}
+
+	public String getDesglose() {
+		return desglose;
+	}
+
+	public void setDesglose(String desglose) {
+		this.desglose = desglose;
+	}
+
+	public Long getIdHuesped() {
+		return idHuesped;
+	}
+
+	public void setIdHuesped(Long idHuesped) {
+		this.idHuesped = idHuesped;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
+
+	public Long getIdCotizacion() {
+		return idCotizacion;
+	}
+
+	public void setIdCotizacion(Long idCotizacion) {
+		this.idCotizacion = idCotizacion;
+	}
+
+	public LocalDateTime getFechaCreacion() {
+		return fechaCreacion;
+	}
+
+	public void setFechaCreacion(LocalDateTime fechaCreacion) {
+		this.fechaCreacion = fechaCreacion;
+	}
 }

@@ -10,47 +10,52 @@ import java.util.Map;
  * @see "RF-005"
  */
 public class DashboardDTO {
-    private Long totalUsuarios;
-    private Long alojamientosActivos;
-    private Map<String, Long> reservasPorEstado;
-    private BigDecimal ingresosEstimados;
-    private List<DemandaCiudadDTO> ciudadesMayorDemanda;
+	private Long totalUsuarios;
+	private Long alojamientosActivos;
+	private Map<String, Long> reservasPorEstado;
+	private BigDecimal ingresosEstimados;
+	private List<DemandaCiudadDTO> ciudadesMayorDemanda;
 
-    public DashboardDTO() {
-    }
+	public DashboardDTO() {
+	}
 
-    public Long getTotalUsuarios() {
-        return totalUsuarios;
-    }
-    public void setTotalUsuarios(Long totalUsuarios) {
-        this.totalUsuarios = totalUsuarios;
-    }
+	public Long getTotalUsuarios() {
+		return totalUsuarios;
+	}
 
-    public Long getAlojamientosActivos() {
-        return alojamientosActivos;
-    }
-    public void setAlojamientosActivos(Long alojamientosActivos) {
-        this.alojamientosActivos = alojamientosActivos;
-    }
+	public void setTotalUsuarios(Long totalUsuarios) {
+		this.totalUsuarios = totalUsuarios;
+	}
 
-    public Map<String, Long> getReservasPorEstado() {
-        return reservasPorEstado;
-    }
-    public void setReservasPorEstado(Map<String, Long> reservasPorEstado) {
-        this.reservasPorEstado = reservasPorEstado;
-    }
+	public Long getAlojamientosActivos() {
+		return alojamientosActivos;
+	}
 
-    public BigDecimal getIngresosEstimados() {
-        return ingresosEstimados;
-    }
-    public void setIngresosEstimados(BigDecimal ingresosEstimados) {
-        this.ingresosEstimados = ingresosEstimados;
-    }
+	public void setAlojamientosActivos(Long alojamientosActivos) {
+		this.alojamientosActivos = alojamientosActivos;
+	}
 
-    public List<DemandaCiudadDTO> getCiudadesMayorDemanda() {
-        return ciudadesMayorDemanda;
-    }
-    public void setCiudadesMayorDemanda(List<DemandaCiudadDTO> ciudadesMayorDemanda) {
-        this.ciudadesMayorDemanda = ciudadesMayorDemanda;
-    }
+	public Map<String, Long> getReservasPorEstado() {
+		return reservasPorEstado;
+	}
+
+	public void setReservasPorEstado(Map<String, Long> reservasPorEstado) {
+		this.reservasPorEstado = reservasPorEstado;
+	}
+
+	public BigDecimal getIngresosEstimados() {
+		return ingresosEstimados;
+	}
+
+	public void setIngresosEstimados(BigDecimal ingresosEstimados) {
+		this.ingresosEstimados = ingresosEstimados;
+	}
+
+	public List<DemandaCiudadDTO> getCiudadesMayorDemanda() {
+		return ciudadesMayorDemanda;
+	}
+
+	public void setCiudadesMayorDemanda(List<DemandaCiudadDTO> ciudadesMayorDemanda) {
+		this.ciudadesMayorDemanda = ciudadesMayorDemanda;
+	}
 }

@@ -14,8 +14,10 @@ import co.edu.unbosque.marketplace.entity.Imagen;
  */
 public interface ImagenRepository extends JpaRepository<Imagen, Long> {
 
-    public List<Imagen> findByIdAlojamientoOrderByIdImagen(Long idAlojamiento);
+	public List<Imagen> findByIdAlojamientoOrderByIdImagen(Long idAlojamiento);
 
-    /** Imagen de un alojamiento concreto (evita tocar imágenes de otro alojamiento). */
-    public Optional<Imagen> findByIdImagenAndIdAlojamiento(Long idImagen, Long idAlojamiento);
+	/**
+	 * Imagen de un alojamiento concreto (evita tocar imágenes de otro alojamiento).
+	 */
+	public Optional<Imagen> findByIdImagenAndIdAlojamiento(Long idImagen, Long idAlojamiento);
 }

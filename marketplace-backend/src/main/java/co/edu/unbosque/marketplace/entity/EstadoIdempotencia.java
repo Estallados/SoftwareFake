@@ -6,6 +6,5 @@ package co.edu.unbosque.marketplace.entity;
  * @see "RNF-013, RNF-014"
  */
 public enum EstadoIdempotencia {
-    EN_PROCESO,
-    COMPLETADA
+	EN_PROCESO, COMPLETADA
 }

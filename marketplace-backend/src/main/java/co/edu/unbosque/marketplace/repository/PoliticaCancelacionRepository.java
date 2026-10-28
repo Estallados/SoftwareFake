@@ -13,5 +13,5 @@ import co.edu.unbosque.marketplace.entity.PoliticaCancelacion;
  */
 public interface PoliticaCancelacionRepository extends JpaRepository<PoliticaCancelacion, Long> {
 
-    public Optional<PoliticaCancelacion> findByNombre(String nombre);
+	public Optional<PoliticaCancelacion> findByNombre(String nombre);
 }

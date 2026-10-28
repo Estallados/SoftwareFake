@@ -7,23 +7,25 @@ package co.edu.unbosque.marketplace.dto;
  * @see "RF-001"
  */
 public class VerificacionCorreoDTO {
-    private String correo;
-    private String codigo;
+	private String correo;
+	private String codigo;
 
-    public VerificacionCorreoDTO() {
-    }
+	public VerificacionCorreoDTO() {
+	}
 
-    public String getCorreo() {
-        return correo;
-    }
-    public void setCorreo(String correo) {
-        this.correo = correo;
-    }
+	public String getCorreo() {
+		return correo;
+	}
 
-    public String getCodigo() {
-        return codigo;
-    }
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+	public void setCorreo(String correo) {
+		this.correo = correo;
+	}
+
+	public String getCodigo() {
+		return codigo;
+	}
+
+	public void setCodigo(String codigo) {
+		this.codigo = codigo;
+	}
 }

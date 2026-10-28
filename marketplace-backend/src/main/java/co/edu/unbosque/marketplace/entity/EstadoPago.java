@@ -6,9 +6,5 @@ package co.edu.unbosque.marketplace.entity;
  * @see "RF-028"
  */
 public enum EstadoPago {
-    PENDIENTE,
-    APROBADO,
-    RECHAZADO,
-    ERROR,
-    REEMBOLSADO
+	PENDIENTE, APROBADO, RECHAZADO, ERROR, REEMBOLSADO
 }

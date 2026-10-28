@@ -13,7 +13,7 @@ import co.edu.unbosque.marketplace.entity.HistorialEstadoAlojamiento;
  */
 public interface HistorialEstadoAlojamientoRepository extends Repository<HistorialEstadoAlojamiento, Long> {
 
-    public HistorialEstadoAlojamiento save(HistorialEstadoAlojamiento historial);
+	public HistorialEstadoAlojamiento save(HistorialEstadoAlojamiento historial);
 
-    public List<HistorialEstadoAlojamiento> findByIdAlojamientoOrderByFechaAscIdHistorialAsc(Long idAlojamiento);
+	public List<HistorialEstadoAlojamiento> findByIdAlojamientoOrderByFechaAscIdHistorialAsc(Long idAlojamiento);
 }

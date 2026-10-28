@@ -7,8 +7,5 @@ package co.edu.unbosque.marketplace.entity;
  * @see "RF-021, RF-022"
  */
 public enum EstadoReserva {
-    PENDIENTE_PAGO,
-    CONFIRMADA,
-    EN_REVISION,
-    CANCELADA
+	PENDIENTE_PAGO, CONFIRMADA, EN_REVISION, CANCELADA
 }

@@ -21,9 +21,9 @@ import jakarta.persistence.Table;
  * </p>
  * <p>
  * A diferencia de las demás tablas, no tiene claves foráneas: la bitácora debe
- * poder registrar intentos con usuarios o recursos que no existen (un login
- * con un correo desconocido, una consulta a un id inválido), e
- * {@code idEntidad} apunta a tablas distintas según {@code entidad}.
+ * poder registrar intentos con usuarios o recursos que no existen (un login con
+ * un correo desconocido, una consulta a un id inválido), e {@code idEntidad}
+ * apunta a tablas distintas según {@code entidad}.
  * </p>
  *
  * @see "RNF-023, RNF-026"
@@ -32,83 +32,94 @@ import jakarta.persistence.Table;
 @Immutable
 @Table(name = "eventoAuditoria")
 public class EventoAuditoria {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idEvento;
-    @Column(updatable = false)
-    private String accion;
-    @Column(updatable = false)
-    private LocalDateTime fecha;
-    @Column(updatable = false)
-    private String detalle;
-    /** Usuario que hizo la acción; null si no se conoce (por ejemplo, un login fallido). */
-    @Column(updatable = false)
-    private Long idUsuario;
-    /** Tipo de recurso afectado, por ejemplo USUARIO o ALOJAMIENTO. */
-    @Column(updatable = false)
-    private String entidad;
-    @Column(updatable = false)
-    private Long idEntidad;
-    @Enumerated(EnumType.STRING)
-    @Column(updatable = false)
-    private ResultadoAuditoria resultado;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idEvento;
+	@Column(updatable = false)
+	private String accion;
+	@Column(updatable = false)
+	private LocalDateTime fecha;
+	@Column(updatable = false)
+	private String detalle;
+	/**
+	 * Usuario que hizo la acción; null si no se conoce (por ejemplo, un login
+	 * fallido).
+	 */
+	@Column(updatable = false)
+	private Long idUsuario;
+	/** Tipo de recurso afectado, por ejemplo USUARIO o ALOJAMIENTO. */
+	@Column(updatable = false)
+	private String entidad;
+	@Column(updatable = false)
+	private Long idEntidad;
+	@Enumerated(EnumType.STRING)
+	@Column(updatable = false)
+	private ResultadoAuditoria resultado;
 
-    public EventoAuditoria() {
-    }
+	public EventoAuditoria() {
+	}
 
-    public Long getIdEvento() {
-        return idEvento;
-    }
-    public void setIdEvento(Long idEvento) {
-        this.idEvento = idEvento;
-    }
+	public Long getIdEvento() {
+		return idEvento;
+	}
 
-    public String getAccion() {
-        return accion;
-    }
-    public void setAccion(String accion) {
-        this.accion = accion;
-    }
+	public void setIdEvento(Long idEvento) {
+		this.idEvento = idEvento;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public String getAccion() {
+		return accion;
+	}
 
-    public String getDetalle() {
-        return detalle;
-    }
-    public void setDetalle(String detalle) {
-        this.detalle = detalle;
-    }
+	public void setAccion(String accion) {
+		this.accion = accion;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
 
-    public String getEntidad() {
-        return entidad;
-    }
-    public void setEntidad(String entidad) {
-        this.entidad = entidad;
-    }
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
 
-    public Long getIdEntidad() {
-        return idEntidad;
-    }
-    public void setIdEntidad(Long idEntidad) {
-        this.idEntidad = idEntidad;
-    }
+	public String getDetalle() {
+		return detalle;
+	}
 
-    public ResultadoAuditoria getResultado() {
-        return resultado;
-    }
-    public void setResultado(ResultadoAuditoria resultado) {
-        this.resultado = resultado;
-    }
+	public void setDetalle(String detalle) {
+		this.detalle = detalle;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public String getEntidad() {
+		return entidad;
+	}
+
+	public void setEntidad(String entidad) {
+		this.entidad = entidad;
+	}
+
+	public Long getIdEntidad() {
+		return idEntidad;
+	}
+
+	public void setIdEntidad(Long idEntidad) {
+		this.idEntidad = idEntidad;
+	}
+
+	public ResultadoAuditoria getResultado() {
+		return resultado;
+	}
+
+	public void setResultado(ResultadoAuditoria resultado) {
+		this.resultado = resultado;
+	}
 }

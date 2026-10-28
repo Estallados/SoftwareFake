@@ -9,39 +9,43 @@ import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
  * @see "RF-026, CA-148"
  */
 public class DisponibilidadDTO {
-    private Long idAlojamiento;
-    private EstadoAlojamiento estadoAlojamiento;
-    private List<PeriodoDisponibilidadDTO> periodos;
-    private List<RangoReservadoDTO> reservados;
+	private Long idAlojamiento;
+	private EstadoAlojamiento estadoAlojamiento;
+	private List<PeriodoDisponibilidadDTO> periodos;
+	private List<RangoReservadoDTO> reservados;
 
-    public DisponibilidadDTO() {
-    }
+	public DisponibilidadDTO() {
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
 
-    public EstadoAlojamiento getEstadoAlojamiento() {
-        return estadoAlojamiento;
-    }
-    public void setEstadoAlojamiento(EstadoAlojamiento estadoAlojamiento) {
-        this.estadoAlojamiento = estadoAlojamiento;
-    }
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
 
-    public List<PeriodoDisponibilidadDTO> getPeriodos() {
-        return periodos;
-    }
-    public void setPeriodos(List<PeriodoDisponibilidadDTO> periodos) {
-        this.periodos = periodos;
-    }
+	public EstadoAlojamiento getEstadoAlojamiento() {
+		return estadoAlojamiento;
+	}
 
-    public List<RangoReservadoDTO> getReservados() {
-        return reservados;
-    }
-    public void setReservados(List<RangoReservadoDTO> reservados) {
-        this.reservados = reservados;
-    }
+	public void setEstadoAlojamiento(EstadoAlojamiento estadoAlojamiento) {
+		this.estadoAlojamiento = estadoAlojamiento;
+	}
+
+	public List<PeriodoDisponibilidadDTO> getPeriodos() {
+		return periodos;
+	}
+
+	public void setPeriodos(List<PeriodoDisponibilidadDTO> periodos) {
+		this.periodos = periodos;
+	}
+
+	public List<RangoReservadoDTO> getReservados() {
+		return reservados;
+	}
+
+	public void setReservados(List<RangoReservadoDTO> reservados) {
+		this.reservados = reservados;
+	}
 }

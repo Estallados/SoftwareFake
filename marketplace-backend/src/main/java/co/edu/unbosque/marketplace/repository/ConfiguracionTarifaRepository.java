@@ -14,5 +14,5 @@ import co.edu.unbosque.marketplace.entity.ConfiguracionTarifa;
  */
 public interface ConfiguracionTarifaRepository extends JpaRepository<ConfiguracionTarifa, Long> {
 
-    public Optional<ConfiguracionTarifa> findTopByOrderByFechaDescIdConfiguracionDesc();
+	public Optional<ConfiguracionTarifa> findTopByOrderByFechaDescIdConfiguracionDesc();
 }

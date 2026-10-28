@@ -24,50 +24,53 @@ import co.edu.unbosque.marketplace.entity.Reserva;
  */
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
-    String OCUPA = "(r.estado in :activos or (r.estado = co.edu.unbosque.marketplace.entity.EstadoReserva.PENDIENTE_PAGO "
-            + "and r.fechaCreacion >= :limite))";
+	String OCUPA = "(r.estado in :activos or (r.estado = co.edu.unbosque.marketplace.entity.EstadoReserva.PENDIENTE_PAGO "
+			+ "and r.fechaCreacion >= :limite))";
 
-    /** Indica si alguna reserva que ocupa fechas se cruza con [llegada, salida). */
-    @Query("select count(r) > 0 from Reserva r where r.idAlojamiento = :id and r.fechaEntrada < :salida "
-            + "and r.fechaSalida > :llegada and " + OCUPA)
-    public boolean existeCruce(@Param("id") Long idAlojamiento, @Param("llegada") LocalDate llegada,
-            @Param("salida") LocalDate salida, @Param("activos") Collection<EstadoReserva> activos,
-            @Param("limite") LocalDateTime limite);
+	/** Indica si alguna reserva que ocupa fechas se cruza con [llegada, salida). */
+	@Query("select count(r) > 0 from Reserva r where r.idAlojamiento = :id and r.fechaEntrada < :salida "
+			+ "and r.fechaSalida > :llegada and " + OCUPA)
+	public boolean existeCruce(@Param("id") Long idAlojamiento, @Param("llegada") LocalDate llegada,
+			@Param("salida") LocalDate salida, @Param("activos") Collection<EstadoReserva> activos,
+			@Param("limite") LocalDateTime limite);
 
-    /** Reservas que ocupan fechas de un alojamiento (calendario). */
-    @Query("select r from Reserva r where r.idAlojamiento = :id and r.fechaSalida > :desde and " + OCUPA
-            + " order by r.fechaEntrada")
-    public List<Reserva> buscarOcupadas(@Param("id") Long idAlojamiento, @Param("desde") LocalDate desde,
-            @Param("activos") Collection<EstadoReserva> activos, @Param("limite") LocalDateTime limite);
+	/** Reservas que ocupan fechas de un alojamiento (calendario). */
+	@Query("select r from Reserva r where r.idAlojamiento = :id and r.fechaSalida > :desde and " + OCUPA
+			+ " order by r.fechaEntrada")
+	public List<Reserva> buscarOcupadas(@Param("id") Long idAlojamiento, @Param("desde") LocalDate desde,
+			@Param("activos") Collection<EstadoReserva> activos, @Param("limite") LocalDateTime limite);
 
-    public Page<Reserva> findByIdHuesped(Long idHuesped, Pageable pageable);
+	public Page<Reserva> findByIdHuesped(Long idHuesped, Pageable pageable);
 
-    /** Todas las reservas en un estado (vista del administrador). */
-    public Page<Reserva> findByEstado(EstadoReserva estado, Pageable pageable);
+	/** Todas las reservas en un estado (vista del administrador). */
+	public Page<Reserva> findByEstado(EstadoReserva estado, Pageable pageable);
 
-    /** Cantidad de reservas de un alojamiento en los estados indicados. */
-    public long countByIdAlojamientoAndEstadoIn(Long idAlojamiento, Collection<EstadoReserva> estados);
+	/** Cantidad de reservas de un alojamiento en los estados indicados. */
+	public long countByIdAlojamientoAndEstadoIn(Long idAlojamiento, Collection<EstadoReserva> estados);
 
-    /** Reservas de los alojamientos de un anfitrión. */
-    @Query("select r from Reserva r where r.idAlojamiento in "
-            + "(select a.idAlojamiento from Alojamiento a where a.idAnfitrion = :idAnfitrion)")
-    public Page<Reserva> buscarDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion, Pageable pageable);
+	/** Reservas de los alojamientos de un anfitrión. */
+	@Query("select r from Reserva r where r.idAlojamiento in "
+			+ "(select a.idAlojamiento from Alojamiento a where a.idAnfitrion = :idAnfitrion)")
+	public Page<Reserva> buscarDeAnfitrion(@Param("idAnfitrion") Long idAnfitrion, Pageable pageable);
 
-    /** Reservas futuras de un alojamiento en los estados indicados (bloqueo administrativo). */
-    public List<Reserva> findByIdAlojamientoAndFechaEntradaAfterAndEstadoIn(Long idAlojamiento, LocalDate fecha,
-            Collection<EstadoReserva> estados);
+	/**
+	 * Reservas futuras de un alojamiento en los estados indicados (bloqueo
+	 * administrativo).
+	 */
+	public List<Reserva> findByIdAlojamientoAndFechaEntradaAfterAndEstadoIn(Long idAlojamiento, LocalDate fecha,
+			Collection<EstadoReserva> estados);
 
-    /** Reservas PENDIENTE_PAGO creadas antes del límite (abandonadas). */
-    public List<Reserva> findByEstadoAndFechaCreacionBefore(EstadoReserva estado, LocalDateTime limite);
+	/** Reservas PENDIENTE_PAGO creadas antes del límite (abandonadas). */
+	public List<Reserva> findByEstadoAndFechaCreacionBefore(EstadoReserva estado, LocalDateTime limite);
 
-    @Query("select r.estado, count(r) from Reserva r group by r.estado")
-    public List<Object[]> contarPorEstado();
+	@Query("select r.estado, count(r) from Reserva r group by r.estado")
+	public List<Object[]> contarPorEstado();
 
-    @Query("select a.ciudad, count(r) from Reserva r, Alojamiento a where r.idAlojamiento = a.idAlojamiento "
-            + "and r.estado <> co.edu.unbosque.marketplace.entity.EstadoReserva.CANCELADA "
-            + "group by a.ciudad order by count(r) desc")
-    public List<Object[]> contarPorCiudad();
+	@Query("select a.ciudad, count(r) from Reserva r, Alojamiento a where r.idAlojamiento = a.idAlojamiento "
+			+ "and r.estado <> co.edu.unbosque.marketplace.entity.EstadoReserva.CANCELADA "
+			+ "group by a.ciudad order by count(r) desc")
+	public List<Object[]> contarPorCiudad();
 
-    @Query("select coalesce(sum(r.total), 0) from Reserva r where r.estado in :estados")
-    public BigDecimal sumarTotales(@Param("estados") Collection<EstadoReserva> estados);
+	@Query("select coalesce(sum(r.total), 0) from Reserva r where r.estado in :estados")
+	public BigDecimal sumarTotales(@Param("estados") Collection<EstadoReserva> estados);
 }

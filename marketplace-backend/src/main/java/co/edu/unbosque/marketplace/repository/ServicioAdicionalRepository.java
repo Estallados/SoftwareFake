@@ -14,7 +14,7 @@ import co.edu.unbosque.marketplace.entity.ServicioAdicional;
  */
 public interface ServicioAdicionalRepository extends JpaRepository<ServicioAdicional, Long> {
 
-    public List<ServicioAdicional> findByIdAlojamientoOrderByIdServicio(Long idAlojamiento);
+	public List<ServicioAdicional> findByIdAlojamientoOrderByIdServicio(Long idAlojamiento);
 
-    public Optional<ServicioAdicional> findByIdServicioAndIdAlojamiento(Long idServicio, Long idAlojamiento);
+	public Optional<ServicioAdicional> findByIdServicioAndIdAlojamiento(Long idServicio, Long idAlojamiento);
 }

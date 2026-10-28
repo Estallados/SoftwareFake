@@ -15,7 +15,7 @@ import co.edu.unbosque.marketplace.entity.Favorito;
  */
 public interface FavoritoRepository extends JpaRepository<Favorito, Long> {
 
-    public Page<Favorito> findByIdUsuario(Long idUsuario, Pageable pageable);
+	public Page<Favorito> findByIdUsuario(Long idUsuario, Pageable pageable);
 
-    public Optional<Favorito> findByIdUsuarioAndIdAlojamiento(Long idUsuario, Long idAlojamiento);
+	public Optional<Favorito> findByIdUsuarioAndIdAlojamiento(Long idUsuario, Long idAlojamiento);
 }

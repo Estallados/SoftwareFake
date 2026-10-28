@@ -8,39 +8,43 @@ import java.time.LocalDate;
  * @see "RF-025"
  */
 public class PeriodoDisponibilidadDTO {
-    private Long idPeriodo;
-    private Long idAlojamiento;
-    private LocalDate fechaInicio;
-    private LocalDate fechaFin;
+	private Long idPeriodo;
+	private Long idAlojamiento;
+	private LocalDate fechaInicio;
+	private LocalDate fechaFin;
 
-    public PeriodoDisponibilidadDTO() {
-    }
+	public PeriodoDisponibilidadDTO() {
+	}
 
-    public Long getIdPeriodo() {
-        return idPeriodo;
-    }
-    public void setIdPeriodo(Long idPeriodo) {
-        this.idPeriodo = idPeriodo;
-    }
+	public Long getIdPeriodo() {
+		return idPeriodo;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setIdPeriodo(Long idPeriodo) {
+		this.idPeriodo = idPeriodo;
+	}
 
-    public LocalDate getFechaInicio() {
-        return fechaInicio;
-    }
-    public void setFechaInicio(LocalDate fechaInicio) {
-        this.fechaInicio = fechaInicio;
-    }
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
 
-    public LocalDate getFechaFin() {
-        return fechaFin;
-    }
-    public void setFechaFin(LocalDate fechaFin) {
-        this.fechaFin = fechaFin;
-    }
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
+
+	public LocalDate getFechaInicio() {
+		return fechaInicio;
+	}
+
+	public void setFechaInicio(LocalDate fechaInicio) {
+		this.fechaInicio = fechaInicio;
+	}
+
+	public LocalDate getFechaFin() {
+		return fechaFin;
+	}
+
+	public void setFechaFin(LocalDate fechaFin) {
+		this.fechaFin = fechaFin;
+	}
 }

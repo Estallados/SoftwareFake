@@ -31,42 +31,41 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class SegundoFactorController {
 
-    private final SegundoFactorService segundoFactorService;
+	private final SegundoFactorService segundoFactorService;
 
-    public SegundoFactorController(SegundoFactorService segundoFactorService) {
-        this.segundoFactorService = segundoFactorService;
-    }
+	public SegundoFactorController(SegundoFactorService segundoFactorService) {
+		this.segundoFactorService = segundoFactorService;
+	}
 
-    @Operation(summary = "Generar el secreto TOTP (paso 1)",
-            description = "Devuelve el secreto y la URI otpauth para registrarlo en la app autenticadora.")
-    @ApiResponse(responseCode = "200", description = "{secreto, uri}: la URI otpauth se muestra como código QR")
-    @ApiResponse(responseCode = "409", description = "El segundo factor ya está habilitado.")
-    @PostMapping("/activar")
-    public ResponseEntity<Object> activar(Authentication authentication) {
-        return RespuestaUtil.desde(segundoFactorService.activar(RespuestaUtil.idUsuario(authentication)));
-    }
+	@Operation(summary = "Generar el secreto TOTP (paso 1)", description = "Devuelve el secreto y la URI otpauth para registrarlo en la app autenticadora.")
+	@ApiResponse(responseCode = "200", description = "{secreto, uri}: la URI otpauth se muestra como código QR")
+	@ApiResponse(responseCode = "409", description = "El segundo factor ya está habilitado.")
+	@PostMapping("/activar")
+	public ResponseEntity<Object> activar(Authentication authentication) {
+		return RespuestaUtil.desde(segundoFactorService.activar(RespuestaUtil.idUsuario(authentication)));
+	}
 
-    @Operation(summary = "Confirmar la activación con un código (paso 2)")
-    @ApiResponse(responseCode = "200", description = "Segundo factor habilitado.")
-    @ApiResponse(responseCode = "400", description = "El código no es válido.")
-    @ApiResponse(responseCode = "409", description = "Primero solicita la activación del segundo factor.")
-    @PostMapping("/confirmar")
-    public ResponseEntity<Object> confirmar(@RequestBody SegundoFactorDTO datos, Authentication authentication) {
-        Resultado<Void> resultado = segundoFactorService.confirmar(RespuestaUtil.idUsuario(authentication),
-                datos.getCodigo());
-        return resultado.esExito() ? RespuestaUtil.mensaje(HttpStatus.OK, "Segundo factor habilitado.")
-                : RespuestaUtil.desde(resultado);
-    }
+	@Operation(summary = "Confirmar la activación con un código (paso 2)")
+	@ApiResponse(responseCode = "200", description = "Segundo factor habilitado.")
+	@ApiResponse(responseCode = "400", description = "El código no es válido.")
+	@ApiResponse(responseCode = "409", description = "Primero solicita la activación del segundo factor.")
+	@PostMapping("/confirmar")
+	public ResponseEntity<Object> confirmar(@RequestBody SegundoFactorDTO datos, Authentication authentication) {
+		Resultado<Void> resultado = segundoFactorService.confirmar(RespuestaUtil.idUsuario(authentication),
+				datos.getCodigo());
+		return resultado.esExito() ? RespuestaUtil.mensaje(HttpStatus.OK, "Segundo factor habilitado.")
+				: RespuestaUtil.desde(resultado);
+	}
 
-    @Operation(summary = "Deshabilitar el segundo factor con un código actual")
-    @ApiResponse(responseCode = "200", description = "Segundo factor deshabilitado.")
-    @ApiResponse(responseCode = "400", description = "El código no es válido.")
-    @ApiResponse(responseCode = "409", description = "El segundo factor no está habilitado.")
-    @PostMapping("/desactivar")
-    public ResponseEntity<Object> desactivar(@RequestBody SegundoFactorDTO datos, Authentication authentication) {
-        Resultado<Void> resultado = segundoFactorService.desactivar(RespuestaUtil.idUsuario(authentication),
-                datos.getCodigo());
-        return resultado.esExito() ? RespuestaUtil.mensaje(HttpStatus.OK, "Segundo factor deshabilitado.")
-                : RespuestaUtil.desde(resultado);
-    }
+	@Operation(summary = "Deshabilitar el segundo factor con un código actual")
+	@ApiResponse(responseCode = "200", description = "Segundo factor deshabilitado.")
+	@ApiResponse(responseCode = "400", description = "El código no es válido.")
+	@ApiResponse(responseCode = "409", description = "El segundo factor no está habilitado.")
+	@PostMapping("/desactivar")
+	public ResponseEntity<Object> desactivar(@RequestBody SegundoFactorDTO datos, Authentication authentication) {
+		Resultado<Void> resultado = segundoFactorService.desactivar(RespuestaUtil.idUsuario(authentication),
+				datos.getCodigo());
+		return resultado.esExito() ? RespuestaUtil.mensaje(HttpStatus.OK, "Segundo factor deshabilitado.")
+				: RespuestaUtil.desde(resultado);
+	}
 }

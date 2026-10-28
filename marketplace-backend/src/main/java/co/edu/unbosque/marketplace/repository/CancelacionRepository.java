@@ -15,8 +15,8 @@ import co.edu.unbosque.marketplace.entity.Cancelacion;
  */
 public interface CancelacionRepository extends JpaRepository<Cancelacion, Long> {
 
-    public Optional<Cancelacion> findByIdReserva(Long idReserva);
+	public Optional<Cancelacion> findByIdReserva(Long idReserva);
 
-    @Query("select coalesce(sum(c.valorReembolso), 0) from Cancelacion c")
-    public BigDecimal sumarReembolsos();
+	@Query("select coalesce(sum(c.valorReembolso), 0) from Cancelacion c")
+	public BigDecimal sumarReembolsos();
 }

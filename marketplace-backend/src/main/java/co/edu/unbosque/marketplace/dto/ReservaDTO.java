@@ -13,219 +13,248 @@ import co.edu.unbosque.marketplace.entity.EstadoReserva;
  * @see "RF-021, RF-022"
  */
 public class ReservaDTO {
-    private Long idReserva;
-    private LocalDate fechaEntrada;
-    private LocalDate fechaSalida;
-    private Integer noches;
-    private Integer huespedes;
-    private EstadoReserva estado;
-    private BigDecimal total;
-    private String desglose;
-    private Long idHuesped;
-    private Long idAlojamiento;
-    private String tituloAlojamiento;
-    private Long idCotizacion;
-    private LocalDateTime fechaCreacion;
-    private Boolean completada;
-    private PagoDTO pago;
-    /** URL de la imagen principal del alojamiento. */
-    private String imagenAlojamiento;
-    private String ciudad;
-    private String ubicacion;
-    private String tipoAlojamiento;
-    private Integer capacidadAlojamiento;
-    /** Política de cancelación del alojamiento. */
-    private String nombrePolitica;
-    private String nombreHuesped;
-    private Long idAnfitrion;
-    private String nombreAnfitrion;
-    /** Indica si el huésped ya reseñó esta reserva. */
-    private Boolean tieneResena;
-    /** Datos de la cancelación (fecha, motivo, devolución); null si no fue cancelada por el huésped. */
-    private CancelacionDTO cancelacion;
+	private Long idReserva;
+	private LocalDate fechaEntrada;
+	private LocalDate fechaSalida;
+	private Integer noches;
+	private Integer huespedes;
+	private EstadoReserva estado;
+	private BigDecimal total;
+	private String desglose;
+	private Long idHuesped;
+	private Long idAlojamiento;
+	private String tituloAlojamiento;
+	private Long idCotizacion;
+	private LocalDateTime fechaCreacion;
+	private Boolean completada;
+	private PagoDTO pago;
+	/** URL de la imagen principal del alojamiento. */
+	private String imagenAlojamiento;
+	private String ciudad;
+	private String ubicacion;
+	private String tipoAlojamiento;
+	private Integer capacidadAlojamiento;
+	/** Política de cancelación del alojamiento. */
+	private String nombrePolitica;
+	private String nombreHuesped;
+	private Long idAnfitrion;
+	private String nombreAnfitrion;
+	/** Indica si el huésped ya reseñó esta reserva. */
+	private Boolean tieneResena;
+	/**
+	 * Datos de la cancelación (fecha, motivo, devolución); null si no fue cancelada
+	 * por el huésped.
+	 */
+	private CancelacionDTO cancelacion;
 
-    public ReservaDTO() {
-    }
+	public ReservaDTO() {
+	}
 
-    public Long getIdReserva() {
-        return idReserva;
-    }
-    public void setIdReserva(Long idReserva) {
-        this.idReserva = idReserva;
-    }
+	public Long getIdReserva() {
+		return idReserva;
+	}
 
-    public LocalDate getFechaEntrada() {
-        return fechaEntrada;
-    }
-    public void setFechaEntrada(LocalDate fechaEntrada) {
-        this.fechaEntrada = fechaEntrada;
-    }
+	public void setIdReserva(Long idReserva) {
+		this.idReserva = idReserva;
+	}
 
-    public LocalDate getFechaSalida() {
-        return fechaSalida;
-    }
-    public void setFechaSalida(LocalDate fechaSalida) {
-        this.fechaSalida = fechaSalida;
-    }
+	public LocalDate getFechaEntrada() {
+		return fechaEntrada;
+	}
 
-    public Integer getNoches() {
-        return noches;
-    }
-    public void setNoches(Integer noches) {
-        this.noches = noches;
-    }
+	public void setFechaEntrada(LocalDate fechaEntrada) {
+		this.fechaEntrada = fechaEntrada;
+	}
 
-    public Integer getHuespedes() {
-        return huespedes;
-    }
-    public void setHuespedes(Integer huespedes) {
-        this.huespedes = huespedes;
-    }
+	public LocalDate getFechaSalida() {
+		return fechaSalida;
+	}
 
-    public EstadoReserva getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoReserva estado) {
-        this.estado = estado;
-    }
+	public void setFechaSalida(LocalDate fechaSalida) {
+		this.fechaSalida = fechaSalida;
+	}
 
-    public BigDecimal getTotal() {
-        return total;
-    }
-    public void setTotal(BigDecimal total) {
-        this.total = total;
-    }
+	public Integer getNoches() {
+		return noches;
+	}
 
-    public String getDesglose() {
-        return desglose;
-    }
-    public void setDesglose(String desglose) {
-        this.desglose = desglose;
-    }
+	public void setNoches(Integer noches) {
+		this.noches = noches;
+	}
 
-    public Long getIdHuesped() {
-        return idHuesped;
-    }
-    public void setIdHuesped(Long idHuesped) {
-        this.idHuesped = idHuesped;
-    }
+	public Integer getHuespedes() {
+		return huespedes;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setHuespedes(Integer huespedes) {
+		this.huespedes = huespedes;
+	}
 
-    public String getTituloAlojamiento() {
-        return tituloAlojamiento;
-    }
-    public void setTituloAlojamiento(String tituloAlojamiento) {
-        this.tituloAlojamiento = tituloAlojamiento;
-    }
+	public EstadoReserva getEstado() {
+		return estado;
+	}
 
-    public Long getIdCotizacion() {
-        return idCotizacion;
-    }
-    public void setIdCotizacion(Long idCotizacion) {
-        this.idCotizacion = idCotizacion;
-    }
+	public void setEstado(EstadoReserva estado) {
+		this.estado = estado;
+	}
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+	public BigDecimal getTotal() {
+		return total;
+	}
 
-    public Boolean getCompletada() {
-        return completada;
-    }
-    public void setCompletada(Boolean completada) {
-        this.completada = completada;
-    }
+	public void setTotal(BigDecimal total) {
+		this.total = total;
+	}
 
-    public PagoDTO getPago() {
-        return pago;
-    }
-    public void setPago(PagoDTO pago) {
-        this.pago = pago;
-    }
+	public String getDesglose() {
+		return desglose;
+	}
 
-    public String getImagenAlojamiento() {
-        return imagenAlojamiento;
-    }
-    public void setImagenAlojamiento(String imagenAlojamiento) {
-        this.imagenAlojamiento = imagenAlojamiento;
-    }
+	public void setDesglose(String desglose) {
+		this.desglose = desglose;
+	}
 
-    public String getCiudad() {
-        return ciudad;
-    }
-    public void setCiudad(String ciudad) {
-        this.ciudad = ciudad;
-    }
+	public Long getIdHuesped() {
+		return idHuesped;
+	}
 
-    public String getUbicacion() {
-        return ubicacion;
-    }
-    public void setUbicacion(String ubicacion) {
-        this.ubicacion = ubicacion;
-    }
+	public void setIdHuesped(Long idHuesped) {
+		this.idHuesped = idHuesped;
+	}
 
-    public String getTipoAlojamiento() {
-        return tipoAlojamiento;
-    }
-    public void setTipoAlojamiento(String tipoAlojamiento) {
-        this.tipoAlojamiento = tipoAlojamiento;
-    }
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
 
-    public Integer getCapacidadAlojamiento() {
-        return capacidadAlojamiento;
-    }
-    public void setCapacidadAlojamiento(Integer capacidadAlojamiento) {
-        this.capacidadAlojamiento = capacidadAlojamiento;
-    }
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
 
-    public String getNombrePolitica() {
-        return nombrePolitica;
-    }
-    public void setNombrePolitica(String nombrePolitica) {
-        this.nombrePolitica = nombrePolitica;
-    }
+	public String getTituloAlojamiento() {
+		return tituloAlojamiento;
+	}
 
-    public String getNombreHuesped() {
-        return nombreHuesped;
-    }
-    public void setNombreHuesped(String nombreHuesped) {
-        this.nombreHuesped = nombreHuesped;
-    }
+	public void setTituloAlojamiento(String tituloAlojamiento) {
+		this.tituloAlojamiento = tituloAlojamiento;
+	}
 
-    public Long getIdAnfitrion() {
-        return idAnfitrion;
-    }
-    public void setIdAnfitrion(Long idAnfitrion) {
-        this.idAnfitrion = idAnfitrion;
-    }
+	public Long getIdCotizacion() {
+		return idCotizacion;
+	}
 
-    public String getNombreAnfitrion() {
-        return nombreAnfitrion;
-    }
-    public void setNombreAnfitrion(String nombreAnfitrion) {
-        this.nombreAnfitrion = nombreAnfitrion;
-    }
+	public void setIdCotizacion(Long idCotizacion) {
+		this.idCotizacion = idCotizacion;
+	}
 
-    public Boolean getTieneResena() {
-        return tieneResena;
-    }
-    public void setTieneResena(Boolean tieneResena) {
-        this.tieneResena = tieneResena;
-    }
+	public LocalDateTime getFechaCreacion() {
+		return fechaCreacion;
+	}
 
-    public CancelacionDTO getCancelacion() {
-        return cancelacion;
-    }
-    public void setCancelacion(CancelacionDTO cancelacion) {
-        this.cancelacion = cancelacion;
-    }
+	public void setFechaCreacion(LocalDateTime fechaCreacion) {
+		this.fechaCreacion = fechaCreacion;
+	}
+
+	public Boolean getCompletada() {
+		return completada;
+	}
+
+	public void setCompletada(Boolean completada) {
+		this.completada = completada;
+	}
+
+	public PagoDTO getPago() {
+		return pago;
+	}
+
+	public void setPago(PagoDTO pago) {
+		this.pago = pago;
+	}
+
+	public String getImagenAlojamiento() {
+		return imagenAlojamiento;
+	}
+
+	public void setImagenAlojamiento(String imagenAlojamiento) {
+		this.imagenAlojamiento = imagenAlojamiento;
+	}
+
+	public String getCiudad() {
+		return ciudad;
+	}
+
+	public void setCiudad(String ciudad) {
+		this.ciudad = ciudad;
+	}
+
+	public String getUbicacion() {
+		return ubicacion;
+	}
+
+	public void setUbicacion(String ubicacion) {
+		this.ubicacion = ubicacion;
+	}
+
+	public String getTipoAlojamiento() {
+		return tipoAlojamiento;
+	}
+
+	public void setTipoAlojamiento(String tipoAlojamiento) {
+		this.tipoAlojamiento = tipoAlojamiento;
+	}
+
+	public Integer getCapacidadAlojamiento() {
+		return capacidadAlojamiento;
+	}
+
+	public void setCapacidadAlojamiento(Integer capacidadAlojamiento) {
+		this.capacidadAlojamiento = capacidadAlojamiento;
+	}
+
+	public String getNombrePolitica() {
+		return nombrePolitica;
+	}
+
+	public void setNombrePolitica(String nombrePolitica) {
+		this.nombrePolitica = nombrePolitica;
+	}
+
+	public String getNombreHuesped() {
+		return nombreHuesped;
+	}
+
+	public void setNombreHuesped(String nombreHuesped) {
+		this.nombreHuesped = nombreHuesped;
+	}
+
+	public Long getIdAnfitrion() {
+		return idAnfitrion;
+	}
+
+	public void setIdAnfitrion(Long idAnfitrion) {
+		this.idAnfitrion = idAnfitrion;
+	}
+
+	public String getNombreAnfitrion() {
+		return nombreAnfitrion;
+	}
+
+	public void setNombreAnfitrion(String nombreAnfitrion) {
+		this.nombreAnfitrion = nombreAnfitrion;
+	}
+
+	public Boolean getTieneResena() {
+		return tieneResena;
+	}
+
+	public void setTieneResena(Boolean tieneResena) {
+		this.tieneResena = tieneResena;
+	}
+
+	public CancelacionDTO getCancelacion() {
+		return cancelacion;
+	}
+
+	public void setCancelacion(CancelacionDTO cancelacion) {
+		this.cancelacion = cancelacion;
+	}
 }

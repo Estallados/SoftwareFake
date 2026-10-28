@@ -14,19 +14,19 @@ import co.edu.unbosque.marketplace.entity.TokenRecuperacion;
  */
 public interface TokenRecuperacionRepository extends JpaRepository<TokenRecuperacion, Long> {
 
-    /**
-     * Busca un token por su hash.
-     *
-     * @param tokenHash Hash del token recibido.
-     * @return El token si existe.
-     */
-    public Optional<TokenRecuperacion> findByTokenHash(String tokenHash);
+	/**
+	 * Busca un token por su hash.
+	 *
+	 * @param tokenHash Hash del token recibido.
+	 * @return El token si existe.
+	 */
+	public Optional<TokenRecuperacion> findByTokenHash(String tokenHash);
 
-    /**
-     * Tokens que el usuario aún no ha usado; se invalidan al pedir uno nuevo.
-     *
-     * @param idUsuario Usuario dueño de los tokens.
-     * @return Tokens sin usar.
-     */
-    public List<TokenRecuperacion> findByIdUsuarioAndUsadoFalse(Long idUsuario);
+	/**
+	 * Tokens que el usuario aún no ha usado; se invalidan al pedir uno nuevo.
+	 *
+	 * @param idUsuario Usuario dueño de los tokens.
+	 * @return Tokens sin usar.
+	 */
+	public List<TokenRecuperacion> findByIdUsuarioAndUsadoFalse(Long idUsuario);
 }

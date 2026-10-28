@@ -29,10 +29,9 @@ public class PoliticasInicializador implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) {
-		crearSiFalta("FLEXIBLE", "Devolución del 100 % si cancelas con al menos 1 día de anticipación.", 1, null,
-				null);
-		crearSiFalta("MODERADA", "Devolución del 100 % con 5 o más días de anticipación y del 50 % con 1 a 4 días.",
-				5, 1, PARCIAL);
+		crearSiFalta("FLEXIBLE", "Devolución del 100 % si cancelas con al menos 1 día de anticipación.", 1, null, null);
+		crearSiFalta("MODERADA", "Devolución del 100 % con 5 o más días de anticipación y del 50 % con 1 a 4 días.", 5,
+				1, PARCIAL);
 		crearSiFalta("ESTRICTA", "Devolución del 50 % con 7 o más días de anticipación; después no hay devolución.",
 				null, 7, PARCIAL);
 	}

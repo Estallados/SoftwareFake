@@ -26,21 +26,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class PagoController {
 
-    private final PagoService pagoService;
+	private final PagoService pagoService;
 
-    public PagoController(PagoService pagoService) {
-        this.pagoService = pagoService;
-    }
+	public PagoController(PagoService pagoService) {
+		this.pagoService = pagoService;
+	}
 
-    @Operation(summary = "Configuración de pagos para el front (público)",
-            description = "modo STRIPE_TEST (cobros en el modo de prueba de Stripe) o SIMULADO (sin clave de Stripe), "
-                    + "clave publicable para Stripe Elements, moneda y métodos de prueba con su resultado. El "
-                    + "metodoPago de POST /reservas es uno de esos métodos o el PaymentMethod (pm_...) que crea "
-                    + "Stripe Elements con una tarjeta de prueba, como 4242 4242 4242 4242.")
-    @SecurityRequirements
-    @ApiResponse(responseCode = "200", description = "Configuración de pagos")
-    @GetMapping("/configuracion")
-    public ResponseEntity<ConfiguracionPagoDTO> configuracion() {
-        return ResponseEntity.ok(pagoService.configuracion());
-    }
+	@Operation(summary = "Configuración de pagos para el front (público)", description = "modo STRIPE_TEST (cobros en el modo de prueba de Stripe) o SIMULADO (sin clave de Stripe), "
+			+ "clave publicable para Stripe Elements, moneda y métodos de prueba con su resultado. El "
+			+ "metodoPago de POST /reservas es uno de esos métodos o el PaymentMethod (pm_...) que crea "
+			+ "Stripe Elements con una tarjeta de prueba, como 4242 4242 4242 4242.")
+	@SecurityRequirements
+	@ApiResponse(responseCode = "200", description = "Configuración de pagos")
+	@GetMapping("/configuracion")
+	public ResponseEntity<ConfiguracionPagoDTO> configuracion() {
+		return ResponseEntity.ok(pagoService.configuracion());
+	}
 }

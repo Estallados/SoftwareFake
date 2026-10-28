@@ -6,62 +6,68 @@ import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Role;
 
 public class UsuarioDTO {
-    private Long idUsuario;
-    private String nombre;
-    private String correo;
-    private String telefono;
-    private Role rol;
-    private EstadoUsuario estado;
-    private String contrasenia;
-    private String motivoRestriccion;
-    private Boolean totpHabilitado;
-    private LocalDateTime fechaRegistro;
-    private Boolean correoVerificado;
+	private Long idUsuario;
+	private String nombre;
+	private String correo;
+	private String telefono;
+	private Role rol;
+	private EstadoUsuario estado;
+	private String contrasenia;
+	private String motivoRestriccion;
+	private Boolean totpHabilitado;
+	private LocalDateTime fechaRegistro;
+	private Boolean correoVerificado;
 
-    public UsuarioDTO() {
-    }
+	public UsuarioDTO() {
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
 
-    public String getNombre() {
-        return nombre;
-    }
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
 
-    public String getCorreo() {
-        return correo;
-    }
-    public void setCorreo(String correo) {
-        this.correo = correo;
-    }
+	public String getNombre() {
+		return nombre;
+	}
 
-    public String getTelefono() {
-        return telefono;
-    }
-    public void setTelefono(String telefono) {
-        this.telefono = telefono;
-    }
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
 
-    public Role getRol() {
-        return rol;
-    }
-    public void setRol(Role rol) {
-        this.rol = rol;
-    }
+	public String getCorreo() {
+		return correo;
+	}
 
-    public EstadoUsuario getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoUsuario estado) {
-        this.estado = estado;
-    }
+	public void setCorreo(String correo) {
+		this.correo = correo;
+	}
+
+	public String getTelefono() {
+		return telefono;
+	}
+
+	public void setTelefono(String telefono) {
+		this.telefono = telefono;
+	}
+
+	public Role getRol() {
+		return rol;
+	}
+
+	public void setRol(Role rol) {
+		this.rol = rol;
+	}
+
+	public EstadoUsuario getEstado() {
+		return estado;
+	}
+
+	public void setEstado(EstadoUsuario estado) {
+		this.estado = estado;
+	}
 
 	public String getContrasenia() {
 		return contrasenia;
@@ -71,31 +77,35 @@ public class UsuarioDTO {
 		this.contrasenia = contrasenia;
 	}
 
-    public String getMotivoRestriccion() {
-        return motivoRestriccion;
-    }
-    public void setMotivoRestriccion(String motivoRestriccion) {
-        this.motivoRestriccion = motivoRestriccion;
-    }
+	public String getMotivoRestriccion() {
+		return motivoRestriccion;
+	}
 
-    public Boolean getTotpHabilitado() {
-        return totpHabilitado;
-    }
-    public void setTotpHabilitado(Boolean totpHabilitado) {
-        this.totpHabilitado = totpHabilitado;
-    }
+	public void setMotivoRestriccion(String motivoRestriccion) {
+		this.motivoRestriccion = motivoRestriccion;
+	}
 
-    public LocalDateTime getFechaRegistro() {
-        return fechaRegistro;
-    }
-    public void setFechaRegistro(LocalDateTime fechaRegistro) {
-        this.fechaRegistro = fechaRegistro;
-    }
+	public Boolean getTotpHabilitado() {
+		return totpHabilitado;
+	}
 
-    public Boolean getCorreoVerificado() {
-        return correoVerificado;
-    }
-    public void setCorreoVerificado(Boolean correoVerificado) {
-        this.correoVerificado = correoVerificado;
-    }
+	public void setTotpHabilitado(Boolean totpHabilitado) {
+		this.totpHabilitado = totpHabilitado;
+	}
+
+	public LocalDateTime getFechaRegistro() {
+		return fechaRegistro;
+	}
+
+	public void setFechaRegistro(LocalDateTime fechaRegistro) {
+		this.fechaRegistro = fechaRegistro;
+	}
+
+	public Boolean getCorreoVerificado() {
+		return correoVerificado;
+	}
+
+	public void setCorreoVerificado(Boolean correoVerificado) {
+		this.correoVerificado = correoVerificado;
+	}
 }

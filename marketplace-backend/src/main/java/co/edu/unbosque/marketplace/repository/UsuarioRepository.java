@@ -18,29 +18,29 @@ import co.edu.unbosque.marketplace.entity.Usuario;
  */
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
-    /**
-     * Busca un usuario por el hash de su correo electrónico.
-     *
-     * @param correoHash Hash del correo normalizado.
-     * @return Un objeto {@link Optional} que contiene el usuario si existe,
-     *         o vacío si no se encuentra.
-     */
-    public Optional<Usuario> findByCorreoHash(String correoHash);
+	/**
+	 * Busca un usuario por el hash de su correo electrónico.
+	 *
+	 * @param correoHash Hash del correo normalizado.
+	 * @return Un objeto {@link Optional} que contiene el usuario si existe, o vacío
+	 *         si no se encuentra.
+	 */
+	public Optional<Usuario> findByCorreoHash(String correoHash);
 
-    /**
-     * Verifica si existe un usuario con el hash de correo especificado.
-     *
-     * @param correoHash Hash del correo normalizado.
-     * @return {@code true} si existe un usuario con ese correo,
-     *         {@code false} en caso contrario.
-     */
-    public boolean existsByCorreoHash(String correoHash);
+	/**
+	 * Verifica si existe un usuario con el hash de correo especificado.
+	 *
+	 * @param correoHash Hash del correo normalizado.
+	 * @return {@code true} si existe un usuario con ese correo, {@code false} en
+	 *         caso contrario.
+	 */
+	public boolean existsByCorreoHash(String correoHash);
 
-    /**
-     * Verifica si existe al menos un usuario con el rol indicado.
-     *
-     * @param rol Rol a buscar.
-     * @return {@code true} si hay algún usuario con ese rol.
-     */
-    public boolean existsByRol(Role rol);
+	/**
+	 * Verifica si existe al menos un usuario con el rol indicado.
+	 *
+	 * @param rol Rol a buscar.
+	 * @return {@code true} si hay algún usuario con ese rol.
+	 */
+	public boolean existsByRol(Role rol);
 }

@@ -42,10 +42,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 /**
  * Controlador REST de autenticación del marketplace. Ruta base: {@code /auth}.
  * Expone el registro con verificación del correo por código, el inicio de
- * sesión (devuelve un token JWT listo para usar), la recuperación de
- * contraseña simulada, la reactivación de una cuenta desactivada y el inicio
- * de sesión con Google. Todas sus
- * rutas son públicas.
+ * sesión (devuelve un token JWT listo para usar), la recuperación de contraseña
+ * simulada, la reactivación de una cuenta desactivada y el inicio de sesión con
+ * Google. Todas sus rutas son públicas.
  *
  * @see "RF-001"
  * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
@@ -99,10 +98,10 @@ public class AuthController {
 	 * @param verificacionCorreoService servicio de verificación del correo
 	 * @param inicioGoogleService       servicio de inicio de sesión con Google
 	 */
-	public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
-			UsuarioService usuarioService, UserDetailsService userDetailsService, AuthService authService,
-			AuditoriaService auditoriaService, SegundoFactorService segundoFactorService,
-			VerificacionCorreoService verificacionCorreoService, InicioGoogleService inicioGoogleService) {
+	public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UsuarioService usuarioService,
+			UserDetailsService userDetailsService, AuthService authService, AuditoriaService auditoriaService,
+			SegundoFactorService segundoFactorService, VerificacionCorreoService verificacionCorreoService,
+			InicioGoogleService inicioGoogleService) {
 		this.authenticationManager = authenticationManager;
 		this.jwtUtil = jwtUtil;
 		this.usuarioService = usuarioService;
@@ -118,10 +117,10 @@ public class AuthController {
 	 * Inicia sesión. Ruta: {@code POST /auth/login}.
 	 *
 	 * @param loginRequest DTO con {@code correo} y {@code contrasenia}
-	 * @return 200 con un JSON {token, rol, correo}; 400 si faltan
-	 *         datos; 401 si las credenciales son inválidas; 403 si la cuenta está
-	 *         restringida o desactivada, o si el correo no está verificado
-	 *         (con {@code requiereVerificacion=true})
+	 * @return 200 con un JSON {token, rol, correo}; 400 si faltan datos; 401 si las
+	 *         credenciales son inválidas; 403 si la cuenta está restringida o
+	 *         desactivada, o si el correo no está verificado (con
+	 *         {@code requiereVerificacion=true})
 	 */
 	@Operation(summary = "Iniciar sesión", description = "Devuelve {token, rol, correo}. Si la cuenta tiene "
 			+ "segundo factor, también hay que enviar codigo; sin él responde 401 con requiereSegundoFactor=true. "
@@ -129,9 +128,9 @@ public class AuthController {
 	@ApiResponse(responseCode = "200", description = "Sesión iniciada: {token, rol, correo}")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo y la contraseña.")
 	@ApiResponse(responseCode = "401", description = "Correo o contraseña inválidos. | Ingresa el código de tu "
-	        + "aplicación autenticadora. | El código de verificación no es válido.")
+			+ "aplicación autenticadora. | El código de verificación no es válido.")
 	@ApiResponse(responseCode = "403", description = "Debes verificar tu correo con el código que te enviamos antes de "
-	        + "iniciar sesión. | La cuenta está restringida o desactivada.")
+			+ "iniciar sesión. | La cuenta está restringida o desactivada.")
 	@PostMapping("/login")
 	public ResponseEntity<Object> login(@RequestBody LoginDTO loginRequest) {
 		if (loginRequest.getCorreo() == null || loginRequest.getCorreo().isBlank()
@@ -146,16 +145,19 @@ public class AuthController {
 			UserDetails usuario = (UserDetails) authentication.getPrincipal();
 			Long idUsuario = usuario instanceof Usuario u ? u.getIdUsuario() : null;
 
-			// Correo sin verificar (RF-001): la contraseña es correcta pero aún no se entrega el token
+			// Correo sin verificar (RF-001): la contraseña es correcta pero aún no se
+			// entrega el token
 			if (usuario instanceof Usuario u && !u.esCorreoVerificado()) {
 				auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO,
 						idUsuario, ResultadoAuditoria.RECHAZADO, "Correo sin verificar");
-				return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message",
-						"Debes verificar tu correo con el código que te enviamos antes de iniciar sesión.",
-						"requiereVerificacion", true));
+				return ResponseEntity.status(HttpStatus.FORBIDDEN)
+						.body(Map.of("message",
+								"Debes verificar tu correo con el código que te enviamos antes de iniciar sesión.",
+								"requiereVerificacion", true));
 			}
 
-			// Segundo factor (RNF-033): con las credenciales válidas aún no se entrega el token
+			// Segundo factor (RNF-033): con las credenciales válidas aún no se entrega el
+			// token
 			if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
 				if (loginRequest.getCodigo() == null || loginRequest.getCodigo().isBlank()) {
 					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message",
@@ -169,8 +171,8 @@ public class AuthController {
 				}
 			}
 
-			auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO,
-					idUsuario, ResultadoAuditoria.EXITOSO, null);
+			auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO, idUsuario,
+					ResultadoAuditoria.EXITOSO, null);
 			return respuestaConToken(HttpStatus.OK, usuario, null);
 		} catch (LockedException | DisabledException e) {
 			auditoriaService.registrar(null, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO, null,
@@ -179,14 +181,15 @@ public class AuthController {
 		} catch (AuthenticationException e) {
 			auditoriaService.registrar(null, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO, null,
 					ResultadoAuditoria.RECHAZADO, "Credenciales inválidas");
-			// Mensaje genérico: no revela si el correo existe ni el detalle técnico del error
+			// Mensaje genérico: no revela si el correo existe ni el detalle técnico del
+			// error
 			return mensaje(HttpStatus.UNAUTHORIZED, "Correo o contraseña inválidos.");
 		}
 	}
 
 	/**
-	 * Inicia sesión con Google. Ruta: {@code POST /auth/google}. Si el correo
-	 * no tiene cuenta, la crea ya verificada con el rol pedido.
+	 * Inicia sesión con Google. Ruta: {@code POST /auth/google}. Si el correo no
+	 * tiene cuenta, la crea ya verificada con el rol pedido.
 	 *
 	 * @param datos DTO con {@code idToken} (el credential del botón de Google) y,
 	 *              opcionalmente, {@code rol} y {@code codigo}
@@ -196,18 +199,17 @@ public class AuthController {
 	 *         requiereSegundoFactor=true); 403 si la cuenta está restringida o se
 	 *         pide el rol ADMIN; 503 si no está configurado GOOGLE_CLIENT_ID
 	 */
-	@Operation(summary = "Iniciar sesión o registrarse con Google",
-			description = "Recibe el credential (ID token) del botón de Google. Si el correo ya tiene cuenta inicia "
-					+ "sesión; si no, la crea verificada con rol HUESPED o el rol enviado (ANFITRION). Devuelve el "
-					+ "token igual que /auth/login, más cuentaNueva.")
+	@Operation(summary = "Iniciar sesión o registrarse con Google", description = "Recibe el credential (ID token) del botón de Google. Si el correo ya tiene cuenta inicia "
+			+ "sesión; si no, la crea verificada con rol HUESPED o el rol enviado (ANFITRION). Devuelve el "
+			+ "token igual que /auth/login, más cuentaNueva.")
 	@ApiResponse(responseCode = "200", description = "Sesión iniciada con Google: {token, rol, correo, "
-	        + "cuentaNueva=false}")
+			+ "cuentaNueva=false}")
 	@ApiResponse(responseCode = "201", description = "Cuenta creada con Google: {token, rol, correo, cuentaNueva=true}")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el idToken que entrega el botón de Google.")
 	@ApiResponse(responseCode = "401", description = "No se pudo verificar tu cuenta de Google. Intenta de nuevo. | "
-	        + "Ingresa el código de tu aplicación autenticadora. | El código de verificación no es válido.")
+			+ "Ingresa el código de tu aplicación autenticadora. | El código de verificación no es válido.")
 	@ApiResponse(responseCode = "403", description = "La cuenta está restringida. | Solo puedes registrarte como "
-	        + "HUESPED o ANFITRION.")
+			+ "HUESPED o ANFITRION.")
 	@ApiResponse(responseCode = "503", description = "El inicio de sesión con Google no está configurado.")
 	@PostMapping("/google")
 	public ResponseEntity<Object> google(@RequestBody InicioGoogleDTO datos) {
@@ -228,36 +230,34 @@ public class AuthController {
 		case InicioGoogleService.CUENTA_RESTRINGIDA -> mensaje(HttpStatus.FORBIDDEN, "La cuenta está restringida.");
 		case InicioGoogleService.ROL_NO_PERMITIDO ->
 			mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");
-		case InicioGoogleService.REQUIERE_SEGUNDO_FACTOR -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
-				"message", "Ingresa el código de tu aplicación autenticadora.", "requiereSegundoFactor", true));
-		case InicioGoogleService.SEGUNDO_FACTOR_INVALIDO -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
-				"message", "El código de verificación no es válido.", "requiereSegundoFactor", true));
+		case InicioGoogleService.REQUIERE_SEGUNDO_FACTOR -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+				Map.of("message", "Ingresa el código de tu aplicación autenticadora.", "requiereSegundoFactor", true));
+		case InicioGoogleService.SEGUNDO_FACTOR_INVALIDO -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(Map.of("message", "El código de verificación no es válido.", "requiereSegundoFactor", true));
 		default -> mensaje(HttpStatus.UNAUTHORIZED, "No se pudo verificar tu cuenta de Google. Intenta de nuevo.");
 		};
 	}
 
 	/**
-	 * Registra un usuario nuevo. Ruta: {@code POST /auth/register}. La cuenta
-	 * queda activa pero con el correo sin verificar: se envía un código de 6
-	 * dígitos al correo y el token se entrega al confirmarlo con
-	 * {@code POST /auth/verificar}. El rol permitido (HUESPED por defecto, o
-	 * ANFITRION) lo valida {@link UsuarioService#create}; nunca se acepta ADMIN
-	 * por esta vía.
+	 * Registra un usuario nuevo. Ruta: {@code POST /auth/register}. La cuenta queda
+	 * activa pero con el correo sin verificar: se envía un código de 6 dígitos al
+	 * correo y el token se entrega al confirmarlo con {@code POST /auth/verificar}.
+	 * El rol permitido (HUESPED por defecto, o ANFITRION) lo valida
+	 * {@link UsuarioService#create}; nunca se acepta ADMIN por esta vía.
 	 *
 	 * @param registerRequest DTO con nombre, correo, contrasenia, y opcionalmente
 	 *                        telefono y rol
-	 * @return 201 con {message, correo, requiereVerificacion}; 409 si el correo
-	 *         ya existe; 400 si los datos o la contraseña son inválidos; 403 si
-	 *         se pide un rol no permitido; 500 si ocurre un error inesperado
+	 * @return 201 con {message, correo, requiereVerificacion}; 409 si el correo ya
+	 *         existe; 400 si los datos o la contraseña son inválidos; 403 si se
+	 *         pide un rol no permitido; 500 si ocurre un error inesperado
 	 */
-	@Operation(summary = "Registrarse como HUESPED o ANFITRION",
-			description = "Crea la cuenta y envía un código de verificación al correo. Devuelve "
-					+ "{message, correo, requiereVerificacion}; el token se obtiene en /auth/verificar.")
+	@Operation(summary = "Registrarse como HUESPED o ANFITRION", description = "Crea la cuenta y envía un código de verificación al correo. Devuelve "
+			+ "{message, correo, requiereVerificacion}; el token se obtiene en /auth/verificar.")
 	@ApiResponse(responseCode = "201", description = "Usuario registrado: {message, correo, "
-	        + "requiereVerificacion=true}; se envió el código")
+			+ "requiereVerificacion=true}; se envió el código")
 	@ApiResponse(responseCode = "400", description = "Datos incompletos o inválidos: nombre, correo válido y "
-	        + "contraseña son obligatorios; el teléfono, si se envía, debe tener de 7 a 15 dígitos. | La contraseña "
-	        + "debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.")
+			+ "contraseña son obligatorios; el teléfono, si se envía, debe tener de 7 a 15 dígitos. | La contraseña "
+			+ "debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.")
 	@ApiResponse(responseCode = "403", description = "Solo puedes registrarte como HUESPED o ANFITRION.")
 	@ApiResponse(responseCode = "409", description = "Ya existe un usuario con ese correo electrónico.")
 	@ApiResponse(responseCode = "500", description = "Error desconocido al registrar el usuario.")
@@ -274,9 +274,10 @@ public class AuthController {
 		}
 		case UsuarioService.CORREO_DUPLICADO ->
 			mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
-		case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos: "
-				+ "nombre, correo válido y contraseña son obligatorios; el teléfono, si se envía, debe tener "
-				+ "de 7 a 15 dígitos.");
+		case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST,
+				"Datos incompletos o inválidos: "
+						+ "nombre, correo válido y contraseña son obligatorios; el teléfono, si se envía, debe tener "
+						+ "de 7 a 15 dígitos.");
 		case UsuarioService.CONTRASENIA_DEBIL -> mensaje(HttpStatus.BAD_REQUEST, MENSAJE_CONTRASENIA_DEBIL);
 		case UsuarioService.ROL_NO_PERMITIDO ->
 			mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");
@@ -285,75 +286,73 @@ public class AuthController {
 	}
 
 	/**
-	 * Confirma el correo con el código de verificación e inicia la sesión.
-	 * Ruta: {@code POST /auth/verificar}.
+	 * Confirma el correo con el código de verificación e inicia la sesión. Ruta:
+	 * {@code POST /auth/verificar}.
 	 *
 	 * @param datos DTO con {@code correo} y {@code codigo}
 	 * @return 200 con {message, token, rol, correo}; 400 si faltan datos o el
-	 *         código no es válido o venció; 409 si el correo ya estaba
-	 *         verificado; 429 si se agotaron los intentos del código
+	 *         código no es válido o venció; 409 si el correo ya estaba verificado;
+	 *         429 si se agotaron los intentos del código
 	 */
-	@Operation(summary = "Verificar el correo con el código recibido",
-			description = "El código vence a los 15 minutos y admite 5 intentos. Devuelve el token de sesión.")
+	@Operation(summary = "Verificar el correo con el código recibido", description = "El código vence a los 15 minutos y admite 5 intentos. Devuelve el token de sesión.")
 	@ApiResponse(responseCode = "200", description = "Correo verificado: {message, token, rol, correo}")
 	@ApiResponse(responseCode = "400", description = "El código no es válido o ya venció. Revísalo o solicita uno "
-	        + "nuevo. | Debes enviar el correo y el código.")
+			+ "nuevo. | Debes enviar el correo y el código.")
 	@ApiResponse(responseCode = "409", description = "El correo ya está verificado. Inicia sesión.")
 	@ApiResponse(responseCode = "429", description = "Superaste los intentos permitidos para este código. Solicita uno "
-	        + "nuevo.")
+			+ "nuevo.")
 	@PostMapping("/verificar")
 	public ResponseEntity<Object> verificar(@RequestBody VerificacionCorreoDTO datos) {
 		return switch (verificacionCorreoService.verificar(datos.getCorreo(), datos.getCodigo())) {
 		case VerificacionCorreoService.VERIFICADO -> respuestaVerificada(
 				userDetailsService.loadUserByUsername(UsuarioService.normalizarCorreo(datos.getCorreo())));
-		case VerificacionCorreoService.CODIGO_INVALIDO -> mensaje(HttpStatus.BAD_REQUEST,
-				"El código no es válido o ya venció. Revísalo o solicita uno nuevo.");
+		case VerificacionCorreoService.CODIGO_INVALIDO ->
+			mensaje(HttpStatus.BAD_REQUEST, "El código no es válido o ya venció. Revísalo o solicita uno nuevo.");
 		case VerificacionCorreoService.INTENTOS_AGOTADOS -> mensaje(HttpStatus.TOO_MANY_REQUESTS,
 				"Superaste los intentos permitidos para este código. Solicita uno nuevo.");
-		case VerificacionCorreoService.YA_VERIFICADO -> mensaje(HttpStatus.CONFLICT,
-				"El correo ya está verificado. Inicia sesión.");
+		case VerificacionCorreoService.YA_VERIFICADO ->
+			mensaje(HttpStatus.CONFLICT, "El correo ya está verificado. Inicia sesión.");
 		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo y el código.");
 		};
 	}
 
 	/**
-	 * Envía un código de verificación nuevo. Ruta: {@code POST /auth/reenviarcodigo}.
+	 * Envía un código de verificación nuevo. Ruta:
+	 * {@code POST /auth/reenviarcodigo}.
 	 *
 	 * @param solicitud DTO con {@code correo}
 	 * @return 200 siempre que se envíe un correo (exista o no la cuenta, para no
-	 *         revelarlo); 400 si falta el correo; 429 si el último código se
-	 *         pidió hace menos de un minuto
+	 *         revelarlo); 400 si falta el correo; 429 si el último código se pidió
+	 *         hace menos de un minuto
 	 */
-	@Operation(summary = "Reenviar el código de verificación del correo",
-			description = "Invalida el código anterior. Solo se permite una vez por minuto.")
+	@Operation(summary = "Reenviar el código de verificación del correo", description = "Invalida el código anterior. Solo se permite una vez por minuto.")
 	@ApiResponse(responseCode = "200", description = "Si la cuenta existe y no está verificada, te enviamos un código "
-	        + "nuevo.")
+			+ "nuevo.")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo.")
 	@ApiResponse(responseCode = "429", description = "Espera un minuto antes de pedir otro código.")
 	@PostMapping("/reenviarcodigo")
 	public ResponseEntity<Object> reenviarCodigo(@RequestBody UsuarioDTO solicitud) {
 		return switch (verificacionCorreoService.reenviar(solicitud.getCorreo())) {
-		case VerificacionCorreoService.ENVIADO -> mensaje(HttpStatus.OK,
-				"Si la cuenta existe y no está verificada, te enviamos un código nuevo.");
-		case VerificacionCorreoService.ESPERAR -> mensaje(HttpStatus.TOO_MANY_REQUESTS,
-				"Espera un minuto antes de pedir otro código.");
+		case VerificacionCorreoService.ENVIADO ->
+			mensaje(HttpStatus.OK, "Si la cuenta existe y no está verificada, te enviamos un código nuevo.");
+		case VerificacionCorreoService.ESPERAR ->
+			mensaje(HttpStatus.TOO_MANY_REQUESTS, "Espera un minuto antes de pedir otro código.");
 		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo.");
 		};
 	}
 
 	/**
 	 * Solicita la recuperación de contraseña. Ruta: {@code POST /auth/recuperar}.
-	 * SIMULACIÓN: el token no se envía por correo, se escribe en el log del
-	 * backend y vence a los 30 minutos.
+	 * SIMULACIÓN: el token no se envía por correo, se escribe en el log del backend
+	 * y vence a los 30 minutos.
 	 *
 	 * @param solicitud DTO con {@code correo}
-	 * @return 200 siempre que se envíe un correo (exista o no, para no revelar
-	 *         qué cuentas están registradas); 400 si falta el correo
+	 * @return 200 siempre que se envíe un correo (exista o no, para no revelar qué
+	 *         cuentas están registradas); 400 si falta el correo
 	 */
-	@Operation(summary = "Solicitar recuperación de contraseña (simulada)",
-			description = "El token se escribe en el log del backend en lugar de enviarse por correo.")
+	@Operation(summary = "Solicitar recuperación de contraseña (simulada)", description = "El token se escribe en el log del backend en lugar de enviarse por correo.")
 	@ApiResponse(responseCode = "200", description = "Si el correo está registrado, se generó un enlace de "
-	        + "recuperación válido por 30 minutos.")
+			+ "recuperación válido por 30 minutos.")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo.")
 	@PostMapping("/recuperar")
 	public ResponseEntity<Object> recuperar(@RequestBody UsuarioDTO solicitud) {
@@ -375,8 +374,8 @@ public class AuthController {
 	@Operation(summary = "Restablecer la contraseña con el token de recuperación")
 	@ApiResponse(responseCode = "200", description = "Contraseña actualizada. Ya puedes iniciar sesión.")
 	@ApiResponse(responseCode = "400", description = "El enlace de recuperación no es válido o ya venció. | La "
-	        + "contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo. | "
-	        + "Debes enviar el token y la contraseña nueva.")
+			+ "contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo. | "
+			+ "Debes enviar el token y la contraseña nueva.")
 	@PostMapping("/restablecer")
 	public ResponseEntity<Object> restablecer(@RequestBody RestablecerContraseniaDTO datos) {
 		return switch (authService.restablecerContrasenia(datos.getToken(), datos.getContrasenia())) {
@@ -393,34 +392,32 @@ public class AuthController {
 	 *
 	 * @param credenciales DTO con {@code correo} y {@code contrasenia}
 	 * @return 200 con {message, token, rol, correo}; 400 si faltan datos; 401 si
-	 *         las credenciales son inválidas; 403 si un administrador restringió
-	 *         la cuenta; 409 si la cuenta ya estaba activa
+	 *         las credenciales son inválidas; 403 si un administrador restringió la
+	 *         cuenta; 409 si la cuenta ya estaba activa
 	 */
-	@Operation(summary = "Reactivar la cuenta propia",
-			description = "Una cuenta restringida por un administrador no puede reactivarse por esta vía.")
+	@Operation(summary = "Reactivar la cuenta propia", description = "Una cuenta restringida por un administrador no puede reactivarse por esta vía.")
 	@ApiResponse(responseCode = "200", description = "Cuenta reactivada: {message, token, rol, correo, estado}")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo y la contraseña.")
 	@ApiResponse(responseCode = "401", description = "Correo o contraseña inválidos.")
 	@ApiResponse(responseCode = "403", description = "La cuenta fue restringida por un administrador y no puede "
-	        + "reactivarse.")
+			+ "reactivarse.")
 	@ApiResponse(responseCode = "409", description = "La cuenta ya está activa.")
 	@PostMapping("/reactivar")
 	public ResponseEntity<Object> reactivar(@RequestBody UsuarioDTO credenciales) {
 		return switch (authService.reactivarCuenta(credenciales.getCorreo(), credenciales.getContrasenia())) {
-		case 0 -> respuestaReactivada(userDetailsService
-				.loadUserByUsername(UsuarioService.normalizarCorreo(credenciales.getCorreo())));
+		case 0 -> respuestaReactivada(
+				userDetailsService.loadUserByUsername(UsuarioService.normalizarCorreo(credenciales.getCorreo())));
 		case 1 -> mensaje(HttpStatus.UNAUTHORIZED, "Correo o contraseña inválidos.");
-		case 3 -> mensaje(HttpStatus.FORBIDDEN,
-				"La cuenta fue restringida por un administrador y no puede reactivarse.");
+		case 3 ->
+			mensaje(HttpStatus.FORBIDDEN, "La cuenta fue restringida por un administrador y no puede reactivarse.");
 		case 4 -> mensaje(HttpStatus.CONFLICT, "La cuenta ya está activa.");
 		default -> mensaje(HttpStatus.BAD_REQUEST, "Debes enviar el correo y la contraseña.");
 		};
 	}
 
 	/**
-	 * Respuesta de una cuenta reactivada con su nuevo estado (CA-052). Con
-	 * segundo factor activo no se entrega token aquí: debe iniciar sesión con su
-	 * código.
+	 * Respuesta de una cuenta reactivada con su nuevo estado (CA-052). Con segundo
+	 * factor activo no se entrega token aquí: debe iniciar sesión con su código.
 	 */
 	private ResponseEntity<Object> respuestaReactivada(UserDetails usuario) {
 		if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
@@ -444,11 +441,10 @@ public class AuthController {
 	}
 
 	/**
-	 * Respuesta de sesión iniciada: {message?, token, rol, correo}. La usan
-	 * login, verificación y reactivación para que el front guarde el token igual.
+	 * Respuesta de sesión iniciada: {message?, token, rol, correo}. La usan login,
+	 * verificación y reactivación para que el front guarde el token igual.
 	 */
-	private ResponseEntity<Object> respuestaConToken(HttpStatus status, UserDetails userDetails,
-			String texto) {
+	private ResponseEntity<Object> respuestaConToken(HttpStatus status, UserDetails userDetails, String texto) {
 		return ResponseEntity.status(status).body(cuerpoConToken(userDetails, texto));
 	}
 
@@ -466,7 +462,10 @@ public class AuthController {
 		return respuesta;
 	}
 
-	/** Respuesta JSON uniforme: {"message": "..."} para que el front la lea siempre igual. */
+	/**
+	 * Respuesta JSON uniforme: {"message": "..."} para que el front la lea siempre
+	 * igual.
+	 */
 	private static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
 		return RespuestaUtil.mensaje(status, texto);
 	}

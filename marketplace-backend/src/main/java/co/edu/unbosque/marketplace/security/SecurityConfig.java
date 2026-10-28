@@ -32,8 +32,8 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Seguridad stateless con JWT. Los roles salen del enum {@code Role}: HUESPED,
  * ANFITRION y ADMIN, que Spring ve como ROLE_HUESPED, ROLE_ANFITRION y
- * ROLE_ADMIN. En {@code hasRole(...)} y {@code @PreAuthorize} se escriben sin el
- * prefijo, por ejemplo {@code hasRole('ANFITRION')}.
+ * ROLE_ADMIN. En {@code hasRole(...)} y {@code @PreAuthorize} se escriben sin
+ * el prefijo, por ejemplo {@code hasRole('ANFITRION')}.
  * <p>
  * Las reglas por rol finas están en cada controller con {@code @PreAuthorize};
  * aquí se definen las rutas públicas y {@code /admin/**}.
@@ -48,7 +48,10 @@ public class SecurityConfig {
 
 	private final UserDetailsService userDetailsService;
 
-	/** Orígenes del front que pueden llamar a la API (propiedad app.cors.allowed-origins). */
+	/**
+	 * Orígenes del front que pueden llamar a la API (propiedad
+	 * app.cors.allowed-origins).
+	 */
 	private final List<String> origenesPermitidos;
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService,
@@ -78,8 +81,7 @@ public class SecurityConfig {
 						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;
 						// el detalle de una publicación no ACTIVA lo filtra PublicacionService
 						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/disponibles",
-								"/alojamientos/politicas",
-								"/alojamientos/{id}", "/alojamientos/{id}/disponibilidad",
+								"/alojamientos/politicas", "/alojamientos/{id}", "/alojamientos/{id}/disponibilidad",
 								"/alojamientos/{id}/disponibilidad/consultar", "/alojamientos/{id}/resenas")
 						.permitAll().anyRequest().authenticated())
 				.exceptionHandling(ex -> ex
@@ -100,9 +102,9 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * CORS para el front (Angular). Lo usa {@code .cors(Customizer.withDefaults())}.
-	 * El token viaja en el encabezado Authorization, no en cookies, por eso no se
-	 * habilitan credenciales.
+	 * CORS para el front (Angular). Lo usa
+	 * {@code .cors(Customizer.withDefaults())}. El token viaja en el encabezado
+	 * Authorization, no en cookies, por eso no se habilitan credenciales.
 	 */
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {

@@ -11,7 +11,8 @@ import jakarta.persistence.Table;
  * devolución según los días de anticipación con que se cancela:
  * <ul>
  * <li>100 % si faltan al menos {@code diasReembolsoTotal} días;</li>
- * <li>{@code porcentajeParcial} % si faltan al menos {@code diasReembolsoParcial} días;</li>
+ * <li>{@code porcentajeParcial} % si faltan al menos
+ * {@code diasReembolsoParcial} días;</li>
  * <li>0 % en otro caso.</li>
  * </ul>
  * Un valor null en los días significa que ese tramo no existe.
@@ -21,57 +22,63 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "politicaCancelacion")
 public class PoliticaCancelacion {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idPolitica;
-    private String nombre;
-    private String condiciones;
-    private Integer diasReembolsoTotal;
-    private Integer diasReembolsoParcial;
-    private Integer porcentajeParcial;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idPolitica;
+	private String nombre;
+	private String condiciones;
+	private Integer diasReembolsoTotal;
+	private Integer diasReembolsoParcial;
+	private Integer porcentajeParcial;
 
-    public PoliticaCancelacion() {
-    }
+	public PoliticaCancelacion() {
+	}
 
-    public Long getIdPolitica() {
-        return idPolitica;
-    }
-    public void setIdPolitica(Long idPolitica) {
-        this.idPolitica = idPolitica;
-    }
+	public Long getIdPolitica() {
+		return idPolitica;
+	}
 
-    public String getNombre() {
-        return nombre;
-    }
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+	public void setIdPolitica(Long idPolitica) {
+		this.idPolitica = idPolitica;
+	}
 
-    public String getCondiciones() {
-        return condiciones;
-    }
-    public void setCondiciones(String condiciones) {
-        this.condiciones = condiciones;
-    }
+	public String getNombre() {
+		return nombre;
+	}
 
-    public Integer getDiasReembolsoTotal() {
-        return diasReembolsoTotal;
-    }
-    public void setDiasReembolsoTotal(Integer diasReembolsoTotal) {
-        this.diasReembolsoTotal = diasReembolsoTotal;
-    }
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
 
-    public Integer getDiasReembolsoParcial() {
-        return diasReembolsoParcial;
-    }
-    public void setDiasReembolsoParcial(Integer diasReembolsoParcial) {
-        this.diasReembolsoParcial = diasReembolsoParcial;
-    }
+	public String getCondiciones() {
+		return condiciones;
+	}
 
-    public Integer getPorcentajeParcial() {
-        return porcentajeParcial;
-    }
-    public void setPorcentajeParcial(Integer porcentajeParcial) {
-        this.porcentajeParcial = porcentajeParcial;
-    }
+	public void setCondiciones(String condiciones) {
+		this.condiciones = condiciones;
+	}
+
+	public Integer getDiasReembolsoTotal() {
+		return diasReembolsoTotal;
+	}
+
+	public void setDiasReembolsoTotal(Integer diasReembolsoTotal) {
+		this.diasReembolsoTotal = diasReembolsoTotal;
+	}
+
+	public Integer getDiasReembolsoParcial() {
+		return diasReembolsoParcial;
+	}
+
+	public void setDiasReembolsoParcial(Integer diasReembolsoParcial) {
+		this.diasReembolsoParcial = diasReembolsoParcial;
+	}
+
+	public Integer getPorcentajeParcial() {
+		return porcentajeParcial;
+	}
+
+	public void setPorcentajeParcial(Integer porcentajeParcial) {
+		this.porcentajeParcial = porcentajeParcial;
+	}
 }

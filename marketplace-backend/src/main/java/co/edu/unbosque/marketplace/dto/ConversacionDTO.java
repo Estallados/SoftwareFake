@@ -4,68 +4,76 @@ import java.time.LocalDateTime;
 import co.edu.unbosque.marketplace.entity.EstadoConversacion;
 
 /**
- * Conversación entre huésped (idUsuario) y anfitrión. De entrada se usa idAlojamiento y opcionalmente un primer mensaje.
+ * Conversación entre huésped (idUsuario) y anfitrión. De entrada se usa
+ * idAlojamiento y opcionalmente un primer mensaje.
  *
  * @see "RF-029"
  */
 public class ConversacionDTO {
-    private Long idConversacion;
-    private LocalDateTime fechaCreacion;
-    private EstadoConversacion estado;
-    private Long idUsuario;
-    private Long idAnfitrion;
-    private Long idAlojamiento;
-    private String mensaje;
+	private Long idConversacion;
+	private LocalDateTime fechaCreacion;
+	private EstadoConversacion estado;
+	private Long idUsuario;
+	private Long idAnfitrion;
+	private Long idAlojamiento;
+	private String mensaje;
 
-    public ConversacionDTO() {
-    }
+	public ConversacionDTO() {
+	}
 
-    public Long getIdConversacion() {
-        return idConversacion;
-    }
-    public void setIdConversacion(Long idConversacion) {
-        this.idConversacion = idConversacion;
-    }
+	public Long getIdConversacion() {
+		return idConversacion;
+	}
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+	public void setIdConversacion(Long idConversacion) {
+		this.idConversacion = idConversacion;
+	}
 
-    public EstadoConversacion getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoConversacion estado) {
-        this.estado = estado;
-    }
+	public LocalDateTime getFechaCreacion() {
+		return fechaCreacion;
+	}
 
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+	public void setFechaCreacion(LocalDateTime fechaCreacion) {
+		this.fechaCreacion = fechaCreacion;
+	}
 
-    public Long getIdAnfitrion() {
-        return idAnfitrion;
-    }
-    public void setIdAnfitrion(Long idAnfitrion) {
-        this.idAnfitrion = idAnfitrion;
-    }
+	public EstadoConversacion getEstado() {
+		return estado;
+	}
 
-    public Long getIdAlojamiento() {
-        return idAlojamiento;
-    }
-    public void setIdAlojamiento(Long idAlojamiento) {
-        this.idAlojamiento = idAlojamiento;
-    }
+	public void setEstado(EstadoConversacion estado) {
+		this.estado = estado;
+	}
 
-    public String getMensaje() {
-        return mensaje;
-    }
-    public void setMensaje(String mensaje) {
-        this.mensaje = mensaje;
-    }
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public Long getIdAnfitrion() {
+		return idAnfitrion;
+	}
+
+	public void setIdAnfitrion(Long idAnfitrion) {
+		this.idAnfitrion = idAnfitrion;
+	}
+
+	public Long getIdAlojamiento() {
+		return idAlojamiento;
+	}
+
+	public void setIdAlojamiento(Long idAlojamiento) {
+		this.idAlojamiento = idAlojamiento;
+	}
+
+	public String getMensaje() {
+		return mensaje;
+	}
+
+	public void setMensaje(String mensaje) {
+		this.mensaje = mensaje;
+	}
 }

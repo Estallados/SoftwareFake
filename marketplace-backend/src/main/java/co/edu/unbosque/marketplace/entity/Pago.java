@@ -23,108 +23,122 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "pago")
 public class Pago {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idPago;
-    /** Referencia que entrega el proveedor (id del PaymentIntent en Stripe). */
-    private String referencia;
-    /** STRIPE_TEST o SIMULADO. */
-    private String proveedor;
-    private BigDecimal valor;
-    @Enumerated(EnumType.STRING)
-    private EstadoPago estado;
-    private String detalle;
-    private LocalDateTime fecha;
-    /** PaymentMethod de Stripe con el que se cobró (por ejemplo pm_card_visa). */
-    private String metodo;
-    /** Valor devuelto al cancelar; null si no hubo devolución. */
-    private BigDecimal valorReembolsado;
-    /** Id de la devolución en Stripe (re_...) o del simulador. */
-    private String referenciaReembolso;
-    @Column(name = "id_reserva")
-    private Long idReserva;
-    /** Clave foránea hacia {@link Reserva}; el valor se asigna con {@code idReserva}. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_reserva", insertable = false, updatable = false)
-    private Reserva reserva;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long idPago;
+	/** Referencia que entrega el proveedor (id del PaymentIntent en Stripe). */
+	private String referencia;
+	/** STRIPE_TEST o SIMULADO. */
+	private String proveedor;
+	private BigDecimal valor;
+	@Enumerated(EnumType.STRING)
+	private EstadoPago estado;
+	private String detalle;
+	private LocalDateTime fecha;
+	/** PaymentMethod de Stripe con el que se cobró (por ejemplo pm_card_visa). */
+	private String metodo;
+	/** Valor devuelto al cancelar; null si no hubo devolución. */
+	private BigDecimal valorReembolsado;
+	/** Id de la devolución en Stripe (re_...) o del simulador. */
+	private String referenciaReembolso;
+	@Column(name = "id_reserva")
+	private Long idReserva;
+	/**
+	 * Clave foránea hacia {@link Reserva}; el valor se asigna con
+	 * {@code idReserva}.
+	 */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "id_reserva", insertable = false, updatable = false)
+	private Reserva reserva;
 
-    public Pago() {
-    }
+	public Pago() {
+	}
 
-    public Long getIdPago() {
-        return idPago;
-    }
-    public void setIdPago(Long idPago) {
-        this.idPago = idPago;
-    }
+	public Long getIdPago() {
+		return idPago;
+	}
 
-    public String getReferencia() {
-        return referencia;
-    }
-    public void setReferencia(String referencia) {
-        this.referencia = referencia;
-    }
+	public void setIdPago(Long idPago) {
+		this.idPago = idPago;
+	}
 
-    public String getProveedor() {
-        return proveedor;
-    }
-    public void setProveedor(String proveedor) {
-        this.proveedor = proveedor;
-    }
+	public String getReferencia() {
+		return referencia;
+	}
 
-    public BigDecimal getValor() {
-        return valor;
-    }
-    public void setValor(BigDecimal valor) {
-        this.valor = valor;
-    }
+	public void setReferencia(String referencia) {
+		this.referencia = referencia;
+	}
 
-    public EstadoPago getEstado() {
-        return estado;
-    }
-    public void setEstado(EstadoPago estado) {
-        this.estado = estado;
-    }
+	public String getProveedor() {
+		return proveedor;
+	}
 
-    public String getDetalle() {
-        return detalle;
-    }
-    public void setDetalle(String detalle) {
-        this.detalle = detalle;
-    }
+	public void setProveedor(String proveedor) {
+		this.proveedor = proveedor;
+	}
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
+	public BigDecimal getValor() {
+		return valor;
+	}
 
-    public String getMetodo() {
-        return metodo;
-    }
-    public void setMetodo(String metodo) {
-        this.metodo = metodo;
-    }
+	public void setValor(BigDecimal valor) {
+		this.valor = valor;
+	}
 
-    public BigDecimal getValorReembolsado() {
-        return valorReembolsado;
-    }
-    public void setValorReembolsado(BigDecimal valorReembolsado) {
-        this.valorReembolsado = valorReembolsado;
-    }
+	public EstadoPago getEstado() {
+		return estado;
+	}
 
-    public String getReferenciaReembolso() {
-        return referenciaReembolso;
-    }
-    public void setReferenciaReembolso(String referenciaReembolso) {
-        this.referenciaReembolso = referenciaReembolso;
-    }
+	public void setEstado(EstadoPago estado) {
+		this.estado = estado;
+	}
 
-    public Long getIdReserva() {
-        return idReserva;
-    }
-    public void setIdReserva(Long idReserva) {
-        this.idReserva = idReserva;
-    }
+	public String getDetalle() {
+		return detalle;
+	}
+
+	public void setDetalle(String detalle) {
+		this.detalle = detalle;
+	}
+
+	public LocalDateTime getFecha() {
+		return fecha;
+	}
+
+	public void setFecha(LocalDateTime fecha) {
+		this.fecha = fecha;
+	}
+
+	public String getMetodo() {
+		return metodo;
+	}
+
+	public void setMetodo(String metodo) {
+		this.metodo = metodo;
+	}
+
+	public BigDecimal getValorReembolsado() {
+		return valorReembolsado;
+	}
+
+	public void setValorReembolsado(BigDecimal valorReembolsado) {
+		this.valorReembolsado = valorReembolsado;
+	}
+
+	public String getReferenciaReembolso() {
+		return referenciaReembolso;
+	}
+
+	public void setReferenciaReembolso(String referenciaReembolso) {
+		this.referenciaReembolso = referenciaReembolso;
+	}
+
+	public Long getIdReserva() {
+		return idReserva;
+	}
+
+	public void setIdReserva(Long idReserva) {
+		this.idReserva = idReserva;
+	}
 }

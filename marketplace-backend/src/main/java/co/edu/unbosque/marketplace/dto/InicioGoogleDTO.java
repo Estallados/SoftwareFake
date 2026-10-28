@@ -11,31 +11,34 @@ import co.edu.unbosque.marketplace.entity.Role;
  * @see "RF-008"
  */
 public class InicioGoogleDTO {
-    private String idToken;
-    private Role rol;
-    private String codigo;
+	private String idToken;
+	private Role rol;
+	private String codigo;
 
-    public InicioGoogleDTO() {
-    }
+	public InicioGoogleDTO() {
+	}
 
-    public String getIdToken() {
-        return idToken;
-    }
-    public void setIdToken(String idToken) {
-        this.idToken = idToken;
-    }
+	public String getIdToken() {
+		return idToken;
+	}
 
-    public Role getRol() {
-        return rol;
-    }
-    public void setRol(Role rol) {
-        this.rol = rol;
-    }
+	public void setIdToken(String idToken) {
+		this.idToken = idToken;
+	}
 
-    public String getCodigo() {
-        return codigo;
-    }
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+	public Role getRol() {
+		return rol;
+	}
+
+	public void setRol(Role rol) {
+		this.rol = rol;
+	}
+
+	public String getCodigo() {
+		return codigo;
+	}
+
+	public void setCodigo(String codigo) {
+		this.codigo = codigo;
+	}
 }
