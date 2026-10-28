@@ -33,13 +33,12 @@
 
     <div class="ml-auto flex items-center gap-2">
       @if (role() === 'Huésped') {
-        <button
-          type="button"
-          (click)="auth('register')"
+        <a
+          routerLink="/login"
           class="hidden whitespace-nowrap px-3 text-sm font-bold text-emerald-700 xl:block"
         >
           Crear cuenta
-        </button>
+        </a>
         <a
           [routerLink]="roleHome['Anfitrión']"
           class="hidden items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 lg:flex"
@@ -128,9 +127,13 @@
             <button type="button" (click)="auth('login')" class="w-full rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-50">
               Cerrar sesión / Ingresar
             </button>
-            <button type="button" (click)="auth('register')" class="w-full rounded-xl px-3 py-3 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
-              Crear una cuenta
-            </button>
+            <a
+              routerLink="/login"
+              (click)="closeMenu()"
+              class="block w-full rounded-xl px-3 py-3 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+            >
+              Crear una cuenta...
+            </a>
           </div>
         }
       </div>
