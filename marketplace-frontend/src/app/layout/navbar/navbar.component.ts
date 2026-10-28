@@ -84,6 +84,11 @@ export class NavbarComponent {
     { initialValue: this.router.url },
   );
 
+  // Detecta si estamos en la página de login
+  readonly isLoginPage = computed(() => {
+    return this.url().split(/[?#]/)[0] === '/login';
+  });
+
   // El rol se deduce de la URL: /admin/** , /host/** o el resto (huésped)
   role = computed<Role>(() => {
     const u = this.url();
