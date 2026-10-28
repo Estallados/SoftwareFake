@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;

@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace.entity;
 
 import java.math.BigDecimal;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -20,7 +21,7 @@ public class ServicioAdicional {
     private String nombre;
     private BigDecimal costo;
     @Column(name = "id_alojamiento")
-    private Long idAlojamiento;
+    private Long idAlojamiento;
     /** Clave foránea hacia {@link Alojamiento}; el valor se asigna con {@code idAlojamiento}. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
