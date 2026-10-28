@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -50,6 +51,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/alojamientos")
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Alojamientos", description = "Publicaciones, ciclo de estados, servicios adicionales y búsqueda")
+@CrossOrigin(origins = "*")
 public class AlojamientoController {
 
     private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();

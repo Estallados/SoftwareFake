@@ -4,6 +4,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +32,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/conversaciones")
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Mensajería", description = "Conversaciones entre huésped y anfitrión")
+@CrossOrigin(origins = "*")
 public class MensajeriaController {
 
     private final MensajeriaService mensajeriaService;

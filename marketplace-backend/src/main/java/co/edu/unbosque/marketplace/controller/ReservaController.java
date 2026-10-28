@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +36,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Cotización y reservas", description = "Cotizar, reservar con pago de prueba, consultar y cancelar")
+@CrossOrigin(origins = "*")
 public class ReservaController {
 
     private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();

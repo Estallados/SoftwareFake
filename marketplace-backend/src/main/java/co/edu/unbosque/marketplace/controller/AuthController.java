@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,6 +53,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Autenticación", description = "Registro, inicio de sesión, recuperación y reactivación de cuenta")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
 	private static final String MENSAJE_CONTRASENIA_DEBIL = "La contraseña debe tener al menos 8 caracteres, "
