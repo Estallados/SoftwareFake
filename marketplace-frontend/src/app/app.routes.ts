@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { Login } from './login/login';
 import { Home } from './pages/guest/home/home';
 import { Explore } from './pages/guest/explore/explore';
 import { MapView } from './pages/guest/map-view/map-view';
@@ -161,9 +162,15 @@ export const routes: Routes = [
     path: 'admin/auditoria',
     component: Audit,
   },
+  {
+    path: 'login',
+    component: Login,
+
+  },
 
   {
     path: '**',
     redirectTo: 'home',
   },
+
 ];
