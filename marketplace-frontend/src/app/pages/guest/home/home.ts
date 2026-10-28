@@ -1,30 +1,29 @@
-import { Component, inject, input, signal } from '@angular/core';
+import {Component, inject, input, OnInit, signal} from '@angular/core';
 import { Router } from '@angular/router';
 import { photos} from '../../../services/mockData';
-
-export interface Stay {
-  name: string;
-  image: string;
-  tag: string;
-  city: string;
-  type: string;
-  rating: number | string;
-  guests: number;
-  price: number | string;
-  amenities?: string[];
-}
+import {Alojamiento} from '../../../models/alojamientoDto';
+import {AlojamientoService} from '../../../services/alojamiento.service';
 
 @Component({
   selector: 'app-guest-home',
   standalone: true,
   templateUrl: './home.html',
 })
-export class Home {
+export class Home implements OnInit{
   private router = inject(Router);
+  private alojamientoService = inject(AlojamientoService);
 
-  // Al ser una página de ruta, ya no recibe props: usa los datos de mockData
-  stays = signal<Stay[]>([]);
+  stays = signal<Alojamiento[]>([]);
+
+
   favorites = signal<string[]>([]);
+
+  ngOnInit() {
+    this.alojamientoService.disponibles(4).subscribe({
+      next: (lista) => this.stays.set(lista),
+      error: (err) => console.error('Error cargando alojamientos', err),
+    });
+  }
 
   readonly photos = photos;
 
@@ -84,7 +83,7 @@ export class Home {
     );
   }
 
-  amenities(stay: Stay): string {
-    return (stay.amenities ?? ['WiFi', 'Cocina']).slice(0, 2).join(' · ');
+  amenities(stay: Alojamiento): string {
+    return (stay.amenidades ?? ['WiFi', 'Cocina']).slice(0, 2).join(' · ');
   }
 }
