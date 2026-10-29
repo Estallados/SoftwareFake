@@ -81,7 +81,7 @@ public class SecurityConfig {
 						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;
 						// el detalle de una publicación no ACTIVA lo filtra PublicacionService
 						.requestMatchers(HttpMethod.GET, "/alojamientos", "/alojamientos/disponibles",
-								"/alojamientos/politicas", "/alojamientos/{id}", "/alojamientos/{id}/disponibilidad",
+								"/alojamientos/politicas", "/alojamientos/tipos", "/alojamientos/{id}", "/alojamientos/{id}/disponibilidad",
 								"/alojamientos/{id}/disponibilidad/consultar", "/alojamientos/{id}/resenas")
 						.permitAll().anyRequest().authenticated())
 				.exceptionHandling(ex -> ex

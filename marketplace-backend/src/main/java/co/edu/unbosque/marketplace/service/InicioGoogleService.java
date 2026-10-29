@@ -144,7 +144,7 @@ public class InicioGoogleService {
 		String nombre = cuenta.nombre() == null || cuenta.nombre().isBlank() ? correo.substring(0, correo.indexOf('@'))
 				: cuenta.nombre().trim();
 		Usuario usuario = new Usuario();
-		usuario.setNombre(AESUtil.encrypt(nombre));
+		usuario.setNombre(nombre);
 		usuario.setCorreo(AESUtil.encrypt(correo));
 		usuario.setCorreoHash(UsuarioService.hashCorreo(correo));
 		// Contraseña aleatoria que nadie conoce: para entrar con contraseña se define

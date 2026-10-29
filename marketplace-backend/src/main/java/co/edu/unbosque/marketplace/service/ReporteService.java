@@ -162,7 +162,7 @@ public class ReporteService {
 			dto.setIdUsuario(registro.getIdUsuario());
 			dto.setFecha(registro.getFecha());
 			usuarioRepo.findById(registro.getIdUsuario())
-					.ifPresent(u -> dto.setNombreUsuario(AESUtil.decrypt(u.getNombre())));
+					.ifPresent(u -> dto.setNombreUsuario(u.getNombre()));
 			return dto;
 		});
 	}
@@ -172,7 +172,7 @@ public class ReporteService {
 		case "usuarios":
 			encabezados.addAll(List.of("Id", "Nombre", "Correo", "Rol", "Estado"));
 			for (Usuario u : usuarioRepo.findAll()) {
-				filas.add(List.of(texto(u.getIdUsuario()), AESUtil.decrypt(u.getNombre()),
+				filas.add(List.of(texto(u.getIdUsuario()), u.getNombre(),
 						AESUtil.decrypt(u.getCorreo()), texto(u.getRol()), texto(u.getEstado())));
 			}
 			break;

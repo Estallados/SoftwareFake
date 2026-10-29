@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -121,7 +123,19 @@ public class PublicacionService {
         this.modelMapper = modelMapper;
     }
 
-    // ----- consultas -----
+
+
+    /**
+     * Cantidad de alojamientos de cada tipo, en todos los estados: {"Apartamento": 5,
+     * "Casa": 7, ...}, en orden alfabético.
+     */
+    public Map<String, Long> cantidadPorTipo() {
+        Map<String, Long> cantidades = new LinkedHashMap<>();
+        for (Object[] fila : alojamientoRepo.contarPorTipo()) {
+            cantidades.put((String) fila[0], (Long) fila[1]);
+        }
+        return cantidades;
+    }
 
     /** Políticas de cancelación disponibles para asignar a un alojamiento. */
     public List<PoliticaCancelacionDTO> politicas() {
@@ -749,7 +763,7 @@ public class PublicacionService {
         dto.setCantidadResenas(resenaRepo.countByIdAlojamientoAndEstado(id, EstadoResena.PUBLICADA));
         dto.setCantidadReservas(reservaRepo.countByIdAlojamientoAndEstadoIn(id, RESERVAS_VIGENTES));
         usuarioRepo.findById(alojamiento.getIdAnfitrion())
-                .ifPresent(u -> dto.setNombreAnfitrion(AESUtil.decrypt(u.getNombre())));
+                .ifPresent(u -> dto.setNombreAnfitrion(u.getNombre()));
         return dto;
     }
 

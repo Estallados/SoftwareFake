@@ -22,7 +22,6 @@ import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ResenaRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
-import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -214,7 +213,7 @@ public class ResenaService {
 	public ResenaDTO convertirDTO(Resena resena) {
 		ResenaDTO dto = modelMapper.map(resena, ResenaDTO.class);
 		usuarioRepo.findById(resena.getIdUsuario())
-				.ifPresent(u -> dto.setNombreUsuario(AESUtil.decrypt(u.getNombre())));
+				.ifPresent(u -> dto.setNombreUsuario(u.getNombre()));
 		alojamientoRepo.findById(resena.getIdAlojamiento()).ifPresent(a -> dto.setTituloAlojamiento(a.getTitulo()));
 		return dto;
 	}

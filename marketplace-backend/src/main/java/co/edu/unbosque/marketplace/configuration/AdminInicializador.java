@@ -76,7 +76,7 @@ public class AdminInicializador implements CommandLineRunner {
 		}
 
 		Usuario admin = new Usuario();
-		admin.setNombre(AESUtil.encrypt(nombre));
+		admin.setNombre(nombre);
 		admin.setCorreo(AESUtil.encrypt(correoNormalizado));
 		admin.setCorreoHash(correoHash);
 		admin.setContrasenia(passwordEncoder.encode(contrasenia));

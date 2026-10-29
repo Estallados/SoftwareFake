@@ -185,7 +185,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 			// Se arma la entidad campo por campo (sin ModelMapper) para que el
 			// cliente no pueda fijar id, estado ni otros campos internos.
 			usuario = new Usuario();
-			usuario.setNombre(AESUtil.encrypt(data.getNombre().trim()));
+			usuario.setNombre(data.getNombre().trim());
 			usuario.setCorreo(AESUtil.encrypt(correo));
 			usuario.setCorreoHash(correoHash);
 			usuario.setTelefono(normalizarTelefono(data.getTelefono()));
@@ -242,7 +242,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	private UsuarioDTO convertirDTO(Usuario usuario) {
 		UsuarioDTO dto = modelMapper.map(usuario, UsuarioDTO.class);
 		dto.setIdUsuario(usuario.getIdUsuario());
-		dto.setNombre(AESUtil.decrypt(usuario.getNombre()));
+		dto.setNombre(usuario.getNombre());
 		dto.setCorreo(AESUtil.decrypt(usuario.getCorreo()));
 		dto.setContrasenia(null);
 
@@ -271,7 +271,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 			Usuario usuario = usuarioOpt.get();
 
 			if (newData.getNombre() != null) {
-				usuario.setNombre(AESUtil.encrypt(newData.getNombre()));
+				usuario.setNombre(newData.getNombre());
 			}
 
 			if (!esVacio(newData.getCorreo())) {
@@ -393,7 +393,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		Usuario usuario = usuarioOpt.get();
 		StringBuilder cambios = new StringBuilder();
 		if (nombre != null) {
-			usuario.setNombre(AESUtil.encrypt(nombre.trim()));
+			usuario.setNombre(nombre.trim());
 			cambios.append("nombre ");
 		}
 		if (telefono != null) {

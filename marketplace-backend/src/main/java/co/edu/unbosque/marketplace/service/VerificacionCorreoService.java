@@ -186,7 +186,7 @@ public class VerificacionCorreoService {
 		if (ultimo.isPresent() && ultimo.get().getFechaCreacion().plus(ESPERA_REENVIO).isAfter(LocalDateTime.now())) {
 			return ESPERAR;
 		}
-		enviarCodigo(usuario, UsuarioService.normalizarCorreo(correo), AESUtil.decrypt(usuario.getNombre()), false);
+		enviarCodigo(usuario, UsuarioService.normalizarCorreo(correo), usuario.getNombre(), false);
 		return ENVIADO;
 	}
 

@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -30,6 +31,13 @@ public interface AlojamientoRepository extends JpaRepository<Alojamiento, Long>,
 
 	/** Cantidad de publicaciones en un estado (dashboard). */
 	public long countByEstado(EstadoAlojamiento estado);
+
+	/**
+	 * Cantidad de alojamientos por tipo, en orden alfabético. Cada fila es
+	 * [tipo, cantidad].
+	 */
+	@Query("select a.tipo, count(a) from Alojamiento a where a.tipo is not null group by a.tipo order by a.tipo")
+	public List<Object[]> contarPorTipo();
 
 	/**
 	 * Lee el alojamiento con bloqueo pesimista de escritura: dos reservas

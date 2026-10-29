@@ -31,6 +31,7 @@ import co.edu.unbosque.marketplace.entity.Pago;
 import co.edu.unbosque.marketplace.entity.PoliticaCancelacion;
 import co.edu.unbosque.marketplace.entity.Reserva;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
+import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.CancelacionRepository;
 import co.edu.unbosque.marketplace.repository.CotizacionRepository;
@@ -39,7 +40,6 @@ import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
 import co.edu.unbosque.marketplace.repository.ResenaRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
-import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -252,7 +252,7 @@ public class ReservaService {
 
     private String nombreUsuario(Long idUsuario) {
         return idUsuario == null ? null
-                : usuarioRepo.findById(idUsuario).map(u -> AESUtil.decrypt(u.getNombre())).orElse(null);
+                : usuarioRepo.findById(idUsuario).map(Usuario::getNombre).orElse(null);
     }
 
     /** Paso 1: validaciones con bloqueo pesimista y reserva PENDIENTE_PAGO. */

@@ -52,6 +52,19 @@ class PublicacionesTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void cuentaLosAlojamientosPorTipoSinToken() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		String tipo = unico("Tipo");
+		for (int i = 0; i < 2; i++) {
+			crearBorrador(anfitrion, datosAlojamiento("Bogotá", tipo, 2, new BigDecimal("100000"), Set.of("wifi"),
+					"FLEXIBLE"), 201);
+		}
+
+		JsonNode tipos = llamar(get("/alojamientos/tipos"), null, null, 200);
+		assertEquals(2, tipos.get(tipo).asInt());
+	}
+
+	@Test
 	void guardaHabitacionesBanosYHorasDeEntradaYSalida() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
 		Map<String, Object> datos = datosAlojamiento("Cartagena", "Apartamento", 4, new BigDecimal("180000"),

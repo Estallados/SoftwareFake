@@ -3,6 +3,7 @@ package co.edu.unbosque.marketplace.controller;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -97,6 +98,15 @@ public class AlojamientoController {
 			@RequestParam(defaultValue = "0") int pagina, @RequestParam(defaultValue = "12") int tamanio) {
 		return RespuestaUtil.desde(publicacionService.buscar(ciudad, llegada, salida, huespedes, tipo, precioMinimo,
 				precioMaximo, amenidades, orden, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
+	}
+
+	@Operation(summary = "Cantidad de alojamientos por tipo (público)", description = "Cuenta todos los alojamientos, en cualquier estado, agrupados por tipo: "
+			+ "{\"Apartamento\": 5, \"Casa\": 7, ...}.")
+	@SecurityRequirements
+	@ApiResponse(responseCode = "200", description = "Cantidad de alojamientos de cada tipo")
+	@GetMapping("/tipos")
+	public ResponseEntity<Map<String, Long>> cantidadPorTipo() {
+		return ResponseEntity.ok(publicacionService.cantidadPorTipo());
 	}
 
 	@Operation(summary = "Políticas de cancelación disponibles (público)")
