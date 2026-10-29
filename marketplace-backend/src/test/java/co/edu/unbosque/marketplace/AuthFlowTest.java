@@ -115,9 +115,10 @@ class AuthFlowTest {
 				.andExpect(jsonPath("$.fechaRegistro").isNotEmpty())
 				.andExpect(jsonPath("$.contrasenia").doesNotExist());
 
-		// En la base el correo y el nombre quedan cifrados
+		// En la base el correo queda cifrado y el nombre en claro
 		Usuario guardado = usuarioRepo.findAll().get(0);
 		assertNotEquals("ana@correo.com", guardado.getCorreo());
+		assertEquals("Ana Pérez", guardado.getNombre());
 		assertEquals(UsuarioService.hashCorreo("ana@correo.com"), guardado.getCorreoHash());
 		assertEquals(EstadoUsuario.ACTIVO, guardado.getEstado());
 	}

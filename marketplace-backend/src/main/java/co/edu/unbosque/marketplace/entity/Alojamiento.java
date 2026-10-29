@@ -49,6 +49,7 @@ public class Alojamiento {
 	private String tipo;
 	private Integer capacidad;
 	private Integer habitaciones;
+	private Integer camas;
 	private Integer banos;
 	/** Hora desde la que el huésped puede llegar (check-in). */
 	private LocalTime horaEntrada;
@@ -179,6 +180,14 @@ public class Alojamiento {
 
 	public void setHabitaciones(Integer habitaciones) {
 		this.habitaciones = habitaciones;
+	}
+
+	public Integer getCamas() {
+		return camas;
+	}
+
+	public void setCamas(Integer camas) {
+		this.camas = camas;
 	}
 
 	public Integer getBanos() {

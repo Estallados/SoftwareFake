@@ -179,7 +179,7 @@ public class AlojamientoController {
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Alojamiento actualizado")
 	@ApiResponse(responseCode = "400", description = "La capacidad debe ser mayor que cero. | El precio por noche debe "
-			+ "ser positivo. | Las habitaciones y los baños no pueden ser negativos. | La política de cancelación "
+			+ "ser positivo. | Las habitaciones, las camas y los baños no pueden ser negativos. | La política de cancelación "
 			+ "no existe.")
 	@ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
 			+ "este alojamiento.")

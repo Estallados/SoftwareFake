@@ -866,8 +866,9 @@ public class PublicacionService {
             return "La capacidad debe ser mayor que cero.";
         }
         if ((datos.getHabitaciones() != null && datos.getHabitaciones() < 0)
+                || (datos.getCamas() != null && datos.getCamas() < 0)
                 || (datos.getBanos() != null && datos.getBanos() < 0)) {
-            return "Las habitaciones y los baños no pueden ser negativos.";
+            return "Las habitaciones, las camas y los baños no pueden ser negativos.";
         }
         if (datos.getPrecioNoche() != null && datos.getPrecioNoche().signum() <= 0) {
             return "El precio por noche debe ser positivo.";
@@ -917,6 +918,9 @@ public class PublicacionService {
         }
         if (datos.getHabitaciones() != null) {
             alojamiento.setHabitaciones(datos.getHabitaciones());
+        }
+        if (datos.getCamas() != null) {
+            alojamiento.setCamas(datos.getCamas());
         }
         if (datos.getBanos() != null) {
             alojamiento.setBanos(datos.getBanos());

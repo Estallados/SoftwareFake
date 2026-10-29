@@ -70,11 +70,13 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		Map<String, Object> datos = datosAlojamiento("Cartagena", "Apartamento", 4, new BigDecimal("180000"),
 				Set.of("wifi"), "MODERADA");
 		datos.put("habitaciones", 3);
+		datos.put("camas", 4);
 		datos.put("banos", 2);
 		datos.put("horaEntrada", "14:30");
 
 		JsonNode creado = crearBorrador(anfitrion, datos, 201);
 		assertEquals(3, creado.get("habitaciones").asInt());
+		assertEquals(4, creado.get("camas").asInt());
 		assertEquals(2, creado.get("banos").asInt());
 		assertEquals("14:30", creado.get("horaEntrada").asText());
 		assertEquals("11:00", creado.get("horaSalida").asText());
@@ -84,9 +86,12 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		JsonNode editado = actualizarAlojamiento(anfitrion, id, Map.of("banos", 3, "horaSalida", "12:00"), 200);
 		assertEquals(3, editado.get("banos").asInt());
 		assertEquals(3, editado.get("habitaciones").asInt());
+		assertEquals(4, editado.get("camas").asInt());
 		assertEquals("12:00", editado.get("horaSalida").asText());
 
 		JsonNode error = actualizarAlojamiento(anfitrion, id, Map.of("habitaciones", -1), 400);
+		assertTrue(error.get("message").asText().contains("no pueden ser negativos"));
+		error = actualizarAlojamiento(anfitrion, id, Map.of("camas", -1), 400);
 		assertTrue(error.get("message").asText().contains("no pueden ser negativos"));
 	}
 

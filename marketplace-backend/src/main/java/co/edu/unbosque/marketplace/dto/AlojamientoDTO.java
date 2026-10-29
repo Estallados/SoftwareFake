@@ -45,6 +45,7 @@ public class AlojamientoDTO {
 	private List<String> imagenes;
 	private List<ServicioAdicionalDTO> serviciosAdicionales;
 	private Integer habitaciones;
+	private Integer camas;
 	private Integer banos;
 	/** Hora de entrada (check-in), formato HH:mm. */
 	@JsonFormat(pattern = "HH:mm")
@@ -248,6 +249,14 @@ public class AlojamientoDTO {
 
 	public void setHabitaciones(Integer habitaciones) {
 		this.habitaciones = habitaciones;
+	}
+
+	public Integer getCamas() {
+		return camas;
+	}
+
+	public void setCamas(Integer camas) {
+		this.camas = camas;
 	}
 
 	public Integer getBanos() {
