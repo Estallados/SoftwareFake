@@ -15,6 +15,7 @@ import { PoliticaCancelacion } from '../models/politicaCancelacionDto';
 import { RespuestaMensaje } from '../models/respuestaMensajeDto';
 import { ServicioAdicional } from '../models/servicioAdicionalDto';
 import { API_URL } from './api-url';
+import {ResumenResenas} from '../models/resenaDto';
 
 @Injectable({
   providedIn: 'root',
@@ -32,6 +33,18 @@ export class AlojamientoService {
   private historialCache = new Map<number, Observable<HistorialEstadoAlojamiento[]>>();
 
   // ================= Consulta =================
+
+  /**
+   * Catálogo de reseñas de alojamiento especificado.
+   */
+  resenasDeAlojamiento(
+    idAlojamiento: number
+  ): Observable<ResumenResenas> {
+    return this.http.get<ResumenResenas>(
+      `${this.base}/${idAlojamiento}/resenas`
+    );
+  }
+
 
   /**
    * Catálogo de alojamientos disponibles.
