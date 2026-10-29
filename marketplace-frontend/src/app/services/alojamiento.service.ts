@@ -1,162 +1,360 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import {Observable, map, tap} from 'rxjs';
+import {
+  Observable,
+  map,
+  shareReplay,
+  tap,
+} from 'rxjs';
+
 import { AlojamientoEntrada } from '../models/alojamientoEntradaDto';
 import { Alojamiento } from '../models/alojamientoDto';
 import { FiltrosBusqueda } from '../models/filtrosBusquedaDto';
 import { HistorialEstadoAlojamiento } from '../models/historialEstadoAlojamientoDto';
-import { OrdenAlojamientos } from '../models/ordenAlojamientosDto';
 import { PoliticaCancelacion } from '../models/politicaCancelacionDto';
 import { RespuestaMensaje } from '../models/respuestaMensajeDto';
 import { ServicioAdicional } from '../models/servicioAdicionalDto';
 import { API_URL } from './api-url';
 
-/**
- * Cliente HTTP de /alojamientos.
- * Públicos: disponibles, buscar, politicas y el detalle de una publicación ACTIVA.
- * El resto requiere token (lo agrega el interceptor de autenticación).
- *
- * Los listados devuelven un arreglo simple: el backend responde con una página
- * (campo `content`) y aquí se extrae solo ese contenido, sin enviar pagina/tamanio.
- */
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class AlojamientoService {
   private http = inject(HttpClient);
   private base = `${inject(API_URL)}/alojamientos`;
 
+  // Cachés de consultas GET
+  private disponiblesCache = new Map<number, Observable<Alojamiento[]>>();
+  private busquedaCache = new Map<string, Observable<Alojamiento[]>>();
+  private politicasCache$?: Observable<PoliticaCancelacion[]>;
+  private miosCache$?: Observable<Alojamiento[]>;
+  private detalleCache = new Map<number, Observable<Alojamiento>>();
+  private historialCache = new Map<number, Observable<HistorialEstadoAlojamiento[]>>();
+
   // ================= Consulta =================
 
-  /** Catálogo de alojamientos disponibles para reservar (público). */
+  /**
+   * Catálogo de alojamientos disponibles.
+   * Reutiliza la petición para un mismo tamaño.
+   */
   disponibles(tamanio: number): Observable<Alojamiento[]> {
-    const url = `${this.base}/disponibles?pagina=0&tamanio=${tamanio}`;
-    console.log('[AlojamientoService] disponibles() -> GET', url);
+    const cached = this.disponiblesCache.get(tamanio);
 
-    return this.http
+    if (cached) {
+      return cached;
+    }
+
+    const url = `${this.base}/disponibles?pagina=0&tamanio=${tamanio}`;
+
+    const request$ = this.http
       .get<{ contenido: Alojamiento[] }>(url)
       .pipe(
-        tap({
-          next: (r) =>
-            console.log('[AlojamientoService] respuesta OK. contenido:', r?.contenido?.length, 'items', r),
-          error: (e) =>
-            console.error('[AlojamientoService] ERROR status:', e.status, 'url:', e.url, e),
-          complete: () => console.log('[AlojamientoService] petición completada'),
-        }),
         map((r) => r.contenido),
+        tap({
+          error: (e) =>
+            console.error('[AlojamientoService] Error en disponibles:', e),
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    this.disponiblesCache.set(tamanio, request$);
+
+    return request$;
   }
 
-  /** Búsqueda con filtros opcionales y combinables (público). */
+  /**
+   * Búsqueda con filtros opcionales.
+   * Comparte los resultados para filtros equivalentes.
+   */
   buscar(filtros: FiltrosBusqueda = {}): Observable<Alojamiento[]> {
-    return this.http
-      .get<{ content: Alojamiento[] }>(this.base, { params: this.params({ ...filtros }) })
-      .pipe(map((r) => r.content));
+    const params = this.params({ ...filtros });
+
+    const cacheKey = params
+      .keys()
+      .sort()
+      .map((key) =>
+        params
+          .getAll(key)!
+          .slice()
+          .sort()
+          .map((value) => `${key}=${encodeURIComponent(value)}`)
+          .join('&'),
+      )
+      .join('&');
+
+    const cached = this.busquedaCache.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http
+      .get<{ content: Alojamiento[] }>(this.base, { params })
+      .pipe(
+        map((r) => r.content),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+
+    this.busquedaCache.set(cacheKey, request$);
+
+    return request$;
   }
 
-  /** Políticas de cancelación disponibles (público). */
+  /**
+   * Políticas de cancelación.
+   */
   politicas(): Observable<PoliticaCancelacion[]> {
-    return this.http.get<PoliticaCancelacion[]>(`${this.base}/politicas`);
+    if (!this.politicasCache$) {
+      this.politicasCache$ = this.http
+        .get<PoliticaCancelacion[]>(`${this.base}/politicas`)
+        .pipe(
+          shareReplay({ bufferSize: 1, refCount: false }),
+        );
+    }
+
+    return this.politicasCache$;
   }
 
-  /** Mis alojamientos con su estado (ANFITRION). */
+  /**
+   * Alojamientos del anfitrión autenticado.
+   */
   mios(): Observable<Alojamiento[]> {
-    return this.http
-      .get<{ content: Alojamiento[] }>(`${this.base}/mios`)
-      .pipe(map((r) => r.content));
+    if (!this.miosCache$) {
+      this.miosCache$ = this.http
+        .get<{ content: Alojamiento[] }>(`${this.base}/mios`)
+        .pipe(
+          map((r) => r.content),
+          shareReplay({ bufferSize: 1, refCount: false }),
+        );
+    }
+
+    return this.miosCache$;
   }
 
-  /** Detalle: público si está ACTIVA; en otro estado solo su anfitrión o un admin. */
+  /**
+   * Detalle de un alojamiento.
+   */
   obtener(id: number): Observable<Alojamiento> {
-    return this.http.get<Alojamiento>(`${this.base}/${id}`);
+    const cached = this.detalleCache.get(id);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http
+      .get<Alojamiento>(`${this.base}/${id}`)
+      .pipe(
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+
+    this.detalleCache.set(id, request$);
+
+    return request$;
   }
 
-  /** Historial de estados (propietario o ADMIN). */
+  /**
+   * Historial de estados de un alojamiento.
+   */
   historial(id: number): Observable<HistorialEstadoAlojamiento[]> {
-    return this.http.get<HistorialEstadoAlojamiento[]>(`${this.base}/${id}/historial`);
+    const cached = this.historialCache.get(id);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http
+      .get<HistorialEstadoAlojamiento[]>(`${this.base}/${id}/historial`)
+      .pipe(
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+
+    this.historialCache.set(id, request$);
+
+    return request$;
   }
 
   // ================= Creación y edición =================
 
-  /**
-   * Crea un alojamiento en BORRADOR con sus imágenes (ANFITRION).
-   * multipart/form-data: 'datos' (JSON como texto) y 'archivos' (1 a 15 imágenes JPG/PNG/WEBP, máx. 5 MB).
-   * La primera imagen queda como principal.
-   */
-  crear(datos: AlojamientoEntrada, archivos: File[] = []): Observable<Alojamiento> {
+  crear(
+    datos: AlojamientoEntrada,
+    archivos: File[] = [],
+  ): Observable<Alojamiento> {
     const form = new FormData();
+
     form.append('datos', JSON.stringify(datos));
     archivos.forEach((f) => form.append('archivos', f));
-    // No fijes Content-Type: el navegador agrega el boundary del multipart.
-    return this.http.post<Alojamiento>(this.base, form);
+
+    return this.http.post<Alojamiento>(this.base, form).pipe(
+      tap(() => this.invalidarListados()),
+    );
   }
 
-  /** Edita (propietario o ADMIN). Los campos undefined/null no cambian; las amenidades reemplazan las anteriores. */
-  actualizar(id: number, datos: Partial<AlojamientoEntrada>): Observable<Alojamiento> {
-    return this.http.put<Alojamiento>(`${this.base}/${id}`, datos);
+  actualizar(
+    id: number,
+    datos: Partial<AlojamientoEntrada>,
+  ): Observable<Alojamiento> {
+    return this.http.put<Alojamiento>(`${this.base}/${id}`, datos).pipe(
+      tap(() => this.invalidarAlojamiento(id)),
+    );
   }
 
   // ================= Imágenes =================
 
-  /** Sube imágenes (máx. 15 por alojamiento). Si no había portada, la primera queda como principal. */
   subirImagenes(id: number, archivos: File[]): Observable<Alojamiento> {
     const form = new FormData();
+
     archivos.forEach((f) => form.append('archivos', f));
-    return this.http.post<Alojamiento>(`${this.base}/${id}/imagenes`, form);
+
+    return this.http
+      .post<Alojamiento>(`${this.base}/${id}/imagenes`, form)
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
-  /** Elimina una imagen (409 si es la última del alojamiento). */
-  eliminarImagen(id: number, idImagen: number): Observable<Alojamiento> {
-    return this.http.delete<Alojamiento>(`${this.base}/${id}/imagenes/${idImagen}`);
+  eliminarImagen(
+    id: number,
+    idImagen: number,
+  ): Observable<Alojamiento> {
+    return this.http
+      .delete<Alojamiento>(`${this.base}/${id}/imagenes/${idImagen}`)
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
-  /** Marca una imagen como principal. */
-  marcarPrincipal(id: number, idImagen: number): Observable<Alojamiento> {
-    return this.http.patch<Alojamiento>(`${this.base}/${id}/imagenes/${idImagen}/principal`, {});
+  marcarPrincipal(
+    id: number,
+    idImagen: number,
+  ): Observable<Alojamiento> {
+    return this.http
+      .patch<Alojamiento>(
+        `${this.base}/${id}/imagenes/${idImagen}/principal`,
+        {},
+      )
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
   // ================= Ciclo de estados =================
 
-  /** BORRADOR → PENDIENTE_REVISION (ANFITRION). */
   enviarRevision(id: number): Observable<Alojamiento> {
-    return this.http.post<Alojamiento>(`${this.base}/${id}/enviarrevision`, {});
+    return this.http
+      .post<Alojamiento>(`${this.base}/${id}/enviarrevision`, {})
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
-  /** ACTIVA → PAUSADA (ANFITRION). */
   pausar(id: number): Observable<Alojamiento> {
-    return this.http.post<Alojamiento>(`${this.base}/${id}/pausar`, {});
+    return this.http
+      .post<Alojamiento>(`${this.base}/${id}/pausar`, {})
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
-  /** PAUSADA → ACTIVA (ANFITRION). */
   reanudar(id: number): Observable<Alojamiento> {
-    return this.http.post<Alojamiento>(`${this.base}/${id}/reanudar`, {});
+    return this.http
+      .post<Alojamiento>(`${this.base}/${id}/reanudar`, {})
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
   // ================= Servicios adicionales =================
 
-  agregarServicio(id: number, servicio: ServicioAdicional): Observable<ServicioAdicional> {
-    return this.http.post<ServicioAdicional>(`${this.base}/${id}/servicios`, servicio);
+  agregarServicio(
+    id: number,
+    servicio: ServicioAdicional,
+  ): Observable<ServicioAdicional> {
+    return this.http
+      .post<ServicioAdicional>(`${this.base}/${id}/servicios`, servicio)
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
-  actualizarServicio(id: number, idServicio: number, servicio: ServicioAdicional): Observable<ServicioAdicional> {
-    return this.http.put<ServicioAdicional>(`${this.base}/${id}/servicios/${idServicio}`, servicio);
+  actualizarServicio(
+    id: number,
+    idServicio: number,
+    servicio: ServicioAdicional,
+  ): Observable<ServicioAdicional> {
+    return this.http
+      .put<ServicioAdicional>(
+        `${this.base}/${id}/servicios/${idServicio}`,
+        servicio,
+      )
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
   }
 
-  eliminarServicio(id: number, idServicio: number): Observable<RespuestaMensaje> {
-    return this.http.delete<RespuestaMensaje>(`${this.base}/${id}/servicios/${idServicio}`);
+  eliminarServicio(
+    id: number,
+    idServicio: number,
+  ): Observable<RespuestaMensaje> {
+    return this.http
+      .delete<RespuestaMensaje>(
+        `${this.base}/${id}/servicios/${idServicio}`,
+      )
+      .pipe(
+        tap(() => this.invalidarAlojamiento(id)),
+      );
+  }
+
+  // ================= Caché =================
+
+  /**
+   * Invalida listados que pueden haber cambiado.
+   */
+  private invalidarListados(): void {
+    this.disponiblesCache.clear();
+    this.busquedaCache.clear();
+    this.miosCache$ = undefined;
+  }
+
+  /**
+   * Invalida el detalle y el historial de un alojamiento.
+   */
+  private invalidarAlojamiento(id: number): void {
+    this.detalleCache.delete(id);
+    this.historialCache.delete(id);
+    this.invalidarListados();
+  }
+
+  /**
+   * Permite forzar la recarga de todos los datos almacenados.
+   */
+  limpiarCache(): void {
+    this.disponiblesCache.clear();
+    this.busquedaCache.clear();
+    this.politicasCache$ = undefined;
+    this.miosCache$ = undefined;
+    this.detalleCache.clear();
+    this.historialCache.clear();
   }
 
   // ================= Utilidades =================
 
-  /** Arma HttpParams omitiendo valores vacíos; los arreglos se repiten como ?amenidades=a&amenidades=b. */
   private params(valores: Record<string, unknown>): HttpParams {
     let params = new HttpParams();
+
     for (const [clave, valor] of Object.entries(valores)) {
-      if (valor === undefined || valor === null || valor === '') continue;
+      if (valor === undefined || valor === null || valor === '') {
+        continue;
+      }
+
       if (Array.isArray(valor)) {
-        valor.forEach((v) => (params = params.append(clave, String(v))));
+        valor.forEach((v) => {
+          params = params.append(clave, String(v));
+        });
       } else {
         params = params.set(clave, String(valor));
       }
     }
+
     return params;
   }
 }

@@ -55,7 +55,7 @@ export const routes: Routes = [
     component: MapView,
   },
   {
-    path: 'alojamiento/:nombre',
+    path: 'alojamiento/:id',
     component: Detail,
   },
   {

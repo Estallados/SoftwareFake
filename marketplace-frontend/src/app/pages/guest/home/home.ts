@@ -12,6 +12,8 @@ import {AlojamientoService} from '../../../services/alojamiento.service';
 export class Home implements OnInit{
   private router = inject(Router);
   private alojamientoService = inject(AlojamientoService);
+  loading = signal(true);
+
 
   stays = signal<Alojamiento[]>([]);
 
@@ -20,14 +22,19 @@ export class Home implements OnInit{
 
   ngOnInit() {
     this.alojamientoService.disponibles(4).subscribe({
-      next: (lista) => this.stays.set(lista),
-      error: (err) => console.error('Error cargando alojamientos', err),
+      next: (respuesta) => {
+        this.stays.set(respuesta);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error cargando alojamientos:', err);
+        this.loading.set(false);
+      }
     });
   }
 
   readonly photos = photos;
 
-  // Campos de la barra de búsqueda
   readonly searchFields = [
     { icon: 'pin', label: '¿A dónde?', value: 'Ciudad o destino' },
     { icon: 'calendar', label: 'Entrada', value: '15 jul 2025' },
@@ -35,7 +42,6 @@ export class Home implements OnInit{
     { icon: 'users', label: 'Huéspedes', value: '2 huéspedes' },
   ];
 
-  // Tipos de alojamiento
   readonly types = [
     { name: 'Apartamento', count: '128 lugares', image: photos.loft },
     { name: 'Casa', count: '94 lugares', image: photos.casa },
@@ -51,7 +57,6 @@ export class Home implements OnInit{
     { title: 'Anfitriones', links: ['Publicar alojamiento', 'Administrar propiedades', 'Disponibilidad'] },
   ];
 
-  // ---- Navegación (antes eran outputs) ----
   goSearch() {
     this.router.navigateByUrl('/explorar');
   }
@@ -60,17 +65,16 @@ export class Home implements OnInit{
     this.router.navigateByUrl('/host/dashboard');
   }
 
-  openStay(name: string) {
-    this.router.navigate(['/alojamiento', name]); // ajusta si tu :id es un número
+  openStay(id: number) {
+    this.router.navigate(['/alojamiento', id]);
   }
 
-  // ---- Favoritos ----
   isFavorite(name: string): boolean {
     return this.favorites().includes(name);
   }
 
   toggleFavorite(event: Event, name: string) {
-    event.stopPropagation(); // evita abrir la tarjeta
+    event.stopPropagation();
     this.favorites.update((f) =>
       f.includes(name) ? f.filter((x) => x !== name) : [...f, name],
     );
