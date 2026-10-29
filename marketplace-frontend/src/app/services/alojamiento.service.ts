@@ -45,6 +45,16 @@ export class AlojamientoService {
     );
   }
 
+  /**
+   * Cantidad de alojamientos agrupados por tipo.
+   * Incluye alojamientos en cualquier estado.
+   */
+  cantidadPorTipo(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(
+      `${this.base}/tipos`
+    );
+  }
+
 
   /**
    * Catálogo de alojamientos disponibles.
