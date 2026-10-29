@@ -1,13 +1,32 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal
+} from '@angular/core';
+
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive
+} from '@angular/router';
+
 import { filter, map, startWith } from 'rxjs';
 
 export type Role = 'Huésped' | 'Anfitrión' | 'Administrador';
 export type AuthMode = 'login' | 'register' | 'recovery';
 
-/** [texto del menú, ruta] — rutas tomadas de tu app.routes.ts */
 type NavItem = [label: string, path: string];
+
+// ======================================
+// MENÚS SEGÚN ROL
+// ======================================
 
 const GUEST_ITEMS: NavItem[] = [
   ['Inicio', '/home'],
@@ -15,14 +34,14 @@ const GUEST_ITEMS: NavItem[] = [
   ['Mis favoritos', '/favoritos'],
   ['Mensajes', '/mensajes'],
   ['Mis reservas', '/reservas'],
-  ['Mis reseñas', '/resenas'],
+  ['Mis reseñas', '/resenas']
 ];
 
 const HOST_ITEMS: NavItem[] = [
   ['Resumen', '/host/dashboard'],
   ['Mis alojamientos', '/host/alojamientos'],
   ['Reservas', '/host/reservas'],
-  ['Reseñas', '/host/resenas'],
+  ['Reseñas', '/host/resenas']
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
@@ -32,27 +51,19 @@ const ADMIN_ITEMS: NavItem[] = [
   ['Reservas', '/admin/reservas'],
   ['Reseñas', '/admin/resenas'],
   ['Reportes', '/admin/reportes'],
-  ['Auditoría', '/admin/auditoria'],
+  ['Auditoría', '/admin/auditoria']
 ];
 
-/** Pantalla de inicio de cada rol (al cambiar de rol en el selector) */
 const ROLE_HOME: Record<Role, string> = {
   Huésped: '/home',
   Anfitrión: '/host/dashboard',
-  Administrador: '/admin/dashboard',
+  Administrador: '/admin/dashboard'
 };
 
-/** Ruta de notificaciones por rol (el admin no tiene en tus rutas) */
 const NOTIFICATIONS: Record<Role, string | null> = {
   Huésped: '/notificaciones',
   Anfitrión: '/notificaciones',
-  Administrador: '/notificaciones',
-};
-
-const USERS: Record<Role, { initials: string; name: string }> = {
-  Huésped: { initials: 'MC', name: 'Mariana Cruz' },
-  Anfitrión: { initials: 'AV', name: 'Andrés Villa' },
-  Administrador: { initials: 'AD', name: 'Admin LR' },
+  Administrador: '/notificaciones'
 };
 
 @Component({
@@ -60,82 +71,288 @@ const USERS: Record<Role, { initials: string; name: string }> = {
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
   templateUrl: './navbar.component.html',
-  host: { class: 'sticky top-0 z-40 block' },
+  host: {
+    class: 'sticky top-0 z-40 block'
+  }
 })
 export class NavbarComponent {
-  private router = inject(Router);
 
-  /** Notificaciones sin leer del rol actual */
+  private readonly router = inject(Router);
+
   unread = input(0);
-  /** Abrir el modal de login / registro / recuperación */
   openAuth = output<AuthMode>();
 
   roleMenu = false;
-  readonly roles: Role[] = ['Huésped', 'Anfitrión', 'Administrador'];
+
+  // Se conservan para compatibilidad con el HTML.
+  readonly roles: Role[] = [];
   readonly roleHome = ROLE_HOME;
 
-  // URL actual como signal
-  private url = toSignal(
+  // ======================================
+  // DETECTAR CAMBIOS DE RUTA
+  // ======================================
+
+  private readonly url = toSignal(
     this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map((e) => e.urlAfterRedirects),
-      startWith(this.router.url),
+      filter(
+        (event): event is NavigationEnd =>
+          event instanceof NavigationEnd
+      ),
+      map(event => event.urlAfterRedirects),
+      startWith(this.router.url)
     ),
-    { initialValue: this.router.url },
+    {
+      initialValue: this.router.url
+    }
   );
 
-  // Detecta si estamos en la página de login
-  readonly isLoginPage = computed(() => {
-    return this.url().split(/[?#]/)[0] === '/login';
+  // Permite actualizar la sesión al cerrar sesión.
+  private readonly sesionVersion = signal(0);
+
+  // ======================================
+  // OBTENER SESIÓN REAL
+  // ======================================
+
+  readonly sesion = computed(() => {
+
+    // Se consulta la URL para actualizar la sesión
+    // después de navegar desde el login.
+    this.url();
+    this.sesionVersion();
+
+    const token = sessionStorage.getItem('token');
+    const correo = sessionStorage.getItem('correo');
+    const rol = sessionStorage.getItem('rol');
+
+    if (!token || !correo || !rol) {
+      return null;
+    }
+
+    return {
+      token,
+      correo,
+      rol
+    };
   });
 
-  // El rol se deduce de la URL: /admin/** , /host/** o el resto (huésped)
-  role = computed<Role>(() => {
-    const u = this.url();
-    if (u.startsWith('/admin')) return 'Administrador';
-    if (u.startsWith('/host')) return 'Anfitrión';
-    return 'Huésped';
+  readonly estaAutenticado = computed(
+    () => this.sesion() !== null
+  );
+
+  // ======================================
+  // IDENTIFICAR ROL REAL
+  // ======================================
+
+  private normalizarRol(valor: string): Role | null {
+
+    const rol = valor
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (
+      rol === 'HUESPED' ||
+      rol === 'ROLE_HUESPED'
+    ) {
+      return 'Huésped';
+    }
+
+    if (
+      rol === 'ANFITRION' ||
+      rol === 'ROLE_ANFITRION'
+    ) {
+      return 'Anfitrión';
+    }
+
+    if (
+      rol === 'ADMIN' ||
+      rol === 'ADMINISTRADOR' ||
+      rol === 'ROLE_ADMIN' ||
+      rol === 'ROLE_ADMINISTRADOR'
+    ) {
+      return 'Administrador';
+    }
+
+    return null;
+  }
+
+  readonly role = computed<Role>(() => {
+
+    const sesion = this.sesion();
+
+    if (!sesion) {
+      return 'Huésped';
+    }
+
+    return this.normalizarRol(sesion.rol) ?? 'Huésped';
   });
 
-  items = computed(() => {
+  // ======================================
+  // DATOS DEL USUARIO
+  // ======================================
+
+  readonly user = computed(() => {
+
+    const sesion = this.sesion();
+
+    if (!sesion) {
+      return {
+        initials: '?',
+        name: 'Invitado',
+        email: ''
+      };
+    }
+
+    const correo = sesion.correo;
+
+    // Como el backend solo devuelve correo,
+    // mostramos ese dato sin inventar nombres.
+    const nombreVisible = correo.split('@')[0];
+
+    const initials = nombreVisible
+      .split(/[._\-\s]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(parte => parte.charAt(0).toUpperCase())
+      .join('') || 'U';
+
+    return {
+      initials,
+      name: nombreVisible,
+      email: correo
+    };
+  });
+
+  // ======================================
+  // NAVBAR SEGÚN ROL
+  // ======================================
+
+  readonly items = computed<NavItem[]>(() => {
+
+    if (!this.estaAutenticado()) {
+      return [
+        ['Inicio', '/home'],
+        ['Explorar', '/explorar']
+      ];
+    }
+
     switch (this.role()) {
-      case 'Huésped': return GUEST_ITEMS;
-      case 'Anfitrión': return HOST_ITEMS;
-      default: return ADMIN_ITEMS;
+
+      case 'Anfitrión':
+        return HOST_ITEMS;
+
+      case 'Administrador':
+        return ADMIN_ITEMS;
+
+      default:
+        return GUEST_ITEMS;
     }
   });
 
-  user = computed(() => USERS[this.role()]);
-  homePath = computed(() => ROLE_HOME[this.role()]);
-  notificationsPath = computed(() => NOTIFICATIONS[this.role()]);
+  readonly homePath = computed(() => {
 
-  // Clases del enlace activo / inactivo (el estado lo da routerLinkActive)
+    if (!this.estaAutenticado()) {
+      return '/home';
+    }
+
+    return ROLE_HOME[this.role()];
+  });
+
+  readonly notificationsPath = computed(() => {
+
+    if (!this.estaAutenticado()) {
+      return null;
+    }
+
+    return NOTIFICATIONS[this.role()];
+  });
+
+  readonly isLoginPage = computed(() => {
+
+    return this.url().split(/[?#]/)[0] === '/login';
+  });
+
+  // ======================================
+  // ESTILOS DE NAVEGACIÓN
+  // ======================================
+
   readonly activeClass =
-    'text-emerald-700 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-0.5 after:bg-emerald-700';
-  readonly inactiveClass = 'text-slate-500 hover:text-slate-900';
+    'text-emerald-700 after:absolute after:bottom-0 ' +
+    'after:left-4 after:right-4 after:h-0.5 ' +
+    'after:bg-emerald-700';
+
+  readonly inactiveClass =
+    'text-slate-500 hover:text-slate-900';
+
+  // ======================================
+  // COMPATIBILIDAD CON HTML EXISTENTE
+  // ======================================
 
   roleItemClass(r: Role): string {
+
     return (
-      'flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold hover:bg-slate-50 ' +
-      (this.role() === r ? 'text-emerald-700' : '')
+      'flex w-full items-center justify-between ' +
+      'rounded-xl px-3 py-3 text-sm font-semibold ' +
+      (this.role() === r
+        ? 'text-emerald-700'
+        : 'text-slate-500')
     );
   }
 
   roleIcon(r: Role): 'shield' | 'building' | 'users' {
-    return r === 'Administrador' ? 'shield' : r === 'Anfitrión' ? 'building' : 'users';
+
+    if (r === 'Administrador') {
+      return 'shield';
+    }
+
+    if (r === 'Anfitrión') {
+      return 'building';
+    }
+
+    return 'users';
   }
 
-  pickRole(r: Role) {
+  // No se permite cambiar de rol desde la navbar.
+  pickRole(_r: Role): void {
+
     this.roleMenu = false;
-    this.router.navigateByUrl(ROLE_HOME[r]);
   }
 
-  auth(mode: AuthMode) {
+  // ======================================
+  // AUTENTICACIÓN
+  // ======================================
+
+  auth(mode: AuthMode): void {
+
     this.roleMenu = false;
     this.openAuth.emit(mode);
   }
 
-  closeMenu() {
+  // ======================================
+  // CERRAR SESIÓN
+  // ======================================
+
+  cerrarSesion(): void {
+
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('rol');
+    sessionStorage.removeItem('correo');
+
+    this.roleMenu = false;
+
+    // Actualiza los datos visibles.
+    this.sesionVersion.update(valor => valor + 1);
+
+    this.router.navigateByUrl('/login');
+  }
+
+  // ======================================
+  // CERRAR MENÚ
+  // ======================================
+
+  closeMenu(): void {
+
     this.roleMenu = false;
   }
 }
