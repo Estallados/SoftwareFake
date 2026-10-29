@@ -29,6 +29,7 @@ export interface Alojamiento {
   porcentajeServicio?: number;
   reglas?: string;
   habitaciones?: number;
+  camas?: number;
   banos?: number;
   /** Hora de entrada (check-in), formato 'HH:mm' */
   horaEntrada?: string;
