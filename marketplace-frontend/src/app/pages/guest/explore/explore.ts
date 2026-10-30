@@ -108,6 +108,7 @@ export class Explore implements OnInit {
   }
   // ==================== INICIALIZACIÓN ====================
   ngOnInit(): void {
+    this.favoritoService.cargarSiCorresponde();
     this.cargarAlojamientos();
   }
   reintentar(): void {

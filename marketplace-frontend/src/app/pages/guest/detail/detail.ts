@@ -7,6 +7,7 @@ import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {CurrencyPipe, DatePipe, DecimalPipe} from '@angular/common';
 import {Resena, ResumenResenas} from '../../../models/resenaDto';
 import {FavoritoService} from '../../../services/favorito.service';
+import {SessionService} from '../../../services/session.service';
 @Component({
   selector: 'app-detail',
   standalone: true,
@@ -24,6 +25,7 @@ export class Detail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly alojamientoService = inject(AlojamientoService);
   private readonly favoritoService = inject(FavoritoService);
+  protected readonly session = inject(SessionService);
   private readonly fb = inject(FormBuilder);
   // ==================== Alojamiento ====================
   readonly photos = photos;
@@ -116,6 +118,7 @@ export class Detail implements OnInit {
   }
   // ==================== Inicialización ====================
   ngOnInit(): void {
+    this.favoritoService.cargarSiCorresponde();
     this.cargarAlojamiento();
   }
   private cargarAlojamiento(): void {

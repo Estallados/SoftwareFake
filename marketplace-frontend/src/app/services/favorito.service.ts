@@ -1,26 +1,28 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { map, Observable, tap } from 'rxjs';
 import { Alojamiento } from '../models/alojamientoDto';
+import { API_URL } from './api-url';
 import { SessionService } from './session.service';
-import {API_URL} from './api-url';
 /** El backend puede devolver el alojamiento directo o envuelto en el favorito. */
 type ItemFavorito = Alojamiento | { alojamiento: Alojamiento };
-
 interface PaginaFavoritos {
   contenido?: ItemFavorito[];
   content?: ItemFavorito[];
 }
-
 @Injectable({ providedIn: 'root' })
 export class FavoritoService {
   private readonly http = inject(HttpClient);
   private readonly session = inject(SessionService);
-  // Ajusta la ruta base si tu @RequestMapping del controlador es distinto
+  // Ajusta el sufijo si tu @RequestMapping del controlador es distinto
   private readonly baseUrl = `${inject(API_URL)}/favoritos`;
   // ==================== ESTADO COMPARTIDO ====================
   /** Ids de alojamientos favoritos, compartidos por todos los componentes. */
   readonly favoritos = signal<number[]>([]);
+  /** Solo los huéspedes con sesión vigente pueden usar favoritos. */
+  readonly disponible = computed(() => this.session.tieneRol('Huésped'));
+  /** Correo del usuario cuyos favoritos están cargados (evita mezclar usuarios). */
+  private cargadoPara = '';
   /** Mensaje temporal de error (lo muestra <app-favorito-toast />). */
   readonly mensaje = signal<string | null>(null);
   /** Ids con una petición en curso (evita dobles clics). */
@@ -44,14 +46,12 @@ export class FavoritoService {
         tap((lista) => this.sincronizar(lista)),
       );
   }
-
   private sincronizar(lista: Alojamiento[]): void {
     const ids = lista
       .map((a) => a.idAlojamiento)
       .filter((id): id is number => id != null);
     this.favoritos.update((actuales) => [...new Set([...actuales, ...ids])]);
   }
-
   /**
    * POST /favoritos/{idAlojamiento}
    * Idempotente: si ya estaba, responde 200 con el mismo favorito.
@@ -68,6 +68,19 @@ export class FavoritoService {
     return this.http.delete<unknown>(`${this.baseUrl}/${idAlojamiento}`);
   }
   // ==================== API PARA LOS COMPONENTES ====================
+  /** Trae los favoritos del huésped una vez por usuario, para pintar los corazones. */
+  cargarSiCorresponde(): void {
+    if (!this.disponible()) {
+      return;
+    }
+    const correo = this.session.correo();
+    if (this.cargadoPara === correo) {
+      return;
+    }
+    this.cargadoPara = correo;
+    this.favoritos.set([]);
+    this.listar(0, 100).subscribe({ error: () => (this.cargadoPara = '') });
+  }
   esFavorito(id: number | undefined): boolean {
     return id != null && this.favoritos().includes(id);
   }
@@ -79,9 +92,11 @@ export class FavoritoService {
     if (id == null || this.pendientes.has(id)) {
       return;
     }
-    // Sin sesión vigente no tiene sentido llamar al backend (daría 401)
-    if (!this.session.autenticado()) {
-      this.mostrarMensaje('Inicia sesión para guardar alojamientos en favoritos.');
+    // Sin sesión de huésped no tiene sentido llamar al backend (daría 401/403)
+    if (!this.disponible()) {
+      if (!this.session.autenticado()) {
+        this.mostrarMensaje('Inicia sesión para guardar alojamientos en favoritos.');
+      }
       return;
     }
     const eraFavorito = this.esFavorito(id);

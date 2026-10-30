@@ -5,6 +5,7 @@ import { photos } from '../../../services/mockData';
 import { Alojamiento } from '../../../models/alojamientoDto';
 import { AlojamientoService } from '../../../services/alojamiento.service';
 import { FavoritoService } from '../../../services/favorito.service';
+import {SessionService} from '../../../services/session.service';
 interface TipoAlojamiento {
   name: string;
   count: number;
@@ -20,6 +21,7 @@ export class Home implements OnInit {
   private router = inject(Router);
   protected readonly alojamientoService = inject(AlojamientoService);
   protected readonly favoritoService = inject(FavoritoService);
+  protected readonly session = inject(SessionService);
   loading = signal(true);
   loadingTipos = signal(true);
   stays = signal<Alojamiento[]>([]);
@@ -41,6 +43,7 @@ export class Home implements OnInit {
     { icon: 'users', label: 'Huéspedes', value: '2 huéspedes' },
   ];
   ngOnInit(): void {
+    this.favoritoService.cargarSiCorresponde();
     // Cargar alojamientos destacados.
     this.alojamientoService.disponibles(4).subscribe({
       next: (respuesta) => {
