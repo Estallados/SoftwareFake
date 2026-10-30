@@ -12,7 +12,8 @@ import jakarta.persistence.GenerationType;
 
 /**
  * Entidad que representa imagen en el marketplace. Puede ser un archivo subido
- * por el anfitrión (se guarda en disco y {@code rutaArchivo} indica dónde) o
+ * por el anfitrión (su contenido está en {@link ArchivoImagen} con la misma
+ * {@code rutaArchivo}) o
  * una URL externa ({@code rutaArchivo} en null). Una imagen por alojamiento es
  * la principal (portada).
  *

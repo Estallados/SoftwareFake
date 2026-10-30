@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -229,5 +230,19 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 
 		llamar(multipart("/alojamientos/" + id + "/imagenes"), anfitrion.token(), null, 400);
 		llamar(post("/alojamientos/" + id + "/imagenes"), anfitrion.token(), Map.of("archivos", "x"), 415);
+	}
+
+	@Test
+	void unaImagenBorradaYaNoSeSirve() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		JsonNode imagenes = crearBorrador(anfitrion, datos(), 201, imagen("sala.png", PNG),
+				imagen("cuarto.jpg", JPEG)).get("detalleImagenes");
+		Long id = imagenes.get(0).get("idAlojamiento").asLong();
+		String url = imagenes.get(1).get("url").asText();
+		mvc.perform(get(url)).andExpect(status().isOk());
+
+		llamar(delete("/alojamientos/" + id + "/imagenes/" + imagenes.get(1).get("idImagen").asLong()),
+				anfitrion.token(), null, 200);
+		mvc.perform(get(url)).andExpect(status().isNotFound());
 	}
 }

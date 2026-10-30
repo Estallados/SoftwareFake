@@ -68,7 +68,10 @@ class TiempoRealTest extends PruebaIntegracionBase {
 		cliente.stop();
 	}
 
-	/** Conecta; los frames ERROR del servidor completan {@code error}. */
+	/**
+	 * Conecta; un frame ERROR del servidor o el cierre de la conexión que lo sigue
+	 * (el que llegue primero) completan {@code error}.
+	 */
 	private CompletableFuture<StompSession> conectar(String token, CompletableFuture<String> error) {
 		StompHeaders conexion = new StompHeaders();
 		if (token != null) {
@@ -79,6 +82,11 @@ class TiempoRealTest extends PruebaIntegracionBase {
 					@Override
 					public void handleFrame(StompHeaders headers, Object payload) {
 						error.complete(headers.getFirst("message"));
+					}
+
+					@Override
+					public void handleTransportError(StompSession session, Throwable exception) {
+						error.complete(String.valueOf(exception.getMessage()));
 					}
 				});
 	}
