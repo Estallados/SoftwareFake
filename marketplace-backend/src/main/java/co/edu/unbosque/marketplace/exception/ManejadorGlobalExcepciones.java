@@ -89,6 +89,11 @@ public class ManejadorGlobalExcepciones {
 		return mensaje(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño permitido (5 MB por imagen).");
 	}
 
+	@ExceptionHandler(AlmacenamientoNoDisponibleException.class)
+	public ResponseEntity<Map<String, String>> almacenamientoNoDisponible(AlmacenamientoNoDisponibleException e) {
+		return mensaje(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
+	}
+
 	@ExceptionHandler(MissingServletRequestPartException.class)
 	public ResponseEntity<Map<String, String>> parteFaltante(MissingServletRequestPartException e) {
 		return mensaje(HttpStatus.BAD_REQUEST, "Falta el campo " + e.getRequestPartName() + " con los archivos.");

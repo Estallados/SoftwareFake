@@ -1,15 +1,20 @@
 package co.edu.unbosque.marketplace;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +30,13 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/** Imágenes de alojamientos con selector de archivos (multipart), obligatorias desde la creación. */
+import co.edu.unbosque.marketplace.exception.AlmacenamientoNoDisponibleException;
+import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
+
+/**
+ * Imágenes de alojamientos con selector de archivos (multipart), obligatorias desde la creación. Cloudinary
+ * está simulado (ver {@link PruebaIntegracionBase}).
+ */
 class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 
 	private static final byte[] JPEG = { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 16, 'J', 'F', 'I',
@@ -53,8 +64,13 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 		return llamar(get("/alojamientos/" + id), anfitrion.token(), null, 200).get("imagenes").size();
 	}
 
+	/** public_id de una imagen subida, sacado de la URL del Cloudinary simulado. */
+	private static String publicId(JsonNode imagen) {
+		return imagen.get("url").asText().substring(URL_CLOUDINARY.length());
+	}
+
 	@Test
-	void alCrearLaPrimeraImagenQuedaComoPrincipalYSeSirvePublicamente_CA094() throws Exception {
+	void alCrearLaPrimeraImagenQuedaComoPrincipalYSeGuardaEnCloudinary_CA094() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
 
 		JsonNode creado = crearBorrador(anfitrion, datos(), 201, imagen("sala.png", PNG),
@@ -67,12 +83,10 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 		assertTrue(imagenes.get(0).get("principal").asBoolean());
 		assertFalse(imagenes.get(1).get("principal").asBoolean());
 		String url = imagenes.get(0).get("url").asText();
-		assertTrue(url.startsWith("/archivos/alojamientos/" + id + "/") && url.endsWith(".png"));
-		assertTrue(imagenes.get(1).get("url").asText().endsWith(".jpg"));
+		assertTrue(url.startsWith(URL_CLOUDINARY + "marketplace/alojamientos/" + id + "/"));
 		assertEquals(url, creado.get("imagenes").get(0).asText());
-
-		byte[] servida = mvc.perform(get(url)).andReturn().getResponse().getContentAsByteArray();
-		assertArrayEquals(PNG, servida);
+		verify(cloudinaryService).subir(eq(PNG), eq("marketplace/alojamientos/" + id), anyString());
+		verify(cloudinaryService).subir(eq(JPEG), eq("marketplace/alojamientos/" + id), anyString());
 
 		// Las siguientes se agregan sin cambiar la portada
 		JsonNode todas = subir(anfitrion, id, 201, imagen("bano.png", PNG));
@@ -233,16 +247,42 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 	}
 
 	@Test
-	void unaImagenBorradaYaNoSeSirve() throws Exception {
+	void unaImagenBorradaSeEliminaDeCloudinary() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
 		JsonNode imagenes = crearBorrador(anfitrion, datos(), 201, imagen("sala.png", PNG),
 				imagen("cuarto.jpg", JPEG)).get("detalleImagenes");
 		Long id = imagenes.get(0).get("idAlojamiento").asLong();
-		String url = imagenes.get(1).get("url").asText();
-		mvc.perform(get(url)).andExpect(status().isOk());
 
 		llamar(delete("/alojamientos/" + id + "/imagenes/" + imagenes.get(1).get("idImagen").asLong()),
 				anfitrion.token(), null, 200);
-		mvc.perform(get(url)).andExpect(status().isNotFound());
+
+		verify(cloudinaryService).borrar(publicId(imagenes.get(1)));
+		verify(cloudinaryService, never()).borrar(publicId(imagenes.get(0)));
+	}
+
+	@Test
+	void siCloudinaryFallaNoSeCreaElAlojamientoYSeBorraLoQueAlcanzoASubir() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		ImagenSubida primera = new ImagenSubida("marketplace/alojamientos/x/primera", URL_CLOUDINARY + "primera");
+		when(cloudinaryService.subir(any(), anyString(), anyString())).thenReturn(primera)
+				.thenThrow(new AlmacenamientoNoDisponibleException("No se pudo guardar la imagen. Intenta de nuevo."));
+
+		JsonNode error = crearBorrador(anfitrion, datos(), 503, imagen("sala.png", PNG), imagen("cuarto.jpg", JPEG));
+
+		assertTrue(error.get("message").asText().contains("No se pudo guardar la imagen"));
+		assertEquals(0, llamar(get("/alojamientos/mios"), anfitrion.token(), null, 200).get("totalElementos")
+				.asInt());
+		verify(cloudinaryService).borrar(primera.publicId());
+	}
+
+	@Test
+	void siSeRechazaElLoteNoSeSubeNadaACloudinary() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = borrador(anfitrion, imagen("sala.png", PNG));
+		clearInvocations(cloudinaryService);
+
+		subir(anfitrion, id, 400, imagen("buena.png", PNG), imagen("mala.png", new byte[] { 1, 2, 3 }));
+
+		verify(cloudinaryService, never()).subir(any(), anyString(), anyString());
 	}
 }

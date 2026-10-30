@@ -10,6 +10,8 @@ API REST con JWT. Java 17, Spring Boot 3.3, PostgreSQL, Maven.
 |---|---|---|
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Sí | Conexión a PostgreSQL |
 | `AES_SECRET_KEY` | Sí | Base64 de 32 bytes. Cifra el correo y el secreto TOTP, y de ella se deriva la clave que firma los JWT. **Todo el equipo debe usar la misma** si comparten base; si cambia, los usuarios existentes quedan inservibles y los tokens emitidos dejan de valer |
+| `CLOUDINARY_URL` | Sí, para subir imágenes | `cloudinary://<api_key>:<api_secret>@<cloud_name>` (Dashboard de Cloudinary → API Keys). Las imágenes de los alojamientos se guardan allí; sin ella la app arranca, pero subir imágenes responde 503. **Todo el equipo usa la misma cuenta** |
+| `CLOUDINARY_CARPETA` | No | Carpeta raíz en Cloudinary (por defecto `marketplace`); sirve para separar ambientes |
 | `MAIL_PASSWORD` | No | Contraseña de aplicación de Gmail de la cuenta remitente. Sin ella no se envían correos |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | No | Si no existe ningún ADMIN y `ADMIN_PASSWORD` está definida, se crea el admin inicial al arrancar |
 | `CORS_ORIGINS` | No | Orígenes del front separados por coma (por defecto `http://localhost:4200`) |

@@ -12,10 +12,9 @@ import jakarta.persistence.GenerationType;
 
 /**
  * Entidad que representa imagen en el marketplace. Puede ser un archivo subido
- * por el anfitrión (su contenido está en {@link ArchivoImagen} con la misma
- * {@code rutaArchivo}) o
- * una URL externa ({@code rutaArchivo} en null). Una imagen por alojamiento es
- * la principal (portada).
+ * por el anfitrión, guardado en Cloudinary ({@code rutaArchivo} es su id allá),
+ * o una URL externa ({@code rutaArchivo} en null). Una imagen por alojamiento
+ * es la principal (portada).
  *
  * @see "RF-017"
  */
@@ -38,7 +37,7 @@ public class Imagen {
 	/** Portada del alojamiento; null en imágenes anteriores a este campo. */
 	private Boolean principal;
 	/**
-	 * Ruta relativa del archivo en el almacenamiento; null si es una URL externa.
+	 * Id (public_id) de la imagen en Cloudinary; null si es una URL externa.
 	 */
 	private String rutaArchivo;
 

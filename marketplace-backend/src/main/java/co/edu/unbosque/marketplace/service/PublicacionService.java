@@ -43,6 +43,7 @@ import co.edu.unbosque.marketplace.repository.AlojamientoEspecificacion;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.HistorialEstadoAlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ImagenRepository;
+import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
 import co.edu.unbosque.marketplace.repository.PeriodoDisponibilidadRepository;
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
 import co.edu.unbosque.marketplace.repository.ResenaRepository;
@@ -1002,11 +1003,11 @@ public class PublicacionService {
     /** Guarda los archivos ya validados; si el alojamiento no tenía portada, el primero queda como principal. */
     private void guardarArchivos(Long idAlojamiento, List<MultipartFile> archivos, boolean tienePrincipal) {
         for (MultipartFile archivo : archivos) {
-            String ruta = almacenamientoService.guardarImagen(archivo, "alojamientos/" + idAlojamiento);
+            ImagenSubida subida = almacenamientoService.guardarImagen(archivo, "alojamientos/" + idAlojamiento);
             Imagen imagen = new Imagen();
             imagen.setIdAlojamiento(idAlojamiento);
-            imagen.setRutaArchivo(ruta);
-            imagen.setUrl(AlmacenamientoService.urlPublica(ruta));
+            imagen.setRutaArchivo(subida.publicId());
+            imagen.setUrl(subida.url());
             imagen.setPrincipal(!tienePrincipal);
             imagenRepo.save(imagen);
             tienePrincipal = true;

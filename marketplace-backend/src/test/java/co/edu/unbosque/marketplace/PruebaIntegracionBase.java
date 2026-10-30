@@ -1,5 +1,8 @@
 package co.edu.unbosque.marketplace;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -14,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +34,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
+import co.edu.unbosque.marketplace.service.CloudinaryService;
+import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
 
 /**
  * Base de las pruebas de integración de los módulos 2 a 9: un contexto Spring
@@ -50,6 +56,9 @@ abstract class PruebaIntegracionBase {
 	/** Cabecera mínima de un PNG: basta para que el back lo reconozca como imagen. */
 	protected static final byte[] PNG = { (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 13, 1, 2,
 			3 };
+	/** Prefijo de las URL que entrega el Cloudinary simulado; lo sigue el public_id. */
+	protected static final String URL_CLOUDINARY = "https://res.cloudinary.com/prueba/image/upload/"
+			+ CloudinaryService.ENTREGA + "/";
 
 	private static final AtomicInteger CONTADOR = new AtomicInteger();
 
@@ -65,6 +74,18 @@ abstract class PruebaIntegracionBase {
 	/** Evita conectarse a un servidor SMTP real. */
 	@MockBean
 	protected JavaMailSender mailSender;
+
+	/** Evita subir imágenes a Cloudinary: cada subida devuelve una URL simulada. */
+	@MockBean
+	protected CloudinaryService cloudinaryService;
+
+	@BeforeEach
+	void simularCloudinary() {
+		when(cloudinaryService.subir(any(), anyString(), anyString())).thenAnswer(invocacion -> {
+			String publicId = invocacion.getArgument(1) + "/" + invocacion.getArgument(2);
+			return new ImagenSubida(publicId, URL_CLOUDINARY + publicId);
+		});
+	}
 
 	/** Usuario registrado en la prueba. */
 	protected record Sesion(String token, Long id, String correo) {

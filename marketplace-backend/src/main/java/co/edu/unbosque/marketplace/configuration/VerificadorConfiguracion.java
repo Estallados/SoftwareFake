@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import co.edu.unbosque.marketplace.service.CloudinaryService;
 import co.edu.unbosque.marketplace.util.AESUtil;
 import jakarta.annotation.PostConstruct;
 
@@ -18,9 +19,11 @@ public class VerificadorConfiguracion {
 	private static final Logger LOG = LoggerFactory.getLogger(VerificadorConfiguracion.class);
 
 	private final Environment environment;
+	private final CloudinaryService cloudinaryService;
 
-	public VerificadorConfiguracion(Environment environment) {
+	public VerificadorConfiguracion(Environment environment, CloudinaryService cloudinaryService) {
 		this.environment = environment;
+		this.cloudinaryService = cloudinaryService;
 	}
 
 	@PostConstruct
@@ -31,6 +34,9 @@ public class VerificadorConfiguracion {
 		if (!correoConfigurado()) {
 			LOG.warn("MAIL_PASSWORD no está definida (revisa que el nombre no tenga espacios). "
 					+ "La app funciona, pero no se enviarán correos.");
+		}
+		if (!cloudinaryService.estaConfigurado()) {
+			LOG.warn("CLOUDINARY_URL no está definida. La app funciona, pero subir imágenes responderá 503.");
 		}
 	}
 

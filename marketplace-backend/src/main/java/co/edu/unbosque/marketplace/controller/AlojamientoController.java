@@ -156,6 +156,7 @@ public class AlojamientoController {
 			+ "alojamiento: ... | La capacidad debe ser mayor que cero. | La política de cancelación no existe.")
 	@ApiResponse(responseCode = "413", description = "El archivo supera el tamaño permitido (5 MB por imagen).")
 	@ApiResponse(responseCode = "415", description = "El cuerpo debe enviarse como multipart/form-data.")
+	@ApiResponse(responseCode = "503", description = "No se pudo guardar la imagen. Intenta de nuevo.")
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<Object> crear(
 			@Parameter(description = "JSON del alojamiento, por ejemplo {\"titulo\": \"Casa en Villa de Leyva\", "
@@ -203,6 +204,7 @@ public class AlojamientoController {
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
 	@ApiResponse(responseCode = "413", description = "El archivo supera el tamaño permitido (5 MB por imagen).")
 	@ApiResponse(responseCode = "415", description = "El cuerpo debe enviarse como multipart/form-data.")
+	@ApiResponse(responseCode = "503", description = "No se pudo guardar la imagen. Intenta de nuevo.")
 	@PostMapping(value = "/{id}/imagenes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<Object> subirImagenes(@PathVariable Long id,
 			@RequestParam("archivos") List<MultipartFile> archivos, Authentication authentication) {

@@ -4,35 +4,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
-import co.edu.unbosque.marketplace.entity.ArchivoImagen;
-import co.edu.unbosque.marketplace.repository.ArchivoImagenRepository;
+import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
 
 /**
- * Guarda en la base (tabla {@code archivo_imagen}) las imágenes que suben los
- * usuarios y las expone en {@value #RUTA_PUBLICA} (ver
- * {@code ArchivoController}). No se usa el disco del servidor: el equipo
- * comparte la base pero cada uno corre su backend, y una imagen en disco solo
- * la vería quien la subió.
+ * Valida las imágenes que suben los usuarios y las guarda en Cloudinary (ver
+ * {@link CloudinaryService}); la base solo guarda su id y su URL.
  * <p>
  * El tipo de imagen se reconoce por los primeros bytes del archivo y no por la
  * extensión ni por el Content-Type que manda el cliente, que se pueden
  * falsificar. Solo se aceptan JPEG, PNG y WEBP de hasta 5 MB. El nombre es un
  * UUID, así que el nombre original nunca se usa como ruta.
  * </p>
+ * <p>
+ * Cloudinary no participa de la transacción de la base: si la transacción se
+ * revierte, las imágenes que alcanzaron a subirse se borran, y una imagen
+ * eliminada solo se borra de Cloudinary cuando la transacción se confirma.
+ * </p>
  *
  * @see "RF-017"
  */
 @Service
 public class AlmacenamientoService {
-
-	/** Prefijo de las URL con que se sirven los archivos guardados. */
-	public static final String RUTA_PUBLICA = "/archivos/";
 
 	/** Tamaño máximo de una imagen (5 MB). */
 	public static final long TAMANIO_MAXIMO = 5L * 1024 * 1024;
@@ -44,10 +44,14 @@ public class AlmacenamientoService {
 	private static final byte[] WEBP = { 'W', 'E', 'B', 'P' };
 	private static final int INICIO_WEBP = 8;
 
-	private final ArchivoImagenRepository archivoRepo;
+	private final CloudinaryService cloudinaryService;
+	/** Carpeta raíz en Cloudinary; permite separar ambientes (dev, prod). */
+	private final String carpetaRaiz;
 
-	public AlmacenamientoService(ArchivoImagenRepository archivoRepo) {
-		this.archivoRepo = archivoRepo;
+	public AlmacenamientoService(CloudinaryService cloudinaryService,
+			@Value("${app.cloudinary.carpeta:marketplace}") String carpetaRaiz) {
+		this.cloudinaryService = cloudinaryService;
+		this.carpetaRaiz = carpetaRaiz;
 	}
 
 	/**
@@ -62,47 +66,64 @@ public class AlmacenamientoService {
 		if (archivo.getSize() > TAMANIO_MAXIMO) {
 			return "Cada imagen puede pesar máximo 5 MB.";
 		}
-		return extension(cabecera(archivo)) == null ? "Solo se aceptan imágenes JPG, PNG o WEBP." : null;
+		return esImagen(cabecera(archivo)) ? null : "Solo se aceptan imágenes JPG, PNG o WEBP.";
 	}
 
 	/**
 	 * Guarda una imagen ya validada con {@link #errorImagen(MultipartFile)}.
 	 *
 	 * @param archivo Imagen recibida.
-	 * @param carpeta Prefijo de la ruta, por ejemplo {@code alojamientos/12}.
-	 * @return la ruta relativa del archivo guardado (con / como separador).
+	 * @param carpeta Carpeta dentro de la raíz, por ejemplo
+	 *                {@code alojamientos/12}.
+	 * @return el id en Cloudinary (va en {@code rutaArchivo}) y la URL pública.
+	 * @throws co.edu.unbosque.marketplace.exception.AlmacenamientoNoDisponibleException
+	 *         si Cloudinary no la recibe.
 	 */
-	public String guardarImagen(MultipartFile archivo, String carpeta) {
+	public ImagenSubida guardarImagen(MultipartFile archivo, String carpeta) {
 		byte[] datos;
 		try {
 			datos = archivo.getBytes();
 		} catch (IOException e) {
 			throw new UncheckedIOException("No se pudo leer la imagen", e);
 		}
-		String extension = extension(datos);
-		if (extension == null) {
+		if (!esImagen(datos)) {
 			throw new IllegalArgumentException("El archivo no es una imagen aceptada");
 		}
-		String ruta = carpeta + "/" + UUID.randomUUID() + "." + extension;
-		archivoRepo.save(new ArchivoImagen(ruta, "jpg".equals(extension) ? "image/jpeg" : "image/" + extension, datos));
-		return ruta;
+		ImagenSubida subida = cloudinaryService.subir(datos, carpetaRaiz + "/" + carpeta,
+				UUID.randomUUID().toString());
+		alTerminarTransaccion(TransactionSynchronization.STATUS_ROLLED_BACK, subida.publicId());
+		return subida;
 	}
 
-	/** URL pública de un archivo guardado. */
-	public static String urlPublica(String ruta) {
-		return RUTA_PUBLICA + ruta;
-	}
-
-	/** Archivo guardado en la ruta indicada, si existe. */
-	public Optional<ArchivoImagen> buscar(String ruta) {
-		return archivoRepo.findById(ruta);
-	}
-
-	/** Borra un archivo guardado; una ruta null o inexistente no hace nada. */
+	/**
+	 * Borra una imagen guardada cuando se confirme la transacción; una ruta null
+	 * (URL externa) no hace nada.
+	 */
 	public void eliminar(String ruta) {
 		if (ruta != null && !ruta.isBlank()) {
-			archivoRepo.deleteById(ruta);
+			alTerminarTransaccion(TransactionSynchronization.STATUS_COMMITTED, ruta);
 		}
+	}
+
+	/**
+	 * Borra la imagen de Cloudinary si la transacción termina con el estado
+	 * indicado; sin transacción activa, solo la borra cuando se pide eliminar.
+	 */
+	private void alTerminarTransaccion(int estado, String publicId) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			if (estado == TransactionSynchronization.STATUS_COMMITTED) {
+				cloudinaryService.borrar(publicId);
+			}
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCompletion(int estadoFinal) {
+				if (estadoFinal == estado) {
+					cloudinaryService.borrar(publicId);
+				}
+			}
+		});
 	}
 
 	private static byte[] cabecera(MultipartFile archivo) {
@@ -113,20 +134,10 @@ public class AlmacenamientoService {
 		}
 	}
 
-	/**
-	 * Extensión según los primeros bytes; null si no es JPEG, PNG ni WEBP.
-	 */
-	private static String extension(byte[] datos) {
-		if (empiezaCon(datos, JPEG, 0)) {
-			return "jpg";
-		}
-		if (empiezaCon(datos, PNG, 0)) {
-			return "png";
-		}
-		if (empiezaCon(datos, RIFF, 0) && empiezaCon(datos, WEBP, INICIO_WEBP)) {
-			return "webp";
-		}
-		return null;
+	/** Si los primeros bytes son de un JPEG, PNG o WEBP. */
+	private static boolean esImagen(byte[] datos) {
+		return empiezaCon(datos, JPEG, 0) || empiezaCon(datos, PNG, 0)
+				|| (empiezaCon(datos, RIFF, 0) && empiezaCon(datos, WEBP, INICIO_WEBP));
 	}
 
 	private static boolean empiezaCon(byte[] datos, byte[] firma, int desde) {

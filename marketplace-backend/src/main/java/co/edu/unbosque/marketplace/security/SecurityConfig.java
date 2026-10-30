@@ -72,8 +72,6 @@ public class SecurityConfig {
 						.requestMatchers("/error").permitAll()
 						// Endpoint de salud para monitoreo y reinicio automático (RNF-001..003)
 						.requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-						// Imágenes subidas de los alojamientos (ArchivosConfig)
-						.requestMatchers(HttpMethod.GET, "/archivos/**").permitAll()
 						// Configuración de pagos (modo y clave publicable de Stripe) para el front
 						.requestMatchers(HttpMethod.GET, "/pagos/configuracion").permitAll()
 						// Handshake WebSocket: el navegador no envía Authorization aquí; el token

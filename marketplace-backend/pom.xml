@@ -27,6 +27,12 @@
 			<artifactId>resend-java</artifactId>
 			<version>4.11.0</version>
 		</dependency>
+		<!-- Almacenamiento de las imágenes subidas (Cloudinary) -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>2.3.2</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
