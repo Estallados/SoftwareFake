@@ -172,11 +172,20 @@ abstract class PruebaIntegracionBase {
 			BigDecimal precio, Set<String> amenidades, String politica) throws Exception {
 		Long id = crearBorrador(anfitrion, datosAlojamiento(ciudad, tipo, capacidad, precio, amenidades, politica),
 				201).get("idAlojamiento").asLong();
-		llamar(post("/alojamientos/" + id + "/disponibilidad"), anfitrion.token(),
-				Map.of("fechaInicio", HOY.toString(), "fechaFin", HOY.plusDays(120).toString()), 201);
+		ofrecerFechas(anfitrion, id);
 		llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);
 		llamar(post("/admin/alojamientos/" + id + "/aprobar"), tokenAdmin(), null, 200);
 		return id;
+	}
+
+	/**
+	 * Ofrece el alojamiento de hoy a hoy + 120 días (requisito para enviarlo a
+	 * revisión). Devuelve el id del período.
+	 */
+	protected Long ofrecerFechas(Sesion anfitrion, Long idAlojamiento) throws Exception {
+		return llamar(post("/alojamientos/" + idAlojamiento + "/disponibilidad"), anfitrion.token(),
+				Map.of("fechaInicio", HOY.toString(), "fechaFin", HOY.plusDays(120).toString()), 201)
+				.get("idPeriodo").asLong();
 	}
 
 	protected Long crearAlojamientoActivo(Sesion anfitrion) throws Exception {

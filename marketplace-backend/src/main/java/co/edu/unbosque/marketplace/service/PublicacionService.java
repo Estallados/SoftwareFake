@@ -43,6 +43,7 @@ import co.edu.unbosque.marketplace.repository.AlojamientoEspecificacion;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.HistorialEstadoAlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ImagenRepository;
+import co.edu.unbosque.marketplace.repository.PeriodoDisponibilidadRepository;
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
 import co.edu.unbosque.marketplace.repository.ResenaRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
@@ -75,6 +76,8 @@ public class PublicacionService {
     private static final String NO_EXISTE = "El alojamiento no existe.";
     private static final String SIN_PERMISO = "Solo el anfitrión propietario o un administrador puede modificar "
             + "este alojamiento.";
+    private static final String SIN_FECHAS = "El alojamiento no tiene fechas de disponibilidad desde hoy; "
+            + "el anfitrión debe agregarlas antes de publicarlo.";
     private static final int LATITUD_MAXIMA = 90;
     private static final int LONGITUD_MAXIMA = 180;
     /** Máximo de imágenes por alojamiento. */
@@ -93,6 +96,7 @@ public class PublicacionService {
 
     private final AlojamientoRepository alojamientoRepo;
     private final ImagenRepository imagenRepo;
+    private final PeriodoDisponibilidadRepository periodoRepo;
     private final ServicioAdicionalRepository servicioRepo;
     private final PoliticaCancelacionRepository politicaRepo;
     private final HistorialEstadoAlojamientoRepository historialRepo;
@@ -105,12 +109,14 @@ public class PublicacionService {
     private final ModelMapper modelMapper;
 
     public PublicacionService(AlojamientoRepository alojamientoRepo, ImagenRepository imagenRepo,
+            PeriodoDisponibilidadRepository periodoRepo,
             ServicioAdicionalRepository servicioRepo, PoliticaCancelacionRepository politicaRepo,
             HistorialEstadoAlojamientoRepository historialRepo, ReservaRepository reservaRepo,
             ResenaRepository resenaRepo, UsuarioRepository usuarioRepo, AlmacenamientoService almacenamientoService,
             AuditoriaService auditoriaService, NotificacionService notificacionService, ModelMapper modelMapper) {
         this.alojamientoRepo = alojamientoRepo;
         this.imagenRepo = imagenRepo;
+        this.periodoRepo = periodoRepo;
         this.servicioRepo = servicioRepo;
         this.politicaRepo = politicaRepo;
         this.historialRepo = historialRepo;
@@ -517,6 +523,8 @@ public class PublicacionService {
      * PENDIENTE_REVISION → ACTIVA (administrador): queda disponible para
      * reservas y visible en búsquedas.
      *
+     * @return 0 aprobada; 1 no existe; 4 estado no permitido o sin fechas de
+     *         disponibilidad desde hoy.
      * @see "RF-027, CA-158, CA-194, CA-196"
      */
     @Transactional
@@ -527,6 +535,10 @@ public class PublicacionService {
         }
         if (alojamiento.get().getEstado() != EstadoAlojamiento.PENDIENTE_REVISION) {
             return rechazarTransicion(alojamiento.get(), EstadoAlojamiento.ACTIVA, idAdmin);
+        }
+        // El anfitrión pudo borrar sus fechas mientras estaba en revisión
+        if (!tieneFechas(alojamiento.get())) {
+            return Resultado.error(Resultado.ESTADO_INVALIDO, SIN_FECHAS);
         }
         AlojamientoDTO dto = cambiarEstado(alojamiento.get(), EstadoAlojamiento.ACTIVA, idAdmin, "Aprobada");
         notificacionService.enviar(alojamiento.get().getIdAnfitrion(), NotificacionService.ALOJAMIENTO_APROBADO,
@@ -699,7 +711,8 @@ public class PublicacionService {
     /**
      * Datos mínimos para enviar a revisión: título, descripción, ubicación,
      * ciudad, tipo, capacidad, habitaciones, baños, horas de entrada y salida,
-     * precio, reglas, política de cancelación y al menos una imagen.
+     * precio, reglas, política de cancelación, al menos una imagen y fechas de
+     * disponibilidad desde hoy (sin ellas no saldría en el catálogo).
      *
      * @return nombres de los datos que faltan (vacía si está completa).
      * @see "CA-096, CA-097"
@@ -736,7 +749,15 @@ public class PublicacionService {
         if (imagenRepo.findByIdAlojamientoOrderByIdImagen(alojamiento.getIdAlojamiento()).isEmpty()) {
             faltantes.add("al menos una imagen");
         }
+        if (!tieneFechas(alojamiento)) {
+            faltantes.add("fechas de disponibilidad desde hoy");
+        }
         return faltantes;
+    }
+
+    /** Mismo criterio que el catálogo ({@link AlojamientoEspecificacion#conFechasDesde}). */
+    private boolean tieneFechas(Alojamiento alojamiento) {
+        return periodoRepo.existsByIdAlojamientoAndFechaFinAfter(alojamiento.getIdAlojamiento(), LocalDate.now());
     }
 
     /**

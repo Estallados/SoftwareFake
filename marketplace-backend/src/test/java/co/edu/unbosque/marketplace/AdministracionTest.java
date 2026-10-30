@@ -213,6 +213,7 @@ class AdministracionTest extends PruebaIntegracionBase {
 		Long id = crearBorrador(anfitrion,
 				datosAlojamiento("Pasto", "Casa", 2, new BigDecimal("70000"), Set.of(), "FLEXIBLE"), 201)
 				.get("idAlojamiento").asLong();
+		ofrecerFechas(anfitrion, id);
 		llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);
 
 		JsonNode pendientes = llamar(get("/admin/alojamientos?estado=PENDIENTE_REVISION&tamanio=100"), tokenAdmin(),

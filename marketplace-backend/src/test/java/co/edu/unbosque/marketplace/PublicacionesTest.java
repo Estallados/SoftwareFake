@@ -174,6 +174,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		String ciudad = unico("CiudadAprobada");
 		Long id = crearBorrador(anfitrion, datosAlojamiento(ciudad, "Casa", 2, new BigDecimal("90000"),
 				Set.of(), "ESTRICTA"));
+		ofrecerFechas(anfitrion, id);
 
 		JsonNode enviado = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);
 		assertEquals("PENDIENTE_REVISION", enviado.get("estado").asText());
@@ -185,10 +186,28 @@ class PublicacionesTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void sinFechasDeDisponibilidadNoSePuedeEnviarNiAprobar() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = crearBorrador(anfitrion, datosAlojamiento("Cancún", "Casa", 2, new BigDecimal("90000"), Set.of(),
+				"FLEXIBLE"));
+
+		String mensaje = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 400)
+				.get("message").asText();
+		assertTrue(mensaje.contains("fechas de disponibilidad"), mensaje);
+
+		// Con fechas sí se envía; si las borra mientras está en revisión, no se aprueba
+		Long idPeriodo = ofrecerFechas(anfitrion, id);
+		llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);
+		llamar(delete("/alojamientos/" + id + "/disponibilidad/" + idPeriodo), anfitrion.token(), null, 200);
+		llamar(post("/admin/alojamientos/" + id + "/aprobar"), tokenAdmin(), null, 409);
+	}
+
+	@Test
 	void debeRechazarConMotivoNotificarAlAnfitrionYAuditar_CA195_CA196() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
 		Long id = crearBorrador(anfitrion, datosAlojamiento("Cali", "Casa", 2, new BigDecimal("90000"), Set.of(),
 				"FLEXIBLE"));
+		ofrecerFechas(anfitrion, id);
 		llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 200);
 		String admin = tokenAdmin();
 

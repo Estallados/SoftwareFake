@@ -18,6 +18,9 @@ public interface PeriodoDisponibilidadRepository extends JpaRepository<PeriodoDi
 
 	public List<PeriodoDisponibilidad> findByIdAlojamientoOrderByFechaInicio(Long idAlojamiento);
 
+	/** Indica si tiene algún período con al menos una noche después de {@code fecha}. */
+	public boolean existsByIdAlojamientoAndFechaFinAfter(Long idAlojamiento, LocalDate fecha);
+
 	/** Indica si algún período ofrecido contiene la estancia [llegada, salida). */
 	@Query("select count(p) > 0 from PeriodoDisponibilidad p where p.idAlojamiento = :id "
 			+ "and p.fechaInicio <= :llegada and p.fechaFin >= :salida")
