@@ -45,6 +45,16 @@ HUESPED, ANFITRION y ADMIN (enum `Role`). El registro público solo permite HUES
 
 Filtros de búsqueda: `ciudad, llegada, salida, huespedes, tipo, precioMinimo, precioMaximo, amenidades, pagina, tamanio`. Todas las listas son paginadas (`pagina`, `tamanio`, máximo 100) y responden `{contenido, pagina, tamanio, totalElementos, totalPaginas}`.
 
+### Tiempo real (WebSocket + STOMP)
+Conexión en `ws://localhost:8081/ws` (sin SockJS) con el token en el frame CONNECT: `Authorization: Bearer <jwt>`. Sin token válido el servidor responde un frame ERROR y cierra.
+
+| Suscribirse a | Llega |
+|---|---|
+| `/user/queue/mensajes` | `MensajeDTO` de cada mensaje nuevo en tus conversaciones (también los tuyos, para sincronizar otras pestañas) |
+| `/user/queue/notificaciones` | `NotificacionDTO` de cada notificación nueva (para la campana) |
+
+Los mensajes se envían por REST (`POST /conversaciones/{id}/mensajes`); por el WebSocket solo se reciben. Solo se permite suscribirse a `/user/queue/...`.
+
 Pago de prueba: sin `STRIPE_SECRET_KEY` se usa un simulador con los métodos de prueba de Stripe (`pm_card_visa` aprobado, `pm_card_chargeDeclined` rechazado, `pm_card_error` error). Con una clave `sk_test_...` se usa el modo de prueba real de Stripe. Una clave que no sea de prueba se rechaza siempre.
 
 ## Decisiones de diseño

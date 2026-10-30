@@ -39,15 +39,19 @@ public class NotificacionService {
 	public static final String MENSAJE_RECIBIDO = "MENSAJE_RECIBIDO";
 
 	private final NotificacionRepository notificacionRepo;
+	private final TiempoRealService tiempoReal;
 	private final ModelMapper modelMapper;
 
-	public NotificacionService(NotificacionRepository notificacionRepo, ModelMapper modelMapper) {
+	public NotificacionService(NotificacionRepository notificacionRepo, TiempoRealService tiempoReal,
+			ModelMapper modelMapper) {
 		this.notificacionRepo = notificacionRepo;
+		this.tiempoReal = tiempoReal;
 		this.modelMapper = modelMapper;
 	}
 
 	/**
-	 * Registra una notificación para un usuario.
+	 * Registra una notificación para un usuario y se la envía en tiempo real a
+	 * {@code /user/queue/notificaciones}.
 	 *
 	 * @param idUsuario Destinatario.
 	 * @param tipo      Evento que la origina (constantes de esta clase).
@@ -65,7 +69,8 @@ public class NotificacionService {
 		notificacion.setMensaje(mensaje);
 		notificacion.setFecha(LocalDateTime.now());
 		notificacion.setLeida(false);
-		notificacionRepo.save(notificacion);
+		tiempoReal.enviarAUsuario(idUsuario, TiempoRealService.NOTIFICACIONES,
+				modelMapper.map(notificacionRepo.save(notificacion), NotificacionDTO.class));
 	}
 
 	/**

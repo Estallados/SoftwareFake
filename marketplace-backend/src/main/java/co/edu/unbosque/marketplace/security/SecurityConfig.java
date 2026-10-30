@@ -76,6 +76,9 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/archivos/**").permitAll()
 						// Configuración de pagos (modo y clave publicable de Stripe) para el front
 						.requestMatchers(HttpMethod.GET, "/pagos/configuracion").permitAll()
+						// Handshake WebSocket: el navegador no envía Authorization aquí; el token
+						// se valida en el frame STOMP CONNECT (WebSocketAuthInterceptor)
+						.requestMatchers(HttpMethod.GET, "/ws").permitAll()
 						.requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.GET, "/alojamientos/mios").hasRole("ANFITRION")
 						// búsqueda, detalle, políticas, disponibilidad y reseñas son públicos;

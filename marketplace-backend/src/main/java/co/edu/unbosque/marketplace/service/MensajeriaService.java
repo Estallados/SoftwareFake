@@ -36,14 +36,17 @@ public class MensajeriaService {
 	private final MensajeRepository mensajeRepo;
 	private final AlojamientoRepository alojamientoRepo;
 	private final NotificacionService notificacionService;
+	private final TiempoRealService tiempoReal;
 	private final ModelMapper modelMapper;
 
 	public MensajeriaService(ConversacionRepository conversacionRepo, MensajeRepository mensajeRepo,
-			AlojamientoRepository alojamientoRepo, NotificacionService notificacionService, ModelMapper modelMapper) {
+			AlojamientoRepository alojamientoRepo, NotificacionService notificacionService,
+			TiempoRealService tiempoReal, ModelMapper modelMapper) {
 		this.conversacionRepo = conversacionRepo;
 		this.mensajeRepo = mensajeRepo;
 		this.alojamientoRepo = alojamientoRepo;
 		this.notificacionService = notificacionService;
+		this.tiempoReal = tiempoReal;
 		this.modelMapper = modelMapper;
 	}
 
@@ -125,20 +128,26 @@ public class MensajeriaService {
 		if (!carga.esExito()) {
 			return Resultado.error(carga.getCodigo(), carga.getMensaje());
 		}
-		return Resultado
-				.exito(modelMapper.map(guardarMensaje(carga.getDato(), contenido, idUsuario), MensajeDTO.class));
+		return Resultado.exito(guardarMensaje(carga.getDato(), contenido, idUsuario));
 	}
 
-	private Mensaje guardarMensaje(Conversacion conversacion, String contenido, Long idRemitente) {
+	/**
+	 * Guarda el mensaje, lo envía en tiempo real a los dos participantes
+	 * ({@code /user/queue/mensajes}; al remitente le sirve para sus otras
+	 * pestañas) y notifica al destinatario.
+	 */
+	private MensajeDTO guardarMensaje(Conversacion conversacion, String contenido, Long idRemitente) {
 		Mensaje mensaje = new Mensaje();
 		mensaje.setIdConversacion(conversacion.getIdConversacion());
 		mensaje.setIdUsuario(idRemitente);
 		mensaje.setContenido(contenido.trim());
 		mensaje.setFechaEnvio(LocalDateTime.now());
-		Mensaje guardado = mensajeRepo.save(mensaje);
+		MensajeDTO guardado = modelMapper.map(mensajeRepo.save(mensaje), MensajeDTO.class);
 
 		Long destinatario = idRemitente.equals(conversacion.getIdUsuario()) ? conversacion.getIdAnfitrion()
 				: conversacion.getIdUsuario();
+		tiempoReal.enviarAUsuario(destinatario, TiempoRealService.MENSAJES, guardado);
+		tiempoReal.enviarAUsuario(idRemitente, TiempoRealService.MENSAJES, guardado);
 		notificacionService.enviar(destinatario, NotificacionService.MENSAJE_RECIBIDO,
 				"Tienes un mensaje nuevo en la conversación " + conversacion.getIdConversacion() + ".");
 		return guardado;

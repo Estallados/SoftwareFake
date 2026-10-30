@@ -73,6 +73,14 @@ public class GoogleTokenVerificador {
 	}
 
 	/**
+	 * Client ID con el que el front inicializa el botón de Google; null si no está
+	 * configurado. No es secreto.
+	 */
+	public String getClientId() {
+		return estaConfigurado() ? clientId : null;
+	}
+
+	/**
 	 * Verifica el ID token.
 	 *
 	 * @return la cuenta de Google, o vacío si el token no es válido, venció, no es
