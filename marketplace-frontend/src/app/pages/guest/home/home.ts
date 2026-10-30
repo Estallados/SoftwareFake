@@ -1,36 +1,29 @@
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-
 import { photos } from '../../../services/mockData';
 import { Alojamiento } from '../../../models/alojamientoDto';
 import { AlojamientoService } from '../../../services/alojamiento.service';
-
+import { FavoritoService } from '../../../services/favorito.service';
 interface TipoAlojamiento {
   name: string;
   count: number;
   image: string;
 }
-
 @Component({
   selector: 'app-guest-home',
   standalone: true,
   templateUrl: './home.html',
+  imports: [CurrencyPipe, DecimalPipe],
 })
 export class Home implements OnInit {
   private router = inject(Router);
-  private alojamientoService = inject(AlojamientoService);
-
+  protected readonly alojamientoService = inject(AlojamientoService);
+  protected readonly favoritoService = inject(FavoritoService);
   loading = signal(true);
   loadingTipos = signal(true);
-
   stays = signal<Alojamiento[]>([]);
-
-  favorites = signal<string[]>([]);
-
-  cantidadesPorTipo: Record<string, number> = {};
-
   readonly photos = photos;
-
   // Las imágenes son fijas y no dependen del tipo de alojamiento.
   private readonly imagenesTipos: string[] = [
     photos.loft,
@@ -39,17 +32,14 @@ export class Home implements OnInit {
     photos.cabana,
     photos.interior,
   ];
-
   // Tipos obtenidos dinámicamente del backend.
   types: TipoAlojamiento[] = [];
-
   readonly searchFields = [
     { icon: 'pin', label: '¿A dónde?', value: 'Ciudad o destino' },
     { icon: 'calendar', label: 'Entrada', value: '15 jul 2025' },
     { icon: 'calendar', label: 'Salida', value: '19 jul 2025' },
     { icon: 'users', label: 'Huéspedes', value: '2 huéspedes' },
   ];
-
   ngOnInit(): void {
     // Cargar alojamientos destacados.
     this.alojamientoService.disponibles(4).subscribe({
@@ -62,11 +52,9 @@ export class Home implements OnInit {
         this.loading.set(false);
       },
     });
-
     // Cargar los cinco tipos con más alojamientos.
     this.cargarTipos();
   }
-
   /**
    * Obtiene las cantidades por tipo, ordena los resultados
    * de mayor a menor y muestra únicamente los cinco primeros.
@@ -75,11 +63,8 @@ export class Home implements OnInit {
    */
   private cargarTipos(): void {
     this.loadingTipos.set(true);
-
     this.alojamientoService.cantidadPorTipo().subscribe({
       next: (datos) => {
-        this.cantidadesPorTipo = datos;
-
         this.types = Object.entries(datos)
           .map(([name, count]) => ({
             name,
@@ -95,7 +80,6 @@ export class Home implements OnInit {
             ...tipo,
             image: this.imagenesTipos[index],
           }));
-
         this.loadingTipos.set(false);
       },
       error: (error) => {
@@ -104,42 +88,17 @@ export class Home implements OnInit {
       },
     });
   }
-
-
   goSearch(): void {
     this.router.navigateByUrl('/explorar');
   }
-
   goHost(): void {
     this.router.navigateByUrl('/host/dashboard');
   }
-
-  openStay(id: number): void {
+  openStay(id: number | undefined): void {
+    if (id == null) {
+      console.error('El alojamiento no tiene un ID válido.');
+      return;
+    }
     this.router.navigate(['/alojamiento', id]);
-  }
-
-  isFavorite(name: string): boolean {
-    return this.favorites().includes(name);
-  }
-
-  toggleFavorite(event: Event, name: string): void {
-    event.stopPropagation();
-
-    this.favorites.update((f) =>
-      f.includes(name) ? f.filter((x) => x !== name) : [...f, name],
-    );
-  }
-
-  favClass(name: string): string {
-    return (
-      'absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 transition ' +
-      (this.isFavorite(name)
-        ? 'text-red-500'
-        : 'text-slate-800 hover:text-red-500')
-    );
-  }
-
-  amenities(stay: Alojamiento): string {
-    return (stay.amenidades ?? ['WiFi', 'Cocina']).slice(0, 2).join(' · ');
   }
 }

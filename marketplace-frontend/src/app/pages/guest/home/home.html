@@ -7,7 +7,6 @@
       class="absolute inset-0 h-full w-full object-cover"
     />
     <div class="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/40 to-transparent"></div>
-
     <div class="relative z-10 flex min-h-[620px] max-w-3xl flex-col justify-center px-16 pb-20 text-white">
       <!-- Badge -->
       <span class="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
@@ -23,7 +22,6 @@
         confianza para tu próxima experiencia.
       </p>
     </div>
-
     <!-- Barra de búsqueda -->
     <div class="absolute bottom-8 left-16 right-16 z-20">
       <div class="grid grid-cols-[1.3fr_1fr_1fr_.8fr_auto] overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-xl shadow-slate-900/10">
@@ -59,7 +57,6 @@
             </span>
           </button>
         }
-
         <!-- Botón buscar -->
         <button
           type="button"
@@ -75,7 +72,6 @@
       </div>
     </div>
   </section>
-
   <!-- ================= ALOJAMIENTOS ================= -->
   <section class="mx-auto max-w-[1320px] px-8 py-24">
     <div class="flex items-end justify-between">
@@ -97,22 +93,18 @@
         </svg>
       </button>
     </div>
-
     <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-
       @if (loading()) {
         <!-- Mostrar siempre 4 skeletons mientras carga -->
         @for (item of [1, 2, 3, 4]; track item) {
           <div class="flex h-64 animate-pulse flex-col gap-4 rounded-xl bg-neutral-100 p-4">
             <!-- Imagen -->
             <div class="h-32 w-full rounded-md bg-neutral-300"></div>
-
             <!-- Título -->
             <div class="flex flex-col gap-2">
               <div class="h-4 w-full rounded-md bg-neutral-300"></div>
               <div class="h-3 w-3/4 rounded-md bg-neutral-300"></div>
             </div>
-
             <!-- Información -->
             <div class="mt-1 flex flex-col gap-2">
               <div class="h-3 w-full rounded-md bg-neutral-300"></div>
@@ -122,10 +114,10 @@
         }
       } @else {
         <!-- Alojamientos cargados -->
-        @for (s of stays(); track s.titulo) {
+        @for (s of stays(); track s.idAlojamiento) {
           <article
             class="group cursor-pointer"
-            (click)="openStay(s.idAlojamiento!)"
+            (click)="openStay(s.idAlojamiento)"
           >
             <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
               <img
@@ -133,21 +125,22 @@
                 [alt]="s.titulo"
                 class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
-
               <span class="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold text-slate-800 shadow-sm">
             {{ s.tipo }}
           </span>
               <button
                 type="button"
-                (click)="toggleFavorite($event, s.titulo)"
-                [attr.aria-label]="isFavorite(s.titulo) ? 'Quitar de favoritos' : 'Guardar alojamiento'"
-                [class]="favClass(s.titulo)"
+                (click)="$event.stopPropagation(); favoritoService.toggle(s.idAlojamiento)"
+                [attr.aria-label]="favoritoService.esFavorito(s.idAlojamiento) ? 'Quitar de favoritos' : 'Guardar alojamiento'"
+                [attr.aria-pressed]="favoritoService.esFavorito(s.idAlojamiento)"
+                class="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 transition"
+                [class]="favoritoService.esFavorito(s.idAlojamiento) ? 'text-red-500' : 'text-slate-800 hover:text-red-500'"
               >
                 <svg
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
-                  [attr.fill]="isFavorite(s.titulo) ? 'currentColor' : 'none'"
+                  [attr.fill]="favoritoService.esFavorito(s.idAlojamiento) ? 'currentColor' : 'none'"
                   stroke="currentColor"
                   stroke-width="1.8"
                   stroke-linecap="round"
@@ -165,16 +158,18 @@
                   {{ s.ciudad }} · {{ s.tipo }}
                 </p>
               </div>
-              <div class="flex items-center gap-1 text-sm font-bold">
-                <span class="text-amber-500">★</span>
-                {{ s.promedioCalificacion }}
-              </div>
+              @if (s.promedioCalificacion != null) {
+                <div class="flex items-center gap-1 text-sm font-bold">
+                  <span class="text-amber-500">★</span>
+                  {{ s.promedioCalificacion | number: '1.1-1' }}
+                </div>
+              }
             </div>
             <p class="mt-2 text-sm text-slate-500">
-              Hasta {{ s.capacidad }} huéspedes · {{ amenities(s) }}
+              Hasta {{ s.capacidad }} huéspedes · {{ alojamientoService.amenidadesResumen(s) }}
             </p>
             <p class="mt-2 text-sm text-slate-700">
-              <strong>${{ s.precioNoche }}</strong> COP
+              <strong>{{ s.precioNoche | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
               <span class="text-slate-500">/ noche</span>
             </p>
           </article>
@@ -182,22 +177,18 @@
       }
     </div>
   </section>
-
   <!-- ================= EXPLORA POR TIPO ================= -->
   <section class="bg-[#f0f5f0] py-24">
     <div class="mx-auto max-w-[1320px] px-8">
       <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
         Encuentra tu estilo
       </p>
-
       <h2 class="font-display mt-3 text-4xl font-semibold text-slate-900">
         Explora por tipo
       </h2>
-
       <p class="mt-3 text-slate-500">
         Desde la energía de la ciudad hasta la calma de la montaña.
       </p>
-
       <div class="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         @if (loadingTipos()) {
           <!-- Skeletons mientras cargan las cantidades por tipo -->
@@ -207,12 +198,10 @@
             >
               <!-- Imagen -->
               <div class="absolute inset-0 bg-neutral-300"></div>
-
               <!-- Degradado inferior simulado -->
               <div
                 class="absolute inset-0 bg-gradient-to-t from-neutral-500/80 via-transparent to-transparent"
               ></div>
-
               <!-- Texto -->
               <div class="absolute bottom-5 left-5 right-5 flex flex-col gap-3">
                 <div class="h-6 w-3/4 rounded-md bg-neutral-100/70"></div>
@@ -232,16 +221,13 @@
                 alt=""
                 class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
-
               <span
                 class="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent"
               ></span>
-
               <span class="absolute bottom-5 left-5">
           <strong class="font-display block text-2xl">
             {{ t.name }}
           </strong>
-
           <span class="mt-1 block text-sm text-white/75">
             {{ t.count }}
             {{ t.count === 1 ? 'alojamiento' : 'alojamientos' }}
@@ -253,8 +239,6 @@
       </div>
     </div>
   </section>
-
-
   <!-- ================= PARA ANFITRIONES ================= -->
   <section class="mx-auto max-w-[1320px] px-8 py-24">
     <div class="flex items-center justify-between overflow-hidden rounded-[28px] bg-emerald-800 px-14 py-14 text-white">
