@@ -14,6 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -199,6 +200,26 @@ public class AuthController {
 	 *         requiereSegundoFactor=true); 403 si la cuenta está restringida o se
 	 *         pide el rol ADMIN; 503 si no está configurado GOOGLE_CLIENT_ID
 	 */
+	/**
+	 * Configuración del botón de Google para el front. Ruta:
+	 * {@code GET /auth/google/configuracion}. Así el client ID no se escribe a
+	 * mano en Angular.
+	 *
+	 * @return 200 con {habilitado, clientId}; clientId es null si no está
+	 *         configurado
+	 */
+	@Operation(summary = "Configuración del botón de Google", description = "Devuelve {habilitado, clientId}. El "
+			+ "front inicializa Google Identity Services con ese clientId y envía el credential a POST /auth/google.")
+	@ApiResponse(responseCode = "200", description = "{habilitado, clientId}")
+	@GetMapping("/google/configuracion")
+	public ResponseEntity<Object> configuracionGoogle() {
+		String clientId = inicioGoogleService.clientId();
+		Map<String, Object> respuesta = new LinkedHashMap<>();
+		respuesta.put("habilitado", clientId != null);
+		respuesta.put("clientId", clientId);
+		return ResponseEntity.ok(respuesta);
+	}
+
 	@Operation(summary = "Iniciar sesión o registrarse con Google", description = "Recibe el credential (ID token) del botón de Google. Si el correo ya tiene cuenta inicia "
 			+ "sesión; si no, la crea verificada con rol HUESPED o el rol enviado (ANFITRION). Devuelve el "
 			+ "token igual que /auth/login, más cuentaNueva.")

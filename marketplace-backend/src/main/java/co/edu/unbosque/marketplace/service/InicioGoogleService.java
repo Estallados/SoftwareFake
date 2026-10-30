@@ -74,6 +74,14 @@ public class InicioGoogleService {
 	}
 
 	/**
+	 * Client ID de Google para el botón del front, o null si el inicio con Google
+	 * no está configurado.
+	 */
+	public String clientId() {
+		return verificador.getClientId();
+	}
+
+	/**
 	 * Inicia sesión o crea la cuenta con el ID token de Google.
 	 *
 	 * @param idToken Token que entregó el botón de Google.

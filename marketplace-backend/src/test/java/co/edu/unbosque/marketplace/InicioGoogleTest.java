@@ -128,6 +128,9 @@ class InicioGoogleTest {
 	@Test
 	void laPrimeraVezCreaLaCuentaVerificadaYLaSegundaIniciaSesion_RF008() throws Exception {
 		String correo = correoNuevo();
+		JsonNode configuracion = llamar(get("/auth/google/configuracion"), null, null, 200);
+		assertTrue(configuracion.get("habilitado").asBoolean());
+		assertEquals(CLIENTE, configuracion.get("clientId").asText());
 
 		JsonNode creada = google(Map.of("idToken", token(correo)), 201);
 

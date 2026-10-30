@@ -303,5 +303,7 @@ class AuthFlowTest {
 	void sinClientIdDeGoogleElInicioConGoogleResponde503() throws Exception {
 		mvc.perform(post("/auth/google").contentType(MediaType.APPLICATION_JSON).content("{\"idToken\":\"x.y.z\"}"))
 				.andExpect(status().isServiceUnavailable());
+		mvc.perform(get("/auth/google/configuracion")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.habilitado").value(false)).andExpect(jsonPath("$.clientId").isEmpty());
 	}
 }
