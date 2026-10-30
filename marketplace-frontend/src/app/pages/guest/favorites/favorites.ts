@@ -1,43 +1,68 @@
-import { Component, inject, signal } from '@angular/core';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-
-export interface Stay {
-  name: string;
-  image: string;
-  tag: string;
-  city: string;
-  type: string;
-  rating: number | string;
-  guests: number;
-  price: number | string;
-  amenities?: string[];
-}
+import { Alojamiento } from '../../../models/alojamientoDto';
+import { AlojamientoService } from '../../../services/alojamiento.service';
+import { FavoritoService } from '../../../services/favorito.service';
+import { SessionService } from '../../../services/session.service';
 
 @Component({
   selector: 'app-favorites',
   standalone: true,
   templateUrl: './favorites.html',
+  imports: [CurrencyPipe, DecimalPipe],
 })
-export class Favorites {
-  private router = inject(Router);
+export class Favorites implements OnInit {
+  private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
+  protected readonly alojamientoService = inject(AlojamientoService);
+  protected readonly favoritoService = inject(FavoritoService);
 
-  // TODO: reemplazar por los favoritos del usuario (backend)
-  favoriteStays = signal<Stay[]>([]);
+  private readonly stays = signal<Alojamiento[]>([]);
+  loading = signal(true);
+  errorCarga = signal(false);
+  requiereSesion = signal(false);
 
-  openStay(name: string) {
-    this.router.navigate(['/alojamiento', name]);
+  /** Solo se muestran los que siguen marcados: al quitar uno desaparece al instante. */
+  readonly favoriteStays = computed(() =>
+    this.stays().filter((s) => this.favoritoService.esFavorito(s.idAlojamiento)),
+  );
+
+  ngOnInit(): void {
+    this.cargar();
   }
 
-  remove(event: Event, name: string) {
-    event.stopPropagation();
-    this.favoriteStays.update((list) => list.filter((s) => s.name !== name));
+  cargar(): void {
+    this.errorCarga.set(false);
+    if (!this.session.autenticado()) {
+      this.requiereSesion.set(true);
+      this.loading.set(false);
+      return;
+    }
+    this.requiereSesion.set(false);
+    this.loading.set(true);
+    this.favoritoService.listar().subscribe({
+      next: (lista) => {
+        this.stays.set(lista);
+        this.loading.set(false);
+      },
+      error: (error) => {
+        console.error('Error al cargar favoritos:', error);
+        this.errorCarga.set(true);
+        this.loading.set(false);
+      },
+    });
   }
 
-  explore() {
+  openStay(id: number | undefined): void {
+    if (id == null) {
+      console.error('El alojamiento no tiene un ID válido.');
+      return;
+    }
+    this.router.navigate(['/alojamiento', id]);
+  }
+
+  explore(): void {
     this.router.navigateByUrl('/explorar');
-  }
-
-  amenities(stay: Stay) {
-    return (stay.amenities ?? ['WiFi', 'Cocina']).slice(0, 2).join(' · ');
   }
 }

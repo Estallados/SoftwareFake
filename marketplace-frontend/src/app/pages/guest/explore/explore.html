@@ -1,5 +1,4 @@
 <main class="mx-auto max-w-[1440px] px-8 py-8">
-
   <!-- ================= BARRA DE BÚSQUEDA ================= -->
   <div
     class="grid grid-cols-[1.2fr_1fr_1fr_auto] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
@@ -28,7 +27,6 @@
                 <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
                 <circle cx="12" cy="10" r="2" />
               }
-
               @case ('calendar') {
                 <rect x="3" y="5" width="18" height="16" rx="2" />
                 <path d="M16 3v4M8 3v4M3 10h18" />
@@ -36,19 +34,16 @@
             }
           </svg>
         </span>
-
         <span>
           <span class="block text-xs font-bold text-slate-800">
             {{ f.label }}
           </span>
-
           <span class="mt-1 block text-xs text-slate-500">
             {{ f.value }}
           </span>
         </span>
       </button>
     }
-
     <button
       type="button"
       (click)="goSearch()"
@@ -68,11 +63,9 @@
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-4-4" />
       </svg>
-
       <span class="hidden xl:inline">Buscar</span>
     </button>
   </div>
-
   <!-- ================= ENCABEZADO ================= -->
   <div
     class="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
@@ -81,11 +74,9 @@
       <p class="text-sm text-emerald-700">
         Inicio / Explorar alojamientos
       </p>
-
       <h1 class="font-display mt-3 text-4xl font-semibold text-slate-900">
         Alojamientos disponibles
       </h1>
-
       <p class="mt-2 text-slate-500">
         @if (loading()) {
           Cargando alojamientos...
@@ -102,13 +93,11 @@
         }
       </p>
     </div>
-
     <!-- Ordenamiento -->
     <label class="block">
       <span class="mb-2 block text-xs font-semibold text-slate-500">
         Ordenar por
       </span>
-
       <select
         id="sort-stays"
         [value]="sortBy()"
@@ -123,10 +112,8 @@
       </select>
     </label>
   </div>
-
   <!-- ================= FILTROS Y RESULTADOS ================= -->
   <div class="mt-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
-
     <!-- ================= PANEL DE FILTROS ================= -->
     <aside
       class="h-fit rounded-2xl border border-slate-200 bg-white p-6"
@@ -135,7 +122,6 @@
         <h2 class="font-display text-xl font-bold text-slate-900">
           Filtros
         </h2>
-
         <svg
           width="20"
           height="20"
@@ -150,13 +136,11 @@
           <path d="M4 5h16M7 12h10M10 19h4" />
         </svg>
       </div>
-
       <!-- Tipo de alojamiento dinámico -->
       <div class="mt-6 border-t border-slate-100 pt-5">
         <h3 class="mb-3 text-sm font-bold text-slate-900">
           Tipo de alojamiento
         </h3>
-
         @for (type of types(); track type) {
           <label
             class="flex cursor-pointer items-center gap-3 rounded-lg py-2 text-sm text-slate-600 transition hover:text-emerald-700"
@@ -169,16 +153,13 @@
               (change)="filterType.set(type)"
               class="size-4 accent-emerald-700"
             />
-
             <span>{{ type }}</span>
           </label>
         }
       </div>
-
       <!-- Rango de precio por noche -->
       <div class="mt-6 border-t border-slate-100 pt-5">
         <h3 class="mb-3 text-sm font-bold">Rango de precio por noche</h3>
-
         @if (loading()) {
           <div class="animate-pulse space-y-3">
             <div class="h-4 w-3/4 rounded bg-neutral-200"></div>
@@ -190,19 +171,16 @@
           </div>
         } @else if (stays().length > 0) {
           <div class="space-y-4">
-
             <!-- Slider doble -->
             <div class="relative h-6">
               <!-- Riel -->
               <div class="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-200"></div>
-
               <!-- Tramo seleccionado -->
               <div
                 class="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-emerald-700"
                 [style.left.%]="porcentajeMin()"
                 [style.right.%]="100 - porcentajeMax()"
               ></div>
-
               <input
                 type="range"
                 aria-label="Precio mínimo por noche"
@@ -217,7 +195,6 @@
                        [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-emerald-700 [&::-webkit-slider-thumb]:shadow
                        [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-emerald-700"
               />
-
               <input
                 type="range"
                 aria-label="Precio máximo por noche"
@@ -232,7 +209,6 @@
                        [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-emerald-700"
               />
             </div>
-
             <!-- Campos editables -->
             <div class="grid grid-cols-2 gap-2">
               <label class="min-w-0 rounded-lg border border-slate-200 p-2 focus-within:border-emerald-500">
@@ -249,7 +225,6 @@
                   class="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
                 />
               </label>
-
               <label class="min-w-0 rounded-lg border border-slate-200 p-2 focus-within:border-emerald-500">
                 <span class="block text-[10px] text-slate-500">Hasta (COP)</span>
                 <input
@@ -265,7 +240,6 @@
                 />
               </label>
             </div>
-
             <p class="text-[11px] text-slate-400">
               Disponible: {{ precioMinimoDisponible() | currency:'COP':'symbol-narrow':'1.0-0' }}
               – {{ precioMaximoDisponible() | currency:'COP':'symbol-narrow':'1.0-0' }}
@@ -277,12 +251,9 @@
           </p>
         }
       </div>
-
-
       <!-- Servicios -->
       <div class="mt-6 border-t border-slate-100 pt-5">
         <h3 class="mb-3 text-sm font-bold">Servicios</h3>
-
         @if (loading()) {
           <div class="animate-pulse space-y-3">
             @for (item of [1, 2, 3, 4]; track item) {
@@ -311,8 +282,6 @@
           </p>
         }
       </div>
-
-
       <!-- Limpiar filtros -->
       <button
         type="button"
@@ -322,10 +291,8 @@
         Limpiar filtros
       </button>
     </aside>
-
     <!-- ================= RESULTADOS ================= -->
     <section class="min-w-0">
-
       <!-- CARGANDO -->
       @if (loading()) {
         <div
@@ -339,35 +306,29 @@
               <div
                 class="aspect-[4/3] w-full rounded-2xl bg-neutral-200"
               ></div>
-
               <!-- Título -->
               <div class="mt-4 flex items-start justify-between gap-3">
                 <div class="flex flex-1 flex-col gap-2">
                   <div
                     class="h-4 w-3/4 rounded-md bg-neutral-200"
                   ></div>
-
                   <div
                     class="h-3 w-1/2 rounded-md bg-neutral-200"
                   ></div>
                 </div>
-
                 <div
                   class="h-4 w-10 rounded-md bg-neutral-200"
                 ></div>
               </div>
-
               <!-- Detalles -->
               <div class="mt-3 flex flex-col gap-2">
                 <div
                   class="h-3 w-full rounded-md bg-neutral-200"
                 ></div>
-
                 <div
                   class="h-3 w-2/3 rounded-md bg-neutral-200"
                 ></div>
               </div>
-
               <!-- Precio -->
               <div
                 class="mt-3 h-4 w-1/2 rounded-md bg-neutral-200"
@@ -397,17 +358,14 @@
               <path d="M12 8v4M12 16h.01" />
             </svg>
           </div>
-
           <h2
             class="font-display mt-5 text-2xl font-bold text-slate-900"
           >
             No pudimos cargar los alojamientos
           </h2>
-
           <p class="mt-2 text-sm text-slate-500">
             Comprueba tu conexión e inténtalo de nuevo.
           </p>
-
           <button
             type="button"
             (click)="reintentar()"
@@ -438,32 +396,31 @@
                   loading="lazy"
                   class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
-
                 <!-- Tipo -->
                 <span
                   class="absolute left-3 top-3 max-w-[75%] truncate rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold text-slate-800 shadow-sm"
                 >
                   {{ s.tipo }}
                 </span>
-
                 <!-- Favoritos -->
                 <button
                   type="button"
-                  (click)="toggleFavorite($event, s.idAlojamiento)"
+                  (click)="$event.stopPropagation(); favoritoService.toggle(s.idAlojamiento)"
                   [attr.aria-label]="
-                    isFavorite(s.idAlojamiento)
+                    favoritoService.esFavorito(s.idAlojamiento)
                       ? 'Quitar de favoritos'
                       : 'Guardar alojamiento'
                   "
-                  [attr.aria-pressed]="isFavorite(s.idAlojamiento)"
-                  [class]="favClass(s.idAlojamiento)"
+                  [attr.aria-pressed]="favoritoService.esFavorito(s.idAlojamiento)"
+                  class="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 transition"
+                  [class]="favoritoService.esFavorito(s.idAlojamiento) ? 'text-red-500' : 'text-slate-800 hover:text-red-500'"
                 >
                   <svg
                     width="18"
                     height="18"
                     viewBox="0 0 24 24"
                     [attr.fill]="
-                      isFavorite(s.idAlojamiento) ? 'currentColor' : 'none'
+                      favoritoService.esFavorito(s.idAlojamiento) ? 'currentColor' : 'none'
                     "
                     stroke="currentColor"
                     stroke-width="1.8"
@@ -477,7 +434,6 @@
                   </svg>
                 </button>
               </div>
-
               <!-- Nombre y calificación -->
               <div class="mt-4 flex items-start justify-between gap-3">
                 <div class="min-w-0">
@@ -487,17 +443,14 @@
                   >
                     {{ s.titulo }}
                   </h2>
-
                   <p class="mt-1 text-sm text-slate-500">
                     {{ s.ciudad }} · {{ s.tipo }}
                   </p>
                 </div>
-
                 <div
                   class="flex shrink-0 items-center gap-1 text-sm font-bold text-slate-900"
                 >
                   <span class="text-amber-500">★</span>
-
                   @if (s.promedioCalificacion != null) {
                     {{ s.promedioCalificacion | number: '1.1-1' }}
                   } @else {
@@ -505,20 +458,17 @@
                   }
                 </div>
               </div>
-
               <!-- Capacidad y amenidades -->
               <p class="mt-2 text-sm text-slate-500">
                 Hasta {{ s.capacidad }}
                 {{ s.capacidad === 1 ? 'huésped' : 'huéspedes' }}
-                · {{ amenities(s) }}
+                · {{ alojamientoService.amenidadesResumen(s) }}
               </p>
-
               <!-- Precio -->
               <p class="mt-2 text-sm text-slate-700">
                 <strong>
                   {{ s.precioNoche | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
                 </strong>
-
                 <span class="text-slate-500">
                   / noche
                 </span>
@@ -547,17 +497,14 @@
                   <path d="m20 20-4-4" />
                 </svg>
               </div>
-
               <h2
                 class="font-display mt-5 text-2xl font-bold text-slate-900"
               >
                 No encontramos resultados
               </h2>
-
               <p class="mt-2 text-slate-500">
                 Prueba con otro tipo de alojamiento o cambia los servicios seleccionados.
               </p>
-
               <button
                 type="button"
                 (click)="limpiarFiltros()"

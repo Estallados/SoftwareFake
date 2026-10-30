@@ -6,7 +6,6 @@ import {
   shareReplay,
   tap,
 } from 'rxjs';
-
 import { AlojamientoEntrada } from '../models/alojamientoEntradaDto';
 import { Alojamiento } from '../models/alojamientoDto';
 import { FiltrosBusqueda } from '../models/filtrosBusquedaDto';
@@ -16,14 +15,12 @@ import { RespuestaMensaje } from '../models/respuestaMensajeDto';
 import { ServicioAdicional } from '../models/servicioAdicionalDto';
 import { API_URL } from './api-url';
 import {ResumenResenas} from '../models/resenaDto';
-
 @Injectable({
   providedIn: 'root',
 })
 export class AlojamientoService {
   private http = inject(HttpClient);
   private base = `${inject(API_URL)}/alojamientos`;
-
   // Cachés de consultas GET
   private disponiblesCache = new Map<number, Observable<Alojamiento[]>>();
   private busquedaCache = new Map<string, Observable<Alojamiento[]>>();
@@ -31,9 +28,7 @@ export class AlojamientoService {
   private miosCache$?: Observable<Alojamiento[]>;
   private detalleCache = new Map<number, Observable<Alojamiento>>();
   private historialCache = new Map<number, Observable<HistorialEstadoAlojamiento[]>>();
-
   // ================= Consulta =================
-
   /**
    * Catálogo de reseñas de alojamiento especificado.
    */
@@ -44,7 +39,6 @@ export class AlojamientoService {
       `${this.base}/${idAlojamiento}/resenas`
     );
   }
-
   /**
    * Cantidad de alojamientos agrupados por tipo.
    * Incluye alojamientos en cualquier estado.
@@ -54,21 +48,16 @@ export class AlojamientoService {
       `${this.base}/tipos`
     );
   }
-
-
   /**
    * Catálogo de alojamientos disponibles.
    * Reutiliza la petición para un mismo tamaño.
    */
   disponibles(tamanio: number): Observable<Alojamiento[]> {
     const cached = this.disponiblesCache.get(tamanio);
-
     if (cached) {
       return cached;
     }
-
     const url = `${this.base}/disponibles?pagina=0&tamanio=${tamanio}`;
-
     const request$ = this.http
       .get<{ contenido: Alojamiento[] }>(url)
       .pipe(
@@ -79,19 +68,15 @@ export class AlojamientoService {
         }),
         shareReplay({ bufferSize: 1, refCount: false }),
       );
-
     this.disponiblesCache.set(tamanio, request$);
-
     return request$;
   }
-
   /**
    * Búsqueda con filtros opcionales.
    * Comparte los resultados para filtros equivalentes.
    */
   buscar(filtros: FiltrosBusqueda = {}): Observable<Alojamiento[]> {
     const params = this.params({ ...filtros });
-
     const cacheKey = params
       .keys()
       .sort()
@@ -104,25 +89,19 @@ export class AlojamientoService {
           .join('&'),
       )
       .join('&');
-
     const cached = this.busquedaCache.get(cacheKey);
-
     if (cached) {
       return cached;
     }
-
     const request$ = this.http
       .get<{ content: Alojamiento[] }>(this.base, { params })
       .pipe(
         map((r) => r.content),
         shareReplay({ bufferSize: 1, refCount: false }),
       );
-
     this.busquedaCache.set(cacheKey, request$);
-
     return request$;
   }
-
   /**
    * Políticas de cancelación.
    */
@@ -134,10 +113,8 @@ export class AlojamientoService {
           shareReplay({ bufferSize: 1, refCount: false }),
         );
     }
-
     return this.politicasCache$;
   }
-
   /**
    * Alojamientos del anfitrión autenticado.
    */
@@ -150,68 +127,52 @@ export class AlojamientoService {
           shareReplay({ bufferSize: 1, refCount: false }),
         );
     }
-
     return this.miosCache$;
   }
-
   /**
    * Detalle de un alojamiento.
    */
   obtener(id: number): Observable<Alojamiento> {
     const cached = this.detalleCache.get(id);
-
     if (cached) {
       return cached;
     }
-
     const request$ = this.http
       .get<Alojamiento>(`${this.base}/${id}`)
       .pipe(
         shareReplay({ bufferSize: 1, refCount: false }),
       );
-
     this.detalleCache.set(id, request$);
-
     return request$;
   }
-
   /**
    * Historial de estados de un alojamiento.
    */
   historial(id: number): Observable<HistorialEstadoAlojamiento[]> {
     const cached = this.historialCache.get(id);
-
     if (cached) {
       return cached;
     }
-
     const request$ = this.http
       .get<HistorialEstadoAlojamiento[]>(`${this.base}/${id}/historial`)
       .pipe(
         shareReplay({ bufferSize: 1, refCount: false }),
       );
-
     this.historialCache.set(id, request$);
-
     return request$;
   }
-
   // ================= Creación y edición =================
-
   crear(
     datos: AlojamientoEntrada,
     archivos: File[] = [],
   ): Observable<Alojamiento> {
     const form = new FormData();
-
     form.append('datos', JSON.stringify(datos));
     archivos.forEach((f) => form.append('archivos', f));
-
     return this.http.post<Alojamiento>(this.base, form).pipe(
       tap(() => this.invalidarListados()),
     );
   }
-
   actualizar(
     id: number,
     datos: Partial<AlojamientoEntrada>,
@@ -220,21 +181,16 @@ export class AlojamientoService {
       tap(() => this.invalidarAlojamiento(id)),
     );
   }
-
   // ================= Imágenes =================
-
   subirImagenes(id: number, archivos: File[]): Observable<Alojamiento> {
     const form = new FormData();
-
     archivos.forEach((f) => form.append('archivos', f));
-
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/imagenes`, form)
       .pipe(
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   eliminarImagen(
     id: number,
     idImagen: number,
@@ -245,7 +201,6 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   marcarPrincipal(
     id: number,
     idImagen: number,
@@ -259,9 +214,7 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   // ================= Ciclo de estados =================
-
   enviarRevision(id: number): Observable<Alojamiento> {
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/enviarrevision`, {})
@@ -269,7 +222,6 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   pausar(id: number): Observable<Alojamiento> {
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/pausar`, {})
@@ -277,7 +229,6 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   reanudar(id: number): Observable<Alojamiento> {
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/reanudar`, {})
@@ -285,9 +236,7 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   // ================= Servicios adicionales =================
-
   agregarServicio(
     id: number,
     servicio: ServicioAdicional,
@@ -298,7 +247,6 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   actualizarServicio(
     id: number,
     idServicio: number,
@@ -313,7 +261,6 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   eliminarServicio(
     id: number,
     idServicio: number,
@@ -326,9 +273,7 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
-
   // ================= Caché =================
-
   /**
    * Invalida listados que pueden haber cambiado.
    */
@@ -337,7 +282,6 @@ export class AlojamientoService {
     this.busquedaCache.clear();
     this.miosCache$ = undefined;
   }
-
   /**
    * Invalida el detalle y el historial de un alojamiento.
    */
@@ -346,7 +290,6 @@ export class AlojamientoService {
     this.historialCache.delete(id);
     this.invalidarListados();
   }
-
   /**
    * Permite forzar la recarga de todos los datos almacenados.
    */
@@ -358,17 +301,23 @@ export class AlojamientoService {
     this.detalleCache.clear();
     this.historialCache.clear();
   }
-
+  // ================= Presentación =================
+  /**
+   * Resumen corto de amenidades para tarjetas (ej. "WiFi · Cocina").
+   */
+  amenidadesResumen(stay: Alojamiento, max = 2): string {
+    return (
+      (stay.amenidades ?? []).slice(0, max).join(' · ') ||
+      'Sin servicios indicados'
+    );
+  }
   // ================= Utilidades =================
-
   private params(valores: Record<string, unknown>): HttpParams {
     let params = new HttpParams();
-
     for (const [clave, valor] of Object.entries(valores)) {
       if (valor === undefined || valor === null || valor === '') {
         continue;
       }
-
       if (Array.isArray(valor)) {
         valor.forEach((v) => {
           params = params.append(clave, String(v));
@@ -377,7 +326,6 @@ export class AlojamientoService {
         params = params.set(clave, String(valor));
       }
     }
-
     return params;
   }
 }
