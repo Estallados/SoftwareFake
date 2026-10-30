@@ -16,6 +16,7 @@ import {
 } from 'rxjs';
 
 import { Auth, LoginResponse } from '../services/auth';
+import { SessionService } from '../services/session.service';
 
 // ======================================
 // INTERFAZ DE ERRORES DEL BACKEND
@@ -41,6 +42,7 @@ export class Login {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly sessionService = inject(SessionService);
 
   // ======================================
   // VARIABLES DEL FORMULARIO
@@ -511,25 +513,60 @@ export class Login {
   // 7. GUARDAR SESIÓN
   // ======================================
 
+
   private guardarSesion(respuesta: LoginResponse): void {
 
-    if (!respuesta.token) {
-
+    if (!respuesta.token || !respuesta.rol || !respuesta.correo) {
       this.error =
-        'El servidor no devolvió un token de autenticación.';
-
+        'El servidor no devolvió los datos necesarios para iniciar sesión.';
       this.actualizarVista();
       return;
     }
 
-    sessionStorage.setItem('token', respuesta.token);
-    sessionStorage.setItem('rol', respuesta.rol);
-    sessionStorage.setItem('correo', respuesta.correo);
+    try {
 
-    console.log('Sesión iniciada correctamente');
+      // Guardar el JWT y actualizar la sesión de Angular.
+      this.sessionService.iniciarSesion({
+        token: respuesta.token,
+        rol: respuesta.rol,
+        correo: respuesta.correo
+      });
 
-    this.router.navigateByUrl('/');
+      console.log('JWT guardado correctamente');
+      console.log('Rol autenticado:', this.sessionService.rol());
+
+      // Redirigir según el rol autorizado.
+      switch (this.sessionService.rol()) {
+
+        case 'Huésped':
+          this.router.navigateByUrl('/home');
+          break;
+
+        case 'Anfitrión':
+          this.router.navigateByUrl('/host/dashboard');
+          break;
+
+        case 'Administrador':
+          this.router.navigateByUrl('/admin/dashboard');
+          break;
+
+        default:
+          this.sessionService.cerrarSesion();
+          this.error = 'El rol recibido no es válido.';
+          this.actualizarVista();
+      }
+
+    } catch (err) {
+
+      console.error('Error guardando sesión:', err);
+
+      this.error =
+        'No se pudo establecer la sesión con el JWT recibido.';
+
+      this.actualizarVista();
+    }
   }
+
 
   // ======================================
   // 8. CAMBIAR CORREO
