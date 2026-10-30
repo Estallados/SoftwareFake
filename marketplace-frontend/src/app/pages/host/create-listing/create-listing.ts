@@ -1,9 +1,7 @@
 
 import {
   Component,
-  ElementRef,
   OnInit,
-  ViewChild,
   inject,
   signal
 } from '@angular/core';
@@ -14,15 +12,15 @@ import { Router } from '@angular/router';
 
 import {
   Observable,
+  concatMap,
   finalize,
+  from,
   map,
   of,
   switchMap,
   tap,
-  timeout
+  toArray
 } from 'rxjs';
-
-import { SessionService } from '../../../services/session.service';
 
 import {
   AlojamientoRespuesta,
@@ -53,6 +51,21 @@ interface FormularioAlojamiento {
   amenidades: string[];
 }
 
+// ======================================
+// INTERFAZ DE DISPONIBILIDAD
+// ======================================
+
+interface PeriodoFormulario {
+  clave: number;
+  fechaInicio: string;
+  fechaFin: string;
+  idPeriodo?: number;
+}
+
+// ======================================
+// COMPONENTE
+// ======================================
+
 @Component({
   selector: 'app-create-listing',
   standalone: true,
@@ -68,20 +81,13 @@ export class CreateListing implements OnInit {
   private readonly publicaciones =
     inject(PublicacionHostService);
 
-  private readonly sesion =
-    inject(SessionService);
-
-  private readonly router =
-    inject(Router);
-
-  @ViewChild('fotoInput')
-  fotoInput?: ElementRef<HTMLInputElement>;
+  private readonly router = inject(Router);
 
   // ======================================
   // SERVICIOS INCLUIDOS
   // ======================================
 
-  readonly servicios: string[] = [
+  readonly servicios = [
     'Wifi',
     'Piscina',
     'Parqueadero',
@@ -94,7 +100,7 @@ export class CreateListing implements OnInit {
   ];
 
   // ======================================
-  // FORMULARIO
+  // FORMULARIO DEL ALOJAMIENTO
   // ======================================
 
   draft: FormularioAlojamiento = {
@@ -116,99 +122,119 @@ export class CreateListing implements OnInit {
   };
 
   // ======================================
-  // IMÁGENES
-  // ======================================
-
-  imagenesSeleccionadas: File[] = [];
-
-  readonly imagenesGuardadas = signal(0);
-
-  // ID del borrador creado en Spring Boot.
-  readonly borradorId = signal<number | null>(null);
-
-  // ======================================
-  // POLÍTICAS DE CANCELACIÓN
+  // ESTADOS
   // ======================================
 
   readonly politicas =
     signal<PoliticaCancelacion[]>([]);
 
-  readonly cargandoPoliticas = signal(false);
+  readonly cargandoPoliticas =
+    signal(false);
+
+  readonly borradorId =
+    signal<number | null>(null);
+
+  readonly imagenesGuardadas =
+    signal(0);
+
+  readonly guardando =
+    signal(false);
+
+  readonly error =
+    signal('');
+
+  readonly mensaje =
+    signal('');
 
   // ======================================
-  // ESTADOS DE LA PÁGINA
+  // IMÁGENES
   // ======================================
 
-  readonly guardando = signal(false);
-  readonly error = signal('');
-  readonly mensaje = signal('');
+  imagenesSeleccionadas: File[] = [];
 
   // ======================================
-  // 1. INICIALIZAR
+  // FECHAS DE DISPONIBILIDAD
   // ======================================
 
-  ngOnInit(): void {
+  periodos: PeriodoFormulario[] = [];
 
-    // Solo los anfitriones pueden crear.
-    if (
-      !this.sesion.autenticado() ||
-      !this.sesion.tieneRol('Anfitrión')
-    ) {
-      void this.router.navigateByUrl('/home');
-      return;
-    }
+  private siguienteClave = 0;
 
-    this.cargarPoliticas();
+  // Fecha local actual en formato YYYY-MM-DD.
+  // Evita problemas de zona horaria con UTC.
+
+  get fechaMinima(): string {
+
+    const hoy = new Date();
+
+    const anio = hoy.getFullYear();
+
+    const mes = String(
+      hoy.getMonth() + 1
+    ).padStart(2, '0');
+
+    const dia = String(
+      hoy.getDate()
+    ).padStart(2, '0');
+
+    return `${anio}-${mes}-${dia}`;
   }
 
   // ======================================
-  // 2. CONSULTAR POLÍTICAS
+  // 1. INICIALIZAR COMPONENTE
   // ======================================
 
-  private cargarPoliticas(): void {
+  ngOnInit(): void {
 
     this.cargandoPoliticas.set(true);
 
     this.publicaciones.obtenerPoliticas()
       .pipe(
-        timeout(15000),
         finalize(() => {
           this.cargandoPoliticas.set(false);
         })
       )
       .subscribe({
 
-        next: (respuesta) => {
-          this.politicas.set(respuesta);
+        next: politicas => {
+          this.politicas.set(politicas);
         },
 
-        error: (err: unknown) => {
+        error: err => {
           this.error.set(
-            this.mensajeError(
-              err,
-              'No se pudieron cargar las políticas de cancelación.'
-            )
+            this.mensajeError(err)
           );
         }
       });
   }
 
   // ======================================
-  // 3. SELECCIONAR SERVICIOS
+  // 2. SELECCIONAR SERVICIOS
   // ======================================
 
   toggleService(servicio: string): void {
 
-    const actuales = this.draft.amenidades;
+    const seleccionados =
+      this.draft.amenidades;
 
-    this.draft.amenidades =
-      actuales.includes(servicio)
-        ? actuales.filter(s => s !== servicio)
-        : [...actuales, servicio];
+    if (seleccionados.includes(servicio)) {
+
+      this.draft.amenidades =
+        seleccionados.filter(
+          s => s !== servicio
+        );
+
+    } else {
+
+      this.draft.amenidades = [
+        ...seleccionados,
+        servicio
+      ];
+    }
   }
 
   // ======================================
-  // 4. SELECCIONAR FOTOGRAFÍAS
+  // 3. SELECCIONAR FOTOGRAFÍAS
   // ======================================
 
   seleccionarImagenes(evento: Event): void {
@@ -216,36 +242,24 @@ export class CreateListing implements OnInit {
     const input =
       evento.target as HTMLInputElement;
 
-    const archivos =
+    const nuevas =
       Array.from(input.files ?? []);
 
-    if (archivos.length === 0) {
+    input.value = '';
+
+    if (nuevas.length === 0) {
       return;
     }
 
-    const total =
-      this.imagenesGuardadas() +
-      this.imagenesSeleccionadas.length +
-      archivos.length;
-
-    if (total > 15) {
-      this.error.set(
-        'Solo puedes agregar un máximo de 15 fotografías por alojamiento.'
-      );
-
-      input.value = '';
-      return;
-    }
-
-    const tiposValidos = [
+    const tiposPermitidos = [
       'image/jpeg',
       'image/png',
       'image/webp'
     ];
 
-    const archivoInvalido = archivos.find(
+    const archivoInvalido = nuevas.find(
       archivo =>
-        !tiposValidos.includes(archivo.type) ||
+        !tiposPermitidos.includes(archivo.type) ||
         archivo.size === 0 ||
         archivo.size > 5 * 1024 * 1024
     );
@@ -253,27 +267,38 @@ export class CreateListing implements OnInit {
     if (archivoInvalido) {
 
       this.error.set(
-        `El archivo ${archivoInvalido.name} no es válido. ` +
-        'Solo se permiten JPG, PNG o WEBP de máximo 5 MB.'
+        `La fotografía ${archivoInvalido.name} ` +
+        'no es válida. Usa JPG, PNG o WEBP ' +
+        'de máximo 5 MB.'
       );
 
-      input.value = '';
+      return;
+    }
+
+    const cantidadTotal =
+      this.imagenesGuardadas() +
+      this.imagenesSeleccionadas.length +
+      nuevas.length;
+
+    if (cantidadTotal > 15) {
+
+      this.error.set(
+        'Puedes cargar máximo 15 fotografías por alojamiento.'
+      );
+
       return;
     }
 
     this.imagenesSeleccionadas = [
       ...this.imagenesSeleccionadas,
-      ...archivos
+      ...nuevas
     ];
 
     this.error.set('');
-
-    // Permite seleccionar más fotografías.
-    input.value = '';
   }
 
   // ======================================
-  // 5. QUITAR FOTOGRAFÍA SELECCIONADA
+  // 4. QUITAR FOTOGRAFÍA
   // ======================================
 
   quitarImagen(indice: number): void {
@@ -285,7 +310,39 @@ export class CreateListing implements OnInit {
   }
 
   // ======================================
-  // 6. GUARDAR BORRADOR
+  // 5. AGREGAR PERÍODO DISPONIBLE
+  // ======================================
+
+  agregarPeriodo(): void {
+
+    this.periodos = [
+      ...this.periodos,
+      {
+        clave: ++this.siguienteClave,
+        fechaInicio: '',
+        fechaFin: ''
+      }
+    ];
+  }
+
+  // ======================================
+  // 6. QUITAR PERÍODO
+  // ======================================
+
+  quitarPeriodo(clave: number): void {
+
+    // Los períodos guardados en Spring Boot
+    // se administran desde Ver disponibilidad.
+
+    this.periodos = this.periodos.filter(
+      periodo =>
+        periodo.clave !== clave ||
+        periodo.idPeriodo !== undefined
+    );
+  }
+
+  // ======================================
+  // 7. GUARDAR BORRADOR
   // ======================================
 
   saveDraft(): void {
@@ -293,7 +350,7 @@ export class CreateListing implements OnInit {
   }
 
   // ======================================
-  // 7. ENVIAR A REVISIÓN
+  // 8. ENVIAR A REVISIÓN
   // ======================================
 
   submit(): void {
@@ -301,11 +358,11 @@ export class CreateListing implements OnInit {
   }
 
   // ======================================
-  // 8. GUARDAR DATOS EN SPRING BOOT
+  // 9. PROCESO PRINCIPAL DE GUARDADO
   // ======================================
 
   private guardar(
-    enviarRevision: boolean
+    enviarARevision: boolean
   ): void {
 
     if (this.guardando()) {
@@ -315,108 +372,58 @@ export class CreateListing implements OnInit {
     this.error.set('');
     this.mensaje.set('');
 
-    const errorValidacion =
-      this.validar(enviarRevision);
+    // Validar información.
+    const problema =
+      this.validar(enviarARevision);
 
-    if (errorValidacion) {
-      this.error.set(errorValidacion);
+    if (problema) {
+
+      this.error.set(problema);
+
       return;
     }
 
-    const datos = this.construirDatos();
-
-    const id = this.borradorId();
-
-    const fotos = [
-      ...this.imagenesSeleccionadas
-    ];
-
-    let guardar$: Observable<AlojamientoRespuesta>;
-
-    // ====================================
-    // CREAR UN NUEVO BORRADOR
-    // ====================================
-
-    if (id === null) {
-
-      guardar$ = this.publicaciones
-        .crearBorrador(datos, fotos)
-        .pipe(
-
-          tap(creado => {
-
-            this.borradorId.set(
-              creado.idAlojamiento
-            );
-
-            const cantidad =
-              creado.detalleImagenes?.length ??
-              creado.imagenes?.length ??
-              fotos.length;
-
-            this.imagenesGuardadas.set(
-              cantidad
-            );
-
-            this.limpiarSeleccionImagenes();
-          })
-        );
-
-    } else {
-
-      // ====================================
-      // ACTUALIZAR BORRADOR EXISTENTE
-      // ====================================
-
-      guardar$ = this.publicaciones
-        .actualizarBorrador(id, datos)
-        .pipe(
-
-          switchMap(actualizado => {
-
-            if (fotos.length === 0) {
-              return of(actualizado);
-            }
-
-            // Subir nuevas fotografías.
-            return this.publicaciones
-              .agregarImagenes(id, fotos)
-              .pipe(
-
-                tap(imagenes => {
-
-                  this.imagenesGuardadas.set(
-                    imagenes.length
-                  );
-
-                  this.limpiarSeleccionImagenes();
-                }),
-
-                map(() => actualizado)
-              );
-          })
-        );
-    }
-
-    // ====================================
-    // OPCIONALMENTE ENVIAR A REVISIÓN
-    // ====================================
-
-    const operacion$ = enviarRevision
-      ? guardar$.pipe(
-        switchMap(resultado =>
-          this.publicaciones.enviarRevision(
-            resultado.idAlojamiento
-          )
-        )
-      )
-      : guardar$;
-
     this.guardando.set(true);
 
-    operacion$
+    const datos =
+      this.construirDatos();
+
+    // PASO 1:
+    // Crear o actualizar alojamiento.
+
+    const datosGuardados$ =
+      this.guardarDatos(datos);
+
+    datosGuardados$
       .pipe(
-        timeout(30000),
+
+        // PASO 2:
+        // Guardar períodos disponibles.
+
+        switchMap(alojamiento =>
+
+          this.guardarPeriodos(
+            alojamiento.idAlojamiento
+          ).pipe(
+
+            map(() => alojamiento)
+          )
+        ),
+
+        // PASO 3:
+        // Enviar a revisión, si corresponde.
+
+        switchMap(alojamiento => {
+
+          if (!enviarARevision) {
+            return of(alojamiento);
+          }
+
+          return this.publicaciones
+            .enviarRevision(
+              alojamiento.idAlojamiento
+            );
+        }),
 
         finalize(() => {
           this.guardando.set(false);
@@ -424,12 +431,12 @@ export class CreateListing implements OnInit {
       )
       .subscribe({
 
-        next: (resultado) => {
+        next: alojamiento => {
 
-          if (enviarRevision) {
+          if (enviarARevision) {
 
             this.mensaje.set(
-              'Alojamiento enviado a revisión correctamente.'
+              'El alojamiento fue enviado a revisión correctamente.'
             );
 
             void this.router.navigateByUrl(
@@ -439,125 +446,400 @@ export class CreateListing implements OnInit {
           } else {
 
             this.mensaje.set(
-              `Borrador #${resultado.idAlojamiento} ` +
-              'guardado correctamente.'
+              `Borrador #${alojamiento.idAlojamiento} ` +
+              'y fechas guardados correctamente.'
             );
           }
         },
 
-        error: (err: unknown) => {
+        error: err => {
 
-          const detalle = this.mensajeError(
-            err,
-            'No se pudo guardar el alojamiento.'
-          );
+          const id =
+            this.borradorId();
 
-          if (
-            enviarRevision &&
-            this.borradorId() !== null
-          ) {
+          let texto =
+            this.mensajeError(err);
 
-            this.error.set(
-              `${detalle} ` +
-              `El borrador #${this.borradorId()} ` +
-              'se conserva. Puedes corregirlo y reintentar.'
-            );
+          if (id !== null) {
 
-          } else {
-
-            this.error.set(detalle);
+            texto +=
+              ` El borrador #${id} se conserva. ` +
+              'Revisa los datos y las fechas ' +
+              'antes de volver a intentarlo.';
           }
+
+          this.error.set(texto);
         }
       });
   }
 
   // ======================================
-  // 9. VALIDAR CAMPOS
+  // 10. CREAR O ACTUALIZAR ALOJAMIENTO
+  // ======================================
+
+  private guardarDatos(
+    datos: DatosAlojamiento
+  ): Observable<AlojamientoRespuesta> {
+
+    const id =
+      this.borradorId();
+
+    const archivos = [
+      ...this.imagenesSeleccionadas
+    ];
+
+    // CREAR UN NUEVO BORRADOR.
+
+    if (id === null) {
+
+      return this.publicaciones
+        .crearBorrador(
+          datos,
+          archivos
+        )
+        .pipe(
+
+          tap(alojamiento => {
+
+            this.borradorId.set(
+              alojamiento.idAlojamiento
+            );
+
+            const totalImagenes =
+              alojamiento.detalleImagenes?.length ??
+              alojamiento.imagenes?.length ??
+              archivos.length;
+
+            this.imagenesGuardadas.set(
+              totalImagenes
+            );
+
+            this.imagenesSeleccionadas = [];
+          })
+        );
+    }
+
+    // ACTUALIZAR BORRADOR EXISTENTE.
+
+    return this.publicaciones
+      .actualizarBorrador(id, datos)
+      .pipe(
+
+        switchMap(alojamiento => {
+
+          if (archivos.length === 0) {
+            return of(alojamiento);
+          }
+
+          return this.publicaciones
+            .agregarImagenes(
+              id,
+              archivos
+            )
+            .pipe(
+
+              tap(imagenes => {
+
+                this.imagenesGuardadas.set(
+                  imagenes.length
+                );
+
+                this.imagenesSeleccionadas = [];
+              }),
+
+              map(() => alojamiento)
+            );
+        })
+      );
+  }
+
+  // ======================================
+  // 11. GUARDAR FECHAS DE DISPONIBILIDAD
+  // ======================================
+
+  private guardarPeriodos(
+    idAlojamiento: number
+  ): Observable<void> {
+
+    // Solo enviar los períodos nuevos.
+    // Los existentes no se duplican.
+
+    const nuevos = this.periodos.filter(
+      periodo =>
+        periodo.idPeriodo === undefined
+    );
+
+    if (nuevos.length === 0) {
+      return of(undefined);
+    }
+
+    // Se guardan uno por uno.
+    // Si alguno falla, los anteriores
+    // conservan su identificador.
+
+    return from(nuevos)
+      .pipe(
+
+        concatMap(periodo =>
+
+          this.publicaciones
+            .agregarPeriodoDisponibilidad(
+              idAlojamiento,
+              {
+                fechaInicio: periodo.fechaInicio,
+                fechaFin: periodo.fechaFin
+              }
+            )
+            .pipe(
+
+              tap(guardado => {
+
+                periodo.idPeriodo =
+                  guardado.idPeriodo;
+              })
+            )
+        ),
+
+        toArray(),
+
+        map(() => undefined)
+      );
+  }
+
+  // ======================================
+  // 12. VALIDAR FORMULARIO
   // ======================================
 
   private validar(
-    enviarRevision: boolean
+    enviarARevision: boolean
   ): string | null {
 
-    if (!this.draft.titulo.trim()) {
-      return 'El título del alojamiento es obligatorio.';
+    const d = this.draft;
+
+    // Título obligatorio.
+    if (!d.titulo.trim()) {
+
+      return (
+        'Debes indicar el título del alojamiento.'
+      );
     }
+
+    // Para crear el alojamiento, el backend
+    // exige al menos una fotografía.
 
     if (
       this.borradorId() === null &&
       this.imagenesSeleccionadas.length === 0
     ) {
-      return 'Debes agregar al menos una fotografía para crear el alojamiento.';
+
+      return (
+        'Debes seleccionar al menos una fotografía ' +
+        'para crear el alojamiento.'
+      );
     }
 
+    // Capacidad.
     if (
-      this.imagenesGuardadas() +
-      this.imagenesSeleccionadas.length > 15
-    ) {
-      return 'El alojamiento admite máximo 15 fotografías.';
-    }
-
-    if (
-      this.draft.capacidad !== null &&
+      d.capacidad !== null &&
       (
-        !Number.isInteger(this.draft.capacidad) ||
-        this.draft.capacidad <= 0
+        !Number.isInteger(d.capacidad) ||
+        d.capacidad <= 0
       )
     ) {
-      return 'La capacidad debe ser un entero mayor que cero.';
+
+      return (
+        'La capacidad debe ser un número ' +
+        'entero mayor que cero.'
+      );
     }
 
-    for (const [campo, cantidad] of [
-      ['habitaciones', this.draft.habitaciones],
-      ['camas', this.draft.camas],
-      ['baños', this.draft.banos]
+    // Habitaciones, camas y baños.
+    for (const [nombre, valor] of [
+      ['habitaciones', d.habitaciones],
+      ['camas', d.camas],
+      ['baños', d.banos]
     ] as const) {
 
       if (
-        cantidad !== null &&
+        valor !== null &&
         (
-          !Number.isInteger(cantidad) ||
-          cantidad < 0
+          !Number.isInteger(valor) ||
+          valor < 0
         )
       ) {
-        return `El número de ${campo} no puede ser negativo.`;
+
+        return (
+          `La cantidad de ${nombre} ` +
+          'debe ser un entero no negativo.'
+        );
       }
     }
 
+    // Precio por noche.
     if (
-      this.draft.precioNoche !== null &&
-      this.draft.precioNoche <= 0
+      d.precioNoche !== null &&
+      !(d.precioNoche > 0)
     ) {
-      return 'El precio por noche debe ser mayor que cero.';
+
+      return (
+        'El precio por noche debe ser mayor que cero.'
+      );
     }
 
-    // Un borrador puede estar incompleto.
-    if (!enviarRevision) {
+    // ====================================
+    // VALIDAR FECHAS
+    // ====================================
+
+    for (const periodo of this.periodos) {
+
+      if (
+        !periodo.fechaInicio ||
+        !periodo.fechaFin
+      ) {
+
+        return (
+          'Completa la fecha de inicio y fin ' +
+          'de cada período o elimina ' +
+          'el período vacío.'
+        );
+      }
+
+      if (
+        periodo.fechaInicio < this.fechaMinima
+      ) {
+
+        return (
+          'La fecha inicial de cada período ' +
+          'debe ser hoy o posterior.'
+        );
+      }
+
+      if (
+        periodo.fechaFin <=
+        periodo.fechaInicio
+      ) {
+
+        return (
+          'La fecha final debe ser posterior ' +
+          'a la inicial. Debe existir ' +
+          'al menos una noche disponible.'
+        );
+      }
+    }
+
+    // ====================================
+    // VALIDAR FECHAS SUPERPUESTAS
+    // ====================================
+
+    for (
+      let i = 0;
+      i < this.periodos.length;
+      i++
+    ) {
+
+      for (
+        let j = i + 1;
+        j < this.periodos.length;
+        j++
+      ) {
+
+        const a = this.periodos[i];
+
+        const b = this.periodos[j];
+
+        // Consideramos cruce incluso cuando
+        // ambos períodos comparten un límite.
+
+        const seCruzan =
+          a.fechaInicio <= b.fechaFin &&
+          b.fechaInicio <= a.fechaFin;
+
+        if (seCruzan) {
+
+          return (
+            'Dos períodos de disponibilidad ' +
+            'se cruzan. Ajusta las fechas ' +
+            'para que no se superpongan.'
+          );
+        }
+      }
+    }
+
+    // Guardar borrador permite
+    // datos y fechas incompletos,
+    // siempre que los períodos agregados
+    // tengan fechas válidas.
+
+    if (!enviarARevision) {
       return null;
     }
 
-    const campos: Array<[string, boolean]> = [
-      ['descripción', !!this.draft.descripcion.trim()],
-      ['ubicación', !!this.draft.ubicacion.trim()],
-      ['ciudad', !!this.draft.ciudad.trim()],
-      ['tipo de alojamiento', !!this.draft.tipo.trim()],
-      ['capacidad', this.draft.capacidad !== null],
-      ['habitaciones', this.draft.habitaciones !== null],
-      ['baños', this.draft.banos !== null],
-      ['precio por noche', this.draft.precioNoche !== null],
-      ['hora de entrada', !!this.draft.horaEntrada],
-      ['hora de salida', !!this.draft.horaSalida],
-      ['reglas', !!this.draft.reglas.trim()],
-      ['política de cancelación', this.draft.idPolitica !== null]
-    ];
+    // ====================================
+    // AL ENVIAR A REVISIÓN
+    // ====================================
 
-    const faltantes = campos
-      .filter(([, completo]) => !completo)
-      .map(([nombre]) => nombre);
+    if (this.periodos.length === 0) {
+
+      return (
+        'Para enviar a revisión debes agregar ' +
+        'al menos un período de disponibilidad.'
+      );
+    }
+
+    const faltantes: string[] = [];
+
+    if (!d.descripcion.trim()) {
+      faltantes.push('descripción');
+    }
+
+    if (!d.ubicacion.trim()) {
+      faltantes.push('ubicación');
+    }
+
+    if (!d.ciudad.trim()) {
+      faltantes.push('ciudad');
+    }
+
+    if (!d.tipo.trim()) {
+      faltantes.push('tipo de alojamiento');
+    }
+
+    if (d.capacidad === null) {
+      faltantes.push('capacidad');
+    }
+
+    if (d.habitaciones === null) {
+      faltantes.push('habitaciones');
+    }
+
+    if (d.banos === null) {
+      faltantes.push('baños');
+    }
+
+    if (d.precioNoche === null) {
+      faltantes.push('precio por noche');
+    }
+
+    if (!d.horaEntrada) {
+      faltantes.push('hora de entrada');
+    }
+
+    if (!d.horaSalida) {
+      faltantes.push('hora de salida');
+    }
+
+    if (!d.reglas.trim()) {
+      faltantes.push('reglas');
+    }
+
+    if (d.idPolitica === null) {
+      faltantes.push('política de cancelación');
+    }
 
     if (faltantes.length > 0) {
+
       return (
-        'Para enviar a revisión debes completar: ' +
+        'Para enviar a revisión falta: ' +
         faltantes.join(', ') +
         '.'
       );
@@ -567,7 +849,7 @@ export class CreateListing implements OnInit {
   }
 
   // ======================================
-  // 10. CONSTRUIR DTO DEL BACKEND
+  // 13. CONSTRUIR DATOS PARA EL BACKEND
   // ======================================
 
   private construirDatos(): DatosAlojamiento {
@@ -575,23 +857,16 @@ export class CreateListing implements OnInit {
     const d = this.draft;
 
     return {
+
       titulo: d.titulo.trim(),
 
-      ...(d.descripcion.trim()
-        ? { descripcion: d.descripcion.trim() }
-        : {}),
+      descripcion: d.descripcion.trim(),
 
-      ...(d.ubicacion.trim()
-        ? { ubicacion: d.ubicacion.trim() }
-        : {}),
+      ubicacion: d.ubicacion.trim(),
 
-      ...(d.ciudad.trim()
-        ? { ciudad: d.ciudad.trim() }
-        : {}),
+      ciudad: d.ciudad.trim(),
 
-      ...(d.tipo.trim()
-        ? { tipo: d.tipo.trim() }
-        : {}),
+      tipo: d.tipo.trim(),
 
       ...(d.capacidad !== null
         ? { capacidad: d.capacidad }
@@ -613,6 +888,10 @@ export class CreateListing implements OnInit {
         ? { precioNoche: d.precioNoche }
         : {}),
 
+      ...(d.idPolitica !== null
+        ? { idPolitica: d.idPolitica }
+        : {}),
+
       ...(d.horaEntrada
         ? { horaEntrada: d.horaEntrada }
         : {}),
@@ -621,85 +900,65 @@ export class CreateListing implements OnInit {
         ? { horaSalida: d.horaSalida }
         : {}),
 
-      ...(d.reglas.trim()
-        ? { reglas: d.reglas.trim() }
-        : {}),
+      reglas: d.reglas.trim(),
 
-      ...(d.idPolitica !== null
-        ? { idPolitica: d.idPolitica }
-        : {}),
-
-      amenidades: [...d.amenidades]
+      amenidades: [
+        ...d.amenidades
+      ]
     };
   }
 
   // ======================================
-  // 11. LIMPIAR ARCHIVOS GUARDADOS
-  // ======================================
-
-  private limpiarSeleccionImagenes(): void {
-
-    this.imagenesSeleccionadas = [];
-
-    if (this.fotoInput) {
-      this.fotoInput.nativeElement.value = '';
-    }
-  }
-
-  // ======================================
-  // 12. MANEJAR ERRORES DEL BACKEND
+  // 14. MENSAJES DE ERROR
   // ======================================
 
   private mensajeError(
-    err: unknown,
-    mensajeAlternativo: string
+    err: unknown
   ): string {
-
-    if (
-      err instanceof Error &&
-      err.name === 'TimeoutError'
-    ) {
-      return (
-        'La solicitud tardó demasiado. ' +
-        'Revisa Mis alojamientos antes de reintentar.'
-      );
-    }
 
     if (err instanceof HttpErrorResponse) {
 
       if (err.status === 0) {
-        return 'No se pudo conectar con Spring Boot en el puerto 8081.';
+
+        return (
+          'No se pudo conectar con Spring Boot ' +
+          'en localhost:8081.'
+        );
       }
 
       if (err.status === 401) {
-        return 'Tu sesión expiró. Inicia sesión nuevamente.';
+
+        return (
+          'Tu sesión expiró. ' +
+          'Inicia sesión nuevamente.'
+        );
       }
 
       if (err.status === 403) {
-        return 'Esta operación requiere una cuenta de Anfitrión autorizada.';
-      }
 
-      const respuesta: unknown = err.error;
+        return (
+          'No tienes permisos para realizar ' +
+          'esta operación como anfitrión.'
+        );
+      }
 
       if (
-        respuesta !== null &&
-        typeof respuesta === 'object' &&
-        'message' in respuesta
+        err.error &&
+        typeof err.error.message === 'string'
       ) {
 
-        const mensaje =
-          (respuesta as { message?: unknown }).message;
-
-        if (typeof mensaje === 'string') {
-          return mensaje;
-        }
+        return err.error.message;
       }
 
-      if (typeof respuesta === 'string') {
-        return respuesta;
-      }
+      return (
+        `Ocurrió un error en el servidor ` +
+        `(HTTP ${err.status}).`
+      );
     }
 
-    return mensajeAlternativo;
+    return (
+      'No se pudo completar la operación. ' +
+      'Revisa la conexión e inténtalo nuevamente.'
+    );
   }
 }
