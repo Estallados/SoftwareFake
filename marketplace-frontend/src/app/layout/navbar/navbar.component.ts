@@ -18,6 +18,7 @@ import {
 } from '@angular/router';
 
 import { filter, map, startWith } from 'rxjs';
+import {SessionService} from '../../services/session.service';
 
 export type Role = 'Huésped' | 'Anfitrión' | 'Administrador';
 export type AuthMode = 'login' | 'register' | 'recovery';
@@ -78,6 +79,7 @@ const NOTIFICATIONS: Record<Role, string | null> = {
 export class NavbarComponent {
 
   private readonly router = inject(Router);
+  protected readonly session = inject(SessionService);
 
   unread = input(0);
   openAuth = output<AuthMode>();
@@ -334,16 +336,8 @@ export class NavbarComponent {
   // ======================================
 
   cerrarSesion(): void {
-
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('rol');
-    sessionStorage.removeItem('correo');
-
+    this.session.cerrarSesion();   // borra el storage y pone la señal en null
     this.roleMenu = false;
-
-    // Actualiza los datos visibles.
-    this.sesionVersion.update(valor => valor + 1);
-
     this.router.navigateByUrl('/login');
   }
 
