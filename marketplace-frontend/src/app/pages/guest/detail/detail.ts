@@ -27,6 +27,7 @@ export class Detail implements OnInit {
   private readonly favoritoService = inject(FavoritoService);
   protected readonly session = inject(SessionService);
   private readonly fb = inject(FormBuilder);
+
   // ==================== Alojamiento ====================
   readonly photos = photos;
   amenities: string[] = [];
