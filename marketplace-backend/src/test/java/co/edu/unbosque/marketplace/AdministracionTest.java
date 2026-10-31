@@ -109,6 +109,9 @@ class AdministracionTest extends PruebaIntegracionBase {
 		JsonNode delAnfitrion = llamar(get("/admin/usuarios/" + anfitrion.id() + "/alojamientos"), admin, null, 200);
 		assertEquals(1, delAnfitrion.get("totalElementos").asInt());
 		assertEquals(anfitrion.correo(), delAnfitrion.get("contenido").get(0).get("correoAnfitrion").asText());
+		// Un usuario que no existe es 404, no una lista vacía
+		llamar(get("/admin/usuarios/999999/reservas"), admin, null, 404);
+		llamar(get("/admin/usuarios/999999/alojamientos"), admin, null, 404);
 
 		llamar(get("/admin/reservas"), huesped.token(), null, 403);
 	}

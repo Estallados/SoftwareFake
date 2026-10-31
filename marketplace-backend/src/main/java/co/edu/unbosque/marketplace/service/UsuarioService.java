@@ -228,6 +228,11 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		return resultado;
 	}
 
+	/** Indica si existe un usuario con ese id. */
+	public boolean existe(Long id) {
+		return usuarioRepo.existsById(id);
+	}
+
 	@Override
 	public UsuarioDTO getById(Long id) {
 		Optional<Usuario> usuario = usuarioRepo.findById(id);

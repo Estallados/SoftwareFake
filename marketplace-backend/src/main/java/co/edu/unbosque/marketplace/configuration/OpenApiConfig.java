@@ -25,6 +25,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 
@@ -45,7 +46,9 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
  */
 @Configuration
 @OpenAPIDefinition(info = @Info(title = "Marketplace de alojamientos", version = "1.0", description = "API del Marketplace de alojamientos de Inversiones LR. Todos los errores responden "
-		+ "{\"message\": \"...\"}."))
+		+ "{\"message\": \"...\"}. Códigos que puede dar cualquier ruta: 404 ruta inexistente, 405 método no "
+		+ "permitido, 406 formato pedido distinto de JSON, 409 otra operación cambió los mismos datos al mismo "
+		+ "tiempo, 415 tipo de contenido no soportado, 503 base de datos no disponible."))
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
 public class OpenApiConfig {
 
@@ -98,6 +101,11 @@ public class OpenApiConfig {
 			if (recibeJson) {
 				agregar(respuestas, "400", JSON_INVALIDO);
 			}
+			// Un id, número, fecha o estado mal escrito en la URL responde 400 (tipoInvalido)
+			if (operacion.getParameters() != null) {
+				operacion.getParameters().stream().filter(OpenApiConfig::puedeSerInvalido)
+						.forEach(p -> agregar(respuestas, "400", "El valor de " + p.getName() + " no es válido."));
+			}
 			agregar(respuestas, "500", ERROR_INTERNO);
 
 			// Ordenadas por código y con el cuerpo de error real
@@ -123,6 +131,15 @@ public class OpenApiConfig {
 		if (otroExito && !declara200) {
 			respuestas.remove("200");
 		}
+	}
+
+	/** Parámetros que Spring convierte (números, fechas, enums) y pueden fallar. */
+	private static boolean puedeSerInvalido(Parameter parametro) {
+		Schema<?> esquema = parametro.getSchema();
+		if (esquema == null || "array".equals(esquema.getType())) {
+			return false;
+		}
+		return !"string".equals(esquema.getType()) || esquema.getFormat() != null || esquema.getEnum() != null;
 	}
 
 	private static boolean exigeRol(HandlerMethod metodo) {

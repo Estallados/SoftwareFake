@@ -49,11 +49,14 @@ public class FavoritoController {
 	}
 
 	@Operation(summary = "Agregar a favoritos (sin duplicados)")
-	@ApiResponse(responseCode = "200", description = "Favorito guardado (si ya estaba, el mismo)")
+	@ApiResponse(responseCode = "200", description = "Ya estaba en favoritos: el favorito existente")
+	@ApiResponse(responseCode = "201", description = "Favorito guardado")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
 	@PostMapping("/{idAlojamiento}")
 	public ResponseEntity<Object> agregar(@PathVariable Long idAlojamiento, Authentication authentication) {
-		return RespuestaUtil.desde(favoritoService.agregar(RespuestaUtil.idUsuario(authentication), idAlojamiento));
+		Long idUsuario = RespuestaUtil.idUsuario(authentication);
+		HttpStatus exito = favoritoService.esFavorito(idUsuario, idAlojamiento) ? HttpStatus.OK : HttpStatus.CREATED;
+		return RespuestaUtil.desde(favoritoService.agregar(idUsuario, idAlojamiento), exito);
 	}
 
 	@Operation(summary = "Quitar de favoritos")

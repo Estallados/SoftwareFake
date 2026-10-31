@@ -494,9 +494,12 @@ public class PublicacionService {
 
     /**
      * BORRADOR → PENDIENTE_REVISION (anfitrión). Exige la información mínima
-     * completa e indica los datos faltantes.
+     * completa e indica los datos faltantes. Que falten datos es un conflicto
+     * con el estado del borrador, no un error de la petición (que no trae
+     * cuerpo).
      *
-     * @return 0 enviada; 1 no existe; 2 faltan datos; 3 sin permiso; 4 estado no permitido.
+     * @return 0 enviada; 1 no existe; 3 sin permiso; 4 estado no permitido o
+     *         faltan datos.
      * @see "RF-017, RF-027, CA-097, CA-157"
      */
     @Transactional
@@ -516,7 +519,7 @@ public class PublicacionService {
                     + ".";
             auditoriaService.registrar(idActor, AuditoriaService.ALOJAMIENTO_CAMBIO_ESTADO,
                     AuditoriaService.ENTIDAD_ALOJAMIENTO, idAlojamiento, ResultadoAuditoria.RECHAZADO, mensaje);
-            return Resultado.error(Resultado.DATOS_INVALIDOS, mensaje);
+            return Resultado.error(Resultado.ESTADO_INVALIDO, mensaje);
         }
         return Resultado.exito(cambiarEstado(alojamiento, EstadoAlojamiento.PENDIENTE_REVISION, idActor, null));
     }

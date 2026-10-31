@@ -38,6 +38,11 @@ public class FavoritoService {
 		this.modelMapper = modelMapper;
 	}
 
+	/** Indica si el alojamiento ya está en los favoritos del usuario. */
+	public boolean esFavorito(Long idUsuario, Long idAlojamiento) {
+		return favoritoRepo.findByIdUsuarioAndIdAlojamiento(idUsuario, idAlojamiento).isPresent();
+	}
+
 	/**
 	 * Agrega un alojamiento ACTIVA a los favoritos. Si ya estaba, se conserva el
 	 * favorito existente.

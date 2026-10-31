@@ -54,8 +54,8 @@ public class MensajeriaService {
 	 * Inicia (o retoma) la conversación del usuario con el anfitrión de un
 	 * alojamiento, con un primer mensaje opcional.
 	 *
-	 * @return 0 con la conversación; 1 el alojamiento no existe; 2 es su propio
-	 *         alojamiento o el mensaje es inválido.
+	 * @return 0 con la conversación; 1 el alojamiento no existe; 2 el mensaje es
+	 *         inválido; 3 es su propio alojamiento.
 	 * @see "CA-169"
 	 */
 	@Transactional
@@ -68,7 +68,7 @@ public class MensajeriaService {
 			return Resultado.error(Resultado.NO_ENCONTRADO, "El alojamiento no existe.");
 		}
 		if (alojamiento.get().getIdAnfitrion().equals(idUsuario)) {
-			return Resultado.error(Resultado.DATOS_INVALIDOS,
+			return Resultado.error(Resultado.SIN_PERMISO,
 					"No puedes iniciar una conversación con tu propio " + "alojamiento.");
 		}
 		if (datos.getMensaje() != null && datos.getMensaje().length() > LARGO_MAXIMO) {
@@ -89,6 +89,12 @@ public class MensajeriaService {
 			guardarMensaje(conversacion, datos.getMensaje(), idUsuario);
 		}
 		return Resultado.exito(modelMapper.map(conversacion, ConversacionDTO.class));
+	}
+
+	/** Indica si el usuario ya tiene una conversación sobre el alojamiento. */
+	public boolean tieneConversacion(Long idUsuario, Long idAlojamiento) {
+		return idAlojamiento != null
+				&& conversacionRepo.findByIdUsuarioAndIdAlojamiento(idUsuario, idAlojamiento).isPresent();
 	}
 
 	/** Conversaciones en las que participa el usuario. */

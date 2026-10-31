@@ -113,7 +113,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		datos.remove("horaSalida");
 		Long id = crearBorrador(anfitrion, datos);
 
-		String mensaje = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 400)
+		String mensaje = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 409)
 				.get("message").asText();
 
 		assertTrue(mensaje.contains("habitaciones") && mensaje.contains("baños") && mensaje.contains("hora de entrada")
@@ -167,7 +167,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		Sesion anfitrion = registrar("ANFITRION");
 		Long id = crearBorrador(anfitrion, Map.of("titulo", "Solo título"));
 
-		JsonNode error = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 400);
+		JsonNode error = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 409);
 
 		String mensaje = error.get("message").asText();
 		assertTrue(mensaje.contains("descripción") && mensaje.contains("capacidad"), mensaje);
@@ -198,7 +198,7 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		Long id = crearBorrador(anfitrion, datosAlojamiento("Cancún", "Casa", 2, new BigDecimal("90000"), Set.of(),
 				"FLEXIBLE"));
 
-		String mensaje = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 400)
+		String mensaje = llamar(post("/alojamientos/" + id + "/enviarrevision"), anfitrion.token(), null, 409)
 				.get("message").asText();
 		assertTrue(mensaje.contains("fechas de disponibilidad"), mensaje);
 

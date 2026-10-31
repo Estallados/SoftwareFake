@@ -48,7 +48,8 @@ public class DisponibilidadController {
 		this.calendarioService = calendarioService;
 	}
 
-	@Operation(summary = "Calendario: períodos disponibles y rangos reservados")
+	@Operation(summary = "Calendario: períodos disponibles y rangos reservados", description = "Público si el alojamiento está ACTIVA; en otro estado solo para su anfitrión o un administrador.")
+	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Períodos ofrecidos y fechas reservadas")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
 	@GetMapping

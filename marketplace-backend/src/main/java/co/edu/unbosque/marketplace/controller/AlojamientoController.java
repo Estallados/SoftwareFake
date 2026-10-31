@@ -128,6 +128,7 @@ public class AlojamientoController {
 	}
 
 	@Operation(summary = "Detalle de un alojamiento", description = "Público si está ACTIVA; en otro estado solo para su anfitrión o un administrador.")
+	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Alojamiento con imágenes, servicios, calificación y anfitrión")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
 	@GetMapping("/{id}")
@@ -244,12 +245,11 @@ public class AlojamientoController {
 	@Operation(summary = "Enviar a revisión: BORRADOR → PENDIENTE_REVISION (ANFITRION)")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Alojamiento PENDIENTE_REVISION")
-	@ApiResponse(responseCode = "400", description = "Completa los datos antes de enviar a revisión. Falta: "
-			+ "descripción, capacidad.")
 	@ApiResponse(responseCode = "403", description = "Solo el anfitrión propietario o un administrador puede modificar "
 			+ "este alojamiento.")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
-	@ApiResponse(responseCode = "409", description = "No se puede pasar de ACTIVA a PENDIENTE_REVISION.")
+	@ApiResponse(responseCode = "409", description = "Completa los datos antes de enviar a revisión. Falta: "
+			+ "descripción, capacidad. | No se puede pasar de ACTIVA a PENDIENTE_REVISION.")
 	@PostMapping("/{id}/enviarrevision")
 	public ResponseEntity<Object> enviarRevision(@PathVariable Long id, Authentication authentication) {
 		return RespuestaUtil.desde(publicacionService.enviarRevision(id, RespuestaUtil.idUsuario(authentication)));

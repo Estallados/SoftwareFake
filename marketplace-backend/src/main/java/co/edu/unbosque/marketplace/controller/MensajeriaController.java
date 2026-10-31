@@ -42,14 +42,20 @@ public class MensajeriaController {
 	}
 
 	@Operation(summary = "Iniciar o retomar una conversación con el anfitrión de un alojamiento")
-	@ApiResponse(responseCode = "201", description = "Conversación con el anfitrión (la existente si ya había una)")
-	@ApiResponse(responseCode = "400", description = "Debes indicar el alojamiento. | No puedes iniciar una "
-			+ "conversación con tu propio alojamiento. | El mensaje no puede superar 2000 caracteres.")
+	@ApiResponse(responseCode = "200", description = "Ya existía: la conversación de antes (con el mensaje nuevo, si "
+			+ "se envió)")
+	@ApiResponse(responseCode = "201", description = "Conversación creada con el anfitrión")
+	@ApiResponse(responseCode = "400", description = "Debes indicar el alojamiento. | El mensaje no puede superar "
+			+ "2000 caracteres.")
+	@ApiResponse(responseCode = "403", description = "No puedes iniciar una conversación con tu propio alojamiento.")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
 	@PostMapping
 	public ResponseEntity<Object> iniciar(@RequestBody ConversacionDTO datos, Authentication authentication) {
-		return RespuestaUtil.desde(mensajeriaService.iniciar(datos, RespuestaUtil.idUsuario(authentication)),
-				HttpStatus.CREATED);
+		Long idUsuario = RespuestaUtil.idUsuario(authentication);
+		HttpStatus exito = datos != null && mensajeriaService.tieneConversacion(idUsuario, datos.getIdAlojamiento())
+				? HttpStatus.OK
+				: HttpStatus.CREATED;
+		return RespuestaUtil.desde(mensajeriaService.iniciar(datos, idUsuario), exito);
 	}
 
 	@Operation(summary = "Mis conversaciones")

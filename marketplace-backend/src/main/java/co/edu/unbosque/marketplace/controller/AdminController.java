@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -51,6 +52,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class AdminController {
 
 	private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();
+	private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado.";
 
 	private final UsuarioService usuarioService;
 	private final PublicacionService publicacionService;
@@ -83,17 +85,25 @@ public class AdminController {
 
 	@Operation(summary = "Reservas de un usuario como huésped (detalle de usuario)")
 	@ApiResponse(responseCode = "200", description = "Reservas del usuario como huésped (vacía si no tiene)")
+	@ApiResponse(responseCode = "404", description = USUARIO_NO_ENCONTRADO)
 	@GetMapping("/usuarios/{id}/reservas")
 	public ResponseEntity<Object> reservasDeUsuario(@PathVariable Long id, @RequestParam(defaultValue = "0") int pagina,
 			@RequestParam(defaultValue = "20") int tamanio) {
+		if (!usuarioService.existe(id)) {
+			return RespuestaUtil.mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
+		}
 		return ResponseEntity.ok(reservaService.listarMias(id, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
 	@Operation(summary = "Alojamientos de un usuario como anfitrión, en cualquier estado (detalle de usuario)")
 	@ApiResponse(responseCode = "200", description = "Alojamientos del usuario como anfitrión, en cualquier estado")
+	@ApiResponse(responseCode = "404", description = USUARIO_NO_ENCONTRADO)
 	@GetMapping("/usuarios/{id}/alojamientos")
 	public ResponseEntity<Object> alojamientosDeUsuario(@PathVariable Long id,
 			@RequestParam(defaultValue = "0") int pagina, @RequestParam(defaultValue = "20") int tamanio) {
+		if (!usuarioService.existe(id)) {
+			return RespuestaUtil.mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
+		}
 		return ResponseEntity
 				.ok(publicacionService.listarDeAnfitrion(id, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}

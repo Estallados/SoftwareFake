@@ -32,7 +32,8 @@ class OpcionalesTest extends PruebaIntegracionBase {
 		Long id = crearAlojamientoActivo(registrar("ANFITRION"));
 		Sesion huesped = registrar("HUESPED");
 
-		JsonNode primero = llamar(post("/favoritos/" + id), huesped.token(), null, 200);
+		// 201 al crearlo; 200 si ya estaba (devuelve el mismo)
+		JsonNode primero = llamar(post("/favoritos/" + id), huesped.token(), null, 201);
 		JsonNode segundo = llamar(post("/favoritos/" + id), huesped.token(), null, 200);
 
 		assertEquals(primero.get("idFavorito").asLong(), segundo.get("idFavorito").asLong());
@@ -48,7 +49,7 @@ class OpcionalesTest extends PruebaIntegracionBase {
 	void eliminarUnFavoritoLoQuitaDeLaLista_CA171() throws Exception {
 		Long id = crearAlojamientoActivo(registrar("ANFITRION"));
 		Sesion huesped = registrar("HUESPED");
-		llamar(post("/favoritos/" + id), huesped.token(), null, 200);
+		llamar(post("/favoritos/" + id), huesped.token(), null, 201);
 
 		llamar(delete("/favoritos/" + id), huesped.token(), null, 200);
 
@@ -91,6 +92,21 @@ class OpcionalesTest extends PruebaIntegracionBase {
 		llamar(get("/conversaciones/" + idConversacion + "/mensajes"), intruso.token(), null, 403);
 		llamar(post("/conversaciones/" + idConversacion + "/mensajes"), intruso.token(), Map.of("contenido", "Hola"),
 				403);
+	}
+
+	@Test
+	void retomarUnaConversacionResponde200YConElPropioAlojamiento403() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		Long id = crearAlojamientoActivo(anfitrion);
+		Sesion huesped = registrar("HUESPED");
+		long creada = llamar(post("/conversaciones"), huesped.token(), Map.of("idAlojamiento", id), 201)
+				.get("idConversacion").asLong();
+
+		long retomada = llamar(post("/conversaciones"), huesped.token(),
+				Map.of("idAlojamiento", id, "mensaje", "Hola de nuevo"), 200).get("idConversacion").asLong();
+
+		assertEquals(creada, retomada);
+		llamar(post("/conversaciones"), anfitrion.token(), Map.of("idAlojamiento", id), 403);
 	}
 
 	// ----- segundo factor -----

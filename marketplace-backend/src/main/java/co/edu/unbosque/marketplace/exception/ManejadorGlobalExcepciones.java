@@ -1,9 +1,13 @@
 package co.edu.unbosque.marketplace.exception;
 
+import java.sql.SQLException;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.ConcurrencyFailureException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,12 +15,16 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.CannotCreateTransactionException;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
@@ -109,6 +117,53 @@ public class ManejadorGlobalExcepciones {
 		return mensaje(HttpStatus.NOT_FOUND, "La ruta solicitada no existe.");
 	}
 
+	/**
+	 * El cliente pidió un formato que la API no entrega (Accept distinto de JSON).
+	 * Va sin cuerpo: un JSON tampoco lo aceptaría.
+	 */
+	@ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+	public ResponseEntity<Void> formatoNoAceptable() {
+		return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+	}
+
+	/**
+	 * El cliente cerró la conexión antes de recibir la respuesta (cambió de página,
+	 * canceló la petición). No hay a quién responder y no es un error del servidor.
+	 */
+	@ExceptionHandler(AsyncRequestNotUsableException.class)
+	public void clienteDesconectado(AsyncRequestNotUsableException e, HttpServletRequest request) {
+		LOG.debug("El cliente cerró la conexión en {} {}: {}", request.getMethod(), request.getRequestURI(),
+				e.getMessage());
+	}
+
+	/**
+	 * Dos peticiones simultáneas chocaron con un índice único (por ejemplo, un doble
+	 * clic). Otras violaciones de integridad son errores del servidor.
+	 */
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<Map<String, String>> conflictoDeDatos(DataIntegrityViolationException e,
+			HttpServletRequest request) {
+		if (!esDuplicado(e)) {
+			return errorInesperado(e, request);
+		}
+		return mensaje(HttpStatus.CONFLICT, "El registro ya existe. Actualiza la página e intenta de nuevo.");
+	}
+
+	/** Otra operación modificó o bloqueó los mismos datos al mismo tiempo. */
+	@ExceptionHandler(ConcurrencyFailureException.class)
+	public ResponseEntity<Map<String, String>> conflictoConcurrente() {
+		return mensaje(HttpStatus.CONFLICT, "Otra operación modificó estos datos al mismo tiempo. Intenta de nuevo.");
+	}
+
+	/** La base de datos no responde: es temporal, no un error de la petición. */
+	@ExceptionHandler({ DataAccessResourceFailureException.class, CannotCreateTransactionException.class })
+	public ResponseEntity<Map<String, String>> baseNoDisponible(Exception e, HttpServletRequest request) {
+		// Sin auditoría: se guarda en la misma base que no responde
+		LOG.error("Base de datos no disponible en {} {}", request.getMethod(), request.getRequestURI(), e);
+		return mensaje(HttpStatus.SERVICE_UNAVAILABLE,
+				"El servicio no está disponible en este momento. Intenta de nuevo en unos minutos.");
+	}
+
 	/** Lo lanza {@code @PreAuthorize} cuando el rol no alcanza. */
 	@ExceptionHandler(AccessDeniedException.class)
 	public ResponseEntity<Map<String, String>> accesoDenegado(HttpServletRequest request) {
@@ -119,11 +174,27 @@ public class ManejadorGlobalExcepciones {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<Map<String, String>> errorInesperado(Exception e, HttpServletRequest request) {
+		// Excepciones de Spring que ya traen su estado (por ejemplo ResponseStatusException):
+		// un 4xx es culpa de la petición y se respeta; solo los 5xx son errores inesperados
+		if (e instanceof ErrorResponse respuesta && respuesta.getStatusCode().is4xxClientError()) {
+			return mensaje(HttpStatus.valueOf(respuesta.getStatusCode().value()),
+					"La petición no es válida para esta ruta.");
+		}
 		LOG.error("Error inesperado en {} {}", request.getMethod(), request.getRequestURI(), e);
 		auditoriaService.registrar(idActorActual(), AuditoriaService.ERROR_INTERNO, null, null,
 				ResultadoAuditoria.ERROR,
 				request.getMethod() + " " + request.getRequestURI() + ": " + e.getClass().getSimpleName());
 		return mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado. Intenta de nuevo.");
+	}
+
+	/** SQLState 23505: violación de un índice único (PostgreSQL y H2). */
+	private static boolean esDuplicado(Throwable e) {
+		for (Throwable causa = e; causa != null; causa = causa.getCause()) {
+			if (causa instanceof SQLException sql && "23505".equals(sql.getSQLState())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static Long idActorActual() {
