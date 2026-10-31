@@ -1,36 +1,25 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectorRef, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Usuario } from '../../../models/usuarioDto';
+import { AdminService } from '../../../services/admin.service';
 
-export type UserRole = 'Huésped' | 'Anfitrión' | 'Administrador';
-export type UserStatus = 'Activo' | 'Restringido' | 'Inactivo';
+type TipoAccion = 'restringir' | 'activar';
 
-export interface AdminUser {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: UserRole;
-  status: UserStatus;
-  registered: string;
-}
-
-type UserActionKind = 'restrictUser' | 'activateUser';
-
-const ACTIONS = {
-  restrictUser: {
-    title: 'Restringir usuario',
-    text: '¿Estás seguro de que deseas restringir esta cuenta?',
-    label: 'Motivo de la restricción',
-    confirm: 'Confirmar restricción',
-    needsReason: true,
+const ACCIONES = {
+  restringir: {
+    titulo: 'Restringir usuario',
+    texto: '¿Estás seguro de que deseas restringir esta cuenta?',
+    etiqueta: 'Motivo de la restricción',
+    confirmar: 'Confirmar restricción',
+    necesitaMotivo: true,
   },
-  activateUser: {
-    title: 'Activar usuario',
-    text: '¿Deseas activar nuevamente esta cuenta?',
-    label: '',
-    confirm: 'Confirmar activación',
-    needsReason: false,
+  activar: {
+    titulo: 'Activar usuario',
+    texto: '¿Deseas activar nuevamente esta cuenta?',
+    etiqueta: '',
+    confirmar: 'Confirmar activación',
+    necesitaMotivo: false,
   },
 };
 
@@ -38,18 +27,15 @@ const ACTIONS = {
   selector: 'app-admin-users',
   standalone: true,
   templateUrl: './users.html',
+  imports: [DatePipe],
 })
-export class Users {
-  private router = inject(Router);
+export class Users implements OnInit {
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly adminService = inject(AdminService);
 
-  // TODO: reemplazar por los usuarios del backend
-  users = signal<AdminUser[]>([]);
-
-  search = signal('');
-  roleFilter = signal('Todos');
-  statusFilter = signal('Todos');
-
-  readonly headers = [
+  // ==================== DATOS ====================
+  readonly encabezados = [
     'Nombre',
     'Correo electrónico',
     'Rol',
@@ -57,54 +43,187 @@ export class Users {
     'Fecha de registro',
     'Acciones',
   ];
+  usuarios = signal<Usuario[]>([]);
+  loading = signal(true);
+  errorCarga = signal(false);
 
-  filtered = computed(() => {
-    const term = this.search().toLowerCase();
-    return this.users().filter(
+  // ==================== FILTROS ====================
+  busqueda = signal('');
+  filtroRol = signal('Todos');
+  filtroEstado = signal('Todos');
+
+  readonly visibles = computed(() => {
+    const termino = this.busqueda().trim().toLowerCase();
+    const rol = this.filtroRol();
+    const estado = this.filtroEstado();
+
+    return this.usuarios().filter(
       (u) =>
-        `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(term) &&
-        (this.roleFilter() === 'Todos' || u.role === this.roleFilter()) &&
-        (this.statusFilter() === 'Todos' || u.status === this.statusFilter()),
+        `${u.nombre ?? ''} ${u.correo ?? ''}`.toLowerCase().includes(termino) &&
+        (rol === 'Todos' || this.tipoRol(u.rol) === rol) &&
+        (estado === 'Todos' || this.tipoEstado(u.estado) === estado),
     );
   });
 
-  // ---- Modal de confirmación ----
-  action = signal<{ kind: UserActionKind; id: string } | null>(null);
-  reason = signal('');
-  modal = computed(() => {
-    const a = this.action();
-    return a ? ACTIONS[a.kind] : null;
-  });
+  onBusquedaChange(event: Event): void {
+    this.busqueda.set((event.target as HTMLInputElement).value);
+  }
 
-  open(id: string) {
+  onRolChange(event: Event): void {
+    this.filtroRol.set((event.target as HTMLSelectElement).value);
+  }
+
+  onEstadoChange(event: Event): void {
+    this.filtroEstado.set((event.target as HTMLSelectElement).value);
+  }
+
+  limpiarFiltros(): void {
+    this.busqueda.set('');
+    this.filtroRol.set('Todos');
+    this.filtroEstado.set('Todos');
+  }
+
+  // ==================== INICIALIZACIÓN ====================
+  ngOnInit(): void {
+    this.cargarUsuarios();
+  }
+
+  reintentar(): void {
+    this.cargarUsuarios();
+  }
+
+  /** Si `silencioso` es true no muestra el esqueleto de carga (se usa al refrescar tras una acción). */
+  private cargarUsuarios(silencioso = false): void {
+    if (!silencioso) {
+      this.loading.set(true);
+    }
+    this.errorCarga.set(false);
+
+    this.adminService.usuarios().subscribe({
+      next: (respuesta: Usuario[]) => {
+        console.log('Usuarios recibidos:', respuesta);
+        this.usuarios.set(respuesta ?? []);
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar usuarios:', error);
+        this.usuarios.set([]);
+        this.errorCarga.set(true);
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  // ==================== ROL Y ESTADO ====================
+  /** Normaliza sin depender de cómo escribe el backend el enum (Huésped, HUESPED, ...). */
+  private normalizar(valor: unknown): string {
+    return String(valor ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+  }
+
+  private tipoRol(rol: unknown): 'ADMIN' | 'ANFITRION' | 'HUESPED' | '' {
+    const r = this.normalizar(rol);
+    if (r.includes('ADMIN')) return 'ADMIN';
+    if (r.includes('ANFITRION')) return 'ANFITRION';
+    if (r.includes('HUESPED')) return 'HUESPED';
+    return '';
+  }
+
+  private tipoEstado(estado: unknown): 'ACTIVO' | 'RESTRINGIDO' | 'INACTIVO' | '' {
+    const e = this.normalizar(estado);
+    if (e.includes('RESTRING')) return 'RESTRINGIDO';
+    if (e.includes('INACT')) return 'INACTIVO';
+    if (e.includes('ACTIV')) return 'ACTIVO';
+    return '';
+  }
+
+  esActivo(usuario: Usuario): boolean {
+    return this.tipoEstado(usuario.estado) === 'ACTIVO';
+  }
+
+  claseEstado(usuario: Usuario): string {
+    const estado = this.tipoEstado(usuario.estado);
+    const tono =
+      estado === 'ACTIVO'
+        ? 'bg-emerald-50 text-emerald-700'
+        : estado === 'RESTRINGIDO'
+          ? 'bg-red-50 text-red-700'
+          : 'bg-slate-100 text-slate-600';
+    return 'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + tono;
+  }
+
+  // ==================== NAVEGACIÓN ====================
+  abrirUsuario(id: number | undefined): void {
+    if (id == null) {
+      console.error('El usuario no tiene un ID válido.');
+      return;
+    }
     this.router.navigate(['/admin/usuarios', id]);
   }
 
-  askAction(u: AdminUser) {
-    this.reason.set('');
-    this.action.set({ kind: u.status === 'Activo' ? 'restrictUser' : 'activateUser', id: u.id });
+  // ==================== MODAL DE CONFIRMACIÓN ====================
+  accion = signal<{ tipo: TipoAccion; id: number } | null>(null);
+  motivo = signal('');
+  guardando = signal(false);
+  errorAccion = signal('');
+
+  readonly modal = computed(() => {
+    const a = this.accion();
+    return a ? ACCIONES[a.tipo] : null;
+  });
+
+  pedirAccion(usuario: Usuario): void {
+    this.motivo.set('');
+    this.errorAccion.set('');
+    this.accion.set({
+      tipo: this.esActivo(usuario) ? 'restringir' : 'activar',
+      id: usuario.idUsuario,
+    });
   }
 
-  closeAction() {
-    this.action.set(null);
+  onMotivoChange(event: Event): void {
+    this.motivo.set((event.target as HTMLTextAreaElement).value);
   }
 
-  confirmAction() {
-    const a = this.action();
-    if (!a) return;
-    const next: UserStatus = a.kind === 'restrictUser' ? 'Restringido' : 'Activo';
-    this.users.update((list) => list.map((u) => (u.id === a.id ? { ...u, status: next } : u)));
-    this.action.set(null);
-    // TODO: guardar en el backend (motivo: this.reason()), registrar auditoría y avisar
+  cerrarAccion(): void {
+    if (this.guardando()) {
+      return;
+    }
+    this.accion.set(null);
   }
 
-  statusClass(s: UserStatus) {
-    const tone =
-      s === 'Activo'
-        ? 'bg-emerald-50 text-emerald-700'
-        : s === 'Restringido'
-          ? 'bg-red-50 text-red-700'
-          : 'bg-slate-100 text-slate-600';
-    return 'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + tone;
+  confirmarAccion(): void {
+    const a = this.accion();
+    if (!a || this.guardando()) {
+      return;
+    }
+
+    const motivo = this.motivo().trim();
+    const peticion =
+      a.tipo === 'restringir'
+        ? this.adminService.restringir(a.id, motivo)
+        : this.adminService.liberar(a.id, motivo || undefined);
+
+    this.guardando.set(true);
+    this.errorAccion.set('');
+
+    peticion.subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.accion.set(null);
+        // Recarga la lista para mostrar el estado real guardado por el backend.
+        this.cargarUsuarios(true);
+      },
+      error: (error) => {
+        console.error('Error al actualizar el usuario:', error);
+        this.errorAccion.set(error?.error?.mensaje ?? 'No se pudo completar la acción.');
+        this.guardando.set(false);
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

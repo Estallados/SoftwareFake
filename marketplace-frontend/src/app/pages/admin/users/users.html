@@ -6,7 +6,7 @@
   </div>
 </div>
 
-<!-- Filtros -->
+<!-- ================= FILTROS ================= -->
 <div class="mt-7 grid grid-cols-[1fr_auto_auto] gap-3">
   <label class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -14,96 +14,139 @@
       <path d="m20 20-4-4" />
     </svg>
     <input
-      [value]="search()"
-      (input)="search.set($any($event.target).value)"
+      [value]="busqueda()"
+      (input)="onBusquedaChange($event)"
       aria-label="Buscar por nombre o correo"
       placeholder="Buscar por nombre o correo"
       class="w-full py-3 text-sm outline-none"
     />
   </label>
-  <select aria-label="Filtrar por rol" (change)="roleFilter.set($any($event.target).value)" class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+  <select aria-label="Filtrar por rol" [value]="filtroRol()" (change)="onRolChange($event)" class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
     <option value="Todos">Todos los roles</option>
-    <option>Huésped</option>
-    <option>Anfitrión</option>
-    <option>Administrador</option>
+    <option value="HUESPED">Huésped</option>
+    <option value="ANFITRION">Anfitrión</option>
+    <option value="ADMIN">Administrador</option>
   </select>
-  <select aria-label="Filtrar por estado" (change)="statusFilter.set($any($event.target).value)" class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+  <select aria-label="Filtrar por estado" [value]="filtroEstado()" (change)="onEstadoChange($event)" class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
     <option value="Todos">Todos los estados</option>
-    <option>Activo</option>
-    <option>Restringido</option>
-    <option>Inactivo</option>
+    <option value="ACTIVO">Activo</option>
+    <option value="RESTRINGIDO">Restringido</option>
+    <option value="INACTIVO">Inactivo</option>
   </select>
 </div>
 
-<!-- Tabla -->
+<!-- ================= TABLA ================= -->
 <div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-  <table class="w-full text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-    <tr>
-      @for (h of headers; track h) {
-        <th class="px-5 py-4 font-bold">{{ h }}</th>
+  <!-- CARGANDO -->
+  @if (loading()) {
+    <div class="animate-pulse divide-y divide-slate-100" aria-label="Cargando usuarios" aria-busy="true">
+      <div class="h-12 bg-slate-50"></div>
+      @for (item of [1, 2, 3, 4, 5]; track item) {
+        <div class="flex items-center gap-6 px-5 py-5">
+          <div class="h-4 w-40 rounded-md bg-neutral-200"></div>
+          <div class="h-4 w-56 rounded-md bg-neutral-200"></div>
+          <div class="h-4 w-20 rounded-md bg-neutral-200"></div>
+          <div class="h-4 w-20 rounded-md bg-neutral-200"></div>
+          <div class="h-4 w-24 rounded-md bg-neutral-200"></div>
+        </div>
       }
-    </tr>
-    </thead>
-    <tbody>
-      @for (u of filtered(); track u.id) {
-        <tr class="border-t border-slate-100 hover:bg-slate-50">
-          <td class="px-5 py-5"><strong>{{ u.firstName }} {{ u.lastName }}</strong></td>
-          <td class="px-5 py-5">{{ u.email }}</td>
-          <td class="px-5 py-5">
-            <span class="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">{{ u.role }}</span>
-          </td>
-          <td class="px-5 py-5"><span [class]="statusClass(u.status)">{{ u.status }}</span></td>
-          <td class="px-5 py-5">{{ u.registered }}</td>
-          <td class="px-5 py-5">
-            <div class="flex gap-3">
-              <button type="button" (click)="open(u.id)" class="font-bold text-emerald-700">Ver detalles</button>
+    </div>
+  } @else if (errorCarga()) {
+    <!-- ERROR -->
+    <div class="px-6 py-16 text-center">
+      <div class="mx-auto grid size-14 place-items-center rounded-full bg-red-100 text-red-600">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v4M12 16h.01" />
+        </svg>
+      </div>
+      <h2 class="font-display mt-5 text-2xl font-bold text-slate-900">No pudimos cargar los usuarios</h2>
+      <p class="mt-2 text-sm text-slate-500">Comprueba tu conexión e inténtalo de nuevo.</p>
+      <button
+        type="button"
+        (click)="reintentar()"
+        class="mt-6 rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else {
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+      <tr>
+        @for (h of encabezados; track h) {
+          <th class="px-5 py-4 font-bold">{{ h }}</th>
+        }
+      </tr>
+      </thead>
+      <tbody>
+        @for (u of visibles(); track u.idUsuario) {
+          <tr class="border-t border-slate-100 hover:bg-slate-50">
+            <td class="px-5 py-5"><strong>{{ u.nombre }}</strong></td>
+            <td class="px-5 py-5">{{ u.correo }}</td>
+            <td class="px-5 py-5">
+              <span class="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">{{ u.rol }}</span>
+            </td>
+            <td class="px-5 py-5"><span [class]="claseEstado(u)">{{ u.estado }}</span></td>
+            <td class="px-5 py-5">{{ u.fechaRegistro | date: 'dd/MM/yyyy' }}</td>
+            <td class="px-5 py-5">
+              <div class="flex gap-3">
+                <button type="button" (click)="abrirUsuario(u.idUsuario)" class="font-bold text-emerald-700">Ver detalles</button>
+                <button
+                  type="button"
+                  (click)="pedirAccion(u)"
+                  class="font-bold"
+                  [class]="esActivo(u) ? 'text-red-600' : 'text-emerald-700'"
+                >
+                  {{ esActivo(u) ? 'Restringir' : 'Activar' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="px-5 py-14 text-center">
+              <p class="text-sm text-slate-500">No se encontraron usuarios con esos filtros.</p>
               <button
                 type="button"
-                (click)="askAction(u)"
-                class="font-bold"
-                [class]="u.status === 'Activo' ? 'text-red-600' : 'text-emerald-700'"
+                (click)="limpiarFiltros()"
+                class="mt-4 rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-800 transition hover:border-emerald-300 hover:bg-emerald-50"
               >
-                {{ u.status === 'Activo' ? 'Restringir' : 'Activar' }}
+                Limpiar filtros
               </button>
-            </div>
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
-  <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
-    <span>Mostrando {{ filtered().length }} resultados</span>
-    <div class="flex gap-2">
-      <span class="rounded-lg border px-3 py-2 text-slate-300">Anterior</span>
-      <span class="rounded-lg bg-emerald-700 px-3 py-2 text-white">1</span>
-      <span class="rounded-lg border px-3 py-2 text-slate-300">Siguiente</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
+      Mostrando {{ visibles().length }} de {{ usuarios().length }} usuarios
     </div>
-  </div>
+  }
 </div>
 
-<!-- Modal de confirmación -->
+<!-- ================= MODAL DE CONFIRMACIÓN ================= -->
 @if (modal(); as m) {
   <div class="fixed inset-0 z-[70] grid place-items-center bg-slate-950/55 p-6 backdrop-blur-sm">
     <div class="w-full max-w-md rounded-[28px] bg-white p-8 shadow-2xl">
       <div class="flex justify-between">
         <div>
-          <h2 class="font-display text-3xl font-bold">{{ m.title }}</h2>
-          <p class="mt-3 text-sm leading-6 text-slate-500">{{ m.text }}</p>
+          <h2 class="font-display text-3xl font-bold">{{ m.titulo }}</h2>
+          <p class="mt-3 text-sm leading-6 text-slate-500">{{ m.texto }}</p>
         </div>
-        <button type="button" (click)="closeAction()" aria-label="Cerrar" class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100">
+        <button type="button" (click)="cerrarAccion()" aria-label="Cerrar" class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      @if (m.needsReason) {
+      @if (m.necesitaMotivo) {
         <label class="mt-6 block">
-          <span class="mb-2 block text-sm font-bold">{{ m.label }} <span class="text-red-500">*</span></span>
+          <span class="mb-2 block text-sm font-bold">{{ m.etiqueta }} <span class="text-red-500">*</span></span>
           <textarea
-            [value]="reason()"
-            (input)="reason.set($any($event.target).value)"
+            [value]="motivo()"
+            (input)="onMotivoChange($event)"
             rows="3"
             placeholder="Describe brevemente el motivo..."
             class="w-full rounded-xl border border-slate-200 p-4 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -111,18 +154,22 @@
         </label>
       }
 
+      @if (errorAccion()) {
+        <p class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ errorAccion() }}</p>
+      }
+
       <div class="mt-7 flex gap-3">
-        <button type="button" (click)="closeAction()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50">
+        <button type="button" (click)="cerrarAccion()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50">
           Cancelar
         </button>
         <button
           type="button"
-          (click)="confirmAction()"
-          [disabled]="m.needsReason && !reason().trim()"
+          (click)="confirmarAccion()"
+          [disabled]="guardando() || (m.necesitaMotivo && !motivo().trim())"
           class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-45"
-          [class]="m.needsReason ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800'"
+          [class]="m.necesitaMotivo ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800'"
         >
-          {{ m.confirm }}
+          {{ guardando() ? 'Guardando...' : m.confirmar }}
         </button>
       </div>
     </div>
