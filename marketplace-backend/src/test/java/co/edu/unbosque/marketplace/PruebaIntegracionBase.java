@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
 import co.edu.unbosque.marketplace.service.CloudinaryService;
 import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
+import co.edu.unbosque.marketplace.service.GeocodingService;
 
 /**
  * Base de las pruebas de integración de los módulos 2 a 9: un contexto Spring
@@ -78,6 +79,10 @@ abstract class PruebaIntegracionBase {
 	/** Evita subir imágenes a Cloudinary: cada subida devuelve una URL simulada. */
 	@MockBean
 	protected CloudinaryService cloudinaryService;
+
+	/** Evita consultar Nominatim: sin configurar, no encuentra ninguna dirección. */
+	@MockBean
+	protected GeocodingService geocodingService;
 
 	@BeforeEach
 	void simularCloudinary() {

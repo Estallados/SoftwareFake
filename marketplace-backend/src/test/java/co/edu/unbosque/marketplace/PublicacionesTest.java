@@ -3,6 +3,11 @@ package co.edu.unbosque.marketplace;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -22,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
 import co.edu.unbosque.marketplace.repository.AuditoriaRepository;
 import co.edu.unbosque.marketplace.service.AuditoriaService;
+import co.edu.unbosque.marketplace.service.GeocodingService.Coordenadas;
 
 /** Módulo 2: publicaciones, ciclo de estados, servicios adicionales y tarifas. */
 class PublicacionesTest extends PruebaIntegracionBase {
@@ -370,5 +377,72 @@ class PublicacionesTest extends PruebaIntegracionBase {
 	void lasPoliticasDeCancelacionSonPublicas() throws Exception {
 		JsonNode politicas = llamar(get("/alojamientos/politicas"), null, null, 200);
 		assertTrue(politicas.toString().contains("MODERADA"));
+	}
+
+	// ----- ubicación en el mapa (RNF-032, CA-164) -----
+
+	private Map<String, Object> datosSinCoordenadas(String ubicacion, String ciudad) {
+		Map<String, Object> datos = datosAlojamiento(ciudad, "Casa", 4, new BigDecimal("150000"), Set.of("wifi"),
+				"FLEXIBLE");
+		datos.remove("latitud");
+		datos.remove("longitud");
+		datos.put("ubicacion", ubicacion);
+		return datos;
+	}
+
+	@Test
+	void alCrearSinCoordenadasSeUbicaConLaDireccionYLaCiudad() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		when(geocodingService.ubicar("Calle 70A # 4-41", "Bogotá"))
+				.thenReturn(Optional.of(new Coordenadas(4.6546, -74.0579)));
+
+		JsonNode creado = crearBorrador(anfitrion, datosSinCoordenadas("Calle 70A # 4-41", "Bogotá"), 201);
+
+		assertEquals(4.6546, creado.get("latitud").asDouble());
+		assertEquals(-74.0579, creado.get("longitud").asDouble());
+		JsonNode publico = llamar(get("/alojamientos/" + creado.get("idAlojamiento").asLong()), anfitrion.token(),
+				null, 200);
+		assertEquals(4.6546, publico.get("latitud").asDouble());
+	}
+
+	@Test
+	void siNoSeEncuentraLaDireccionElAlojamientoSeCreaSinCoordenadas() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+
+		JsonNode creado = crearBorrador(anfitrion, datosSinCoordenadas("Vereda sin nombre", "Ningunaparte"), 201);
+
+		assertTrue(creado.get("latitud").isNull());
+		assertTrue(creado.get("longitud").isNull());
+	}
+
+	@Test
+	void lasCoordenadasEnviadasSeRespetanSinBuscarlas() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+
+		JsonNode creado = crearBorrador(anfitrion, datosAlojamiento("Bogotá", "Casa", 4, new BigDecimal("150000"),
+				Set.of("wifi"), "FLEXIBLE"), 201);
+
+		assertEquals(4.711, creado.get("latitud").asDouble());
+		verify(geocodingService, never()).ubicar(any(), any());
+	}
+
+	@Test
+	void alCambiarLaDireccionSeVuelveAUbicarYSiNoCambiaNo() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		when(geocodingService.ubicar("Carrera 37 # 8A-24, El Poblado", "Medellín"))
+				.thenReturn(Optional.of(new Coordenadas(6.2092, -75.5666)));
+		Long id = crearBorrador(anfitrion, datosAlojamiento("Bogotá", "Casa", 4, new BigDecimal("150000"),
+				Set.of("wifi"), "FLEXIBLE"));
+
+		JsonNode editado = actualizarAlojamiento(anfitrion, id,
+				Map.of("ubicacion", "Carrera 37 # 8A-24, El Poblado", "ciudad", "Medellín"), 200);
+		assertEquals(6.2092, editado.get("latitud").asDouble());
+		assertEquals(-75.5666, editado.get("longitud").asDouble());
+
+		clearInvocations(geocodingService);
+		editado = actualizarAlojamiento(anfitrion, id,
+				Map.of("ubicacion", "Carrera 37 # 8A-24, El Poblado", "titulo", "Casa en El Poblado"), 200);
+		assertEquals(6.2092, editado.get("latitud").asDouble());
+		verify(geocodingService, never()).ubicar(any(), any());
 	}
 }

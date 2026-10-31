@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -44,6 +45,7 @@ import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.HistorialEstadoAlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ImagenRepository;
 import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
+import co.edu.unbosque.marketplace.service.GeocodingService.Coordenadas;
 import co.edu.unbosque.marketplace.repository.PeriodoDisponibilidadRepository;
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
 import co.edu.unbosque.marketplace.repository.ResenaRepository;
@@ -107,6 +109,7 @@ public class PublicacionService {
     private final AlmacenamientoService almacenamientoService;
     private final AuditoriaService auditoriaService;
     private final NotificacionService notificacionService;
+    private final GeocodingService geocodingService;
     private final ModelMapper modelMapper;
 
     public PublicacionService(AlojamientoRepository alojamientoRepo, ImagenRepository imagenRepo,
@@ -114,7 +117,8 @@ public class PublicacionService {
             ServicioAdicionalRepository servicioRepo, PoliticaCancelacionRepository politicaRepo,
             HistorialEstadoAlojamientoRepository historialRepo, ReservaRepository reservaRepo,
             ResenaRepository resenaRepo, UsuarioRepository usuarioRepo, AlmacenamientoService almacenamientoService,
-            AuditoriaService auditoriaService, NotificacionService notificacionService, ModelMapper modelMapper) {
+            AuditoriaService auditoriaService, NotificacionService notificacionService,
+            GeocodingService geocodingService, ModelMapper modelMapper) {
         this.alojamientoRepo = alojamientoRepo;
         this.imagenRepo = imagenRepo;
         this.periodoRepo = periodoRepo;
@@ -127,6 +131,7 @@ public class PublicacionService {
         this.almacenamientoService = almacenamientoService;
         this.auditoriaService = auditoriaService;
         this.notificacionService = notificacionService;
+        this.geocodingService = geocodingService;
         this.modelMapper = modelMapper;
     }
 
@@ -303,7 +308,8 @@ public class PublicacionService {
      * menos una imagen: el borrador puede guardarse con otros datos
      * incompletos, pero nunca sin imagen, la misma regla que se exige al
      * enviarlo a revisión. La primera imagen queda como principal. El id, el
-     * estado y el propietario enviados se ignoran.
+     * estado y el propietario enviados se ignoran. Si no llegan coordenadas,
+     * se buscan con la dirección y la ciudad ({@link GeocodingService}).
      *
      * @param archivos Imágenes (JPG, PNG o WEBP de hasta 5 MB), entre 1 y
      *                 {@link #MAXIMO_IMAGENES}.
@@ -324,6 +330,9 @@ public class PublicacionService {
 
         Alojamiento alojamiento = new Alojamiento();
         aplicar(datos, alojamiento);
+        if (sinCoordenadas(datos)) {
+            ubicarEnMapa(alojamiento);
+        }
         alojamiento.setIdAnfitrion(idAnfitrion);
         alojamiento.setEstado(EstadoAlojamiento.BORRADOR);
         alojamiento.setFechaCreacion(LocalDateTime.now());
@@ -343,7 +352,8 @@ public class PublicacionService {
      * se dejan como están; las amenidades enviadas reemplazan a las
      * anteriores. El estado, el propietario y las imágenes no se cambian por
      * esta vía: las imágenes se gestionan con {@link #subirImagenes},
-     * {@link #eliminarImagen} y {@link #marcarPrincipal}.
+     * {@link #eliminarImagen} y {@link #marcarPrincipal}. Si cambian la
+     * dirección o la ciudad y no llegan coordenadas, se vuelven a buscar.
      *
      * @return 0 con la publicación; 1 no existe; 2 datos inválidos; 3 sin permiso.
      * @see "RF-018, CA-100, CA-101, CA-113, CA-114"
@@ -362,7 +372,14 @@ public class PublicacionService {
         }
 
         Alojamiento alojamiento = carga.getDato();
+        String direccionAnterior = alojamiento.getUbicacion();
+        String ciudadAnterior = alojamiento.getCiudad();
         aplicar(datos, alojamiento);
+        boolean cambioDireccion = !Objects.equals(direccionAnterior, alojamiento.getUbicacion())
+                || !Objects.equals(ciudadAnterior, alojamiento.getCiudad());
+        if (cambioDireccion && sinCoordenadas(datos)) {
+            ubicarEnMapa(alojamiento);
+        }
         alojamiento.setFechaActualizacion(LocalDateTime.now());
         alojamiento = alojamientoRepo.save(alojamiento);
 
@@ -908,6 +925,22 @@ public class PublicacionService {
             return "La política de cancelación no existe.";
         }
         return null;
+    }
+
+    private static boolean sinCoordenadas(AlojamientoDTO datos) {
+        return datos.getLatitud() == null && datos.getLongitud() == null;
+    }
+
+    /**
+     * Guarda las coordenadas de la dirección y la ciudad; si no se encuentran,
+     * las deja en null (el front muestra entonces la zona de la ciudad) para no
+     * conservar las de una dirección anterior.
+     */
+    private void ubicarEnMapa(Alojamiento alojamiento) {
+        Optional<Coordenadas> coordenadas = geocodingService.ubicar(alojamiento.getUbicacion(),
+                alojamiento.getCiudad());
+        alojamiento.setLatitud(coordenadas.map(Coordenadas::latitud).orElse(null));
+        alojamiento.setLongitud(coordenadas.map(Coordenadas::longitud).orElse(null));
     }
 
     private static void aplicar(AlojamientoDTO datos, Alojamiento alojamiento) {

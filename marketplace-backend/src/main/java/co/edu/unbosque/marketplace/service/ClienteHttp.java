@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.service;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -16,8 +17,8 @@ import org.springframework.web.client.RestClient;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Cliente HTTP común para las APIs externas (Stripe y las claves públicas de
- * Google). Todas las peticiones tienen tiempo máximo de conexión y de lectura,
+ * Cliente HTTP común para las APIs externas (Stripe, las claves públicas de
+ * Google y Nominatim). Todas las peticiones tienen tiempo máximo de conexión y de lectura,
  * así una API lenta no deja colgada la petición del usuario.
  */
 @Component
@@ -30,7 +31,12 @@ public class ClienteHttp {
 
 	@Autowired
 	public ClienteHttp() {
-		this(RestClient.builder().requestFactory(fabricaConTiempos()).build());
+		this(TIEMPO_CONEXION, TIEMPO_LECTURA);
+	}
+
+	/** Cliente con otros tiempos máximos, para APIs que deben responder rápido. */
+	public ClienteHttp(Duration tiempoConexion, Duration tiempoLectura) {
+		this(RestClient.builder().requestFactory(fabricaConTiempos(tiempoConexion, tiempoLectura)).build());
 	}
 
 	/**
@@ -41,10 +47,10 @@ public class ClienteHttp {
 		this.restClient = restClient;
 	}
 
-	private static SimpleClientHttpRequestFactory fabricaConTiempos() {
+	private static SimpleClientHttpRequestFactory fabricaConTiempos(Duration tiempoConexion, Duration tiempoLectura) {
 		SimpleClientHttpRequestFactory fabrica = new SimpleClientHttpRequestFactory();
-		fabrica.setConnectTimeout(TIEMPO_CONEXION);
-		fabrica.setReadTimeout(TIEMPO_LECTURA);
+		fabrica.setConnectTimeout(tiempoConexion);
+		fabrica.setReadTimeout(tiempoLectura);
 		return fabrica;
 	}
 
@@ -59,6 +65,19 @@ public class ClienteHttp {
 	 */
 	public ResponseEntity<JsonNode> getJson(String url) {
 		return restClient.get().uri(url).retrieve().toEntity(JsonNode.class);
+	}
+
+	/**
+	 * GET que espera JSON, con una URI ya codificada (no se vuelve a codificar) y
+	 * encabezados propios.
+	 *
+	 * @throws org.springframework.web.client.RestClientException si no hay
+	 *                                                            comunicación o la
+	 *                                                            API responde con
+	 *                                                            un error.
+	 */
+	public JsonNode getJson(URI uri, Map<String, String> encabezados) {
+		return restClient.get().uri(uri).headers(h -> encabezados.forEach(h::set)).retrieve().body(JsonNode.class);
 	}
 
 	/**
