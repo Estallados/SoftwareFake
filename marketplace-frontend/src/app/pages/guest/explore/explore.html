@@ -379,13 +379,13 @@
           class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3"
         >
           @for (s of visible(); track s.idAlojamiento) {
-            <article
-              class="group min-w-0 cursor-pointer"
-              role="link"
-              tabindex="0"
-              (click)="openStay(s.idAlojamiento)"
-              (keydown.enter)="openStay(s.idAlojamiento)"
-            >
+            <article class="group min-w-0">
+              <a
+                class="block min-w-0 cursor-pointer"
+                (click)="openStay(s.idAlojamiento)"
+              >
+
+
               <!-- Imagen -->
               <div
                 class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100"
@@ -404,6 +404,7 @@
                 </span>
                 <!-- Favoritos -->
                 @if (favoritoService.disponible()) {
+
                   <button
                     type="button"
                     (click)="$event.stopPropagation(); favoritoService.toggle(s.idAlojamiento)"
@@ -475,6 +476,8 @@
                   / noche
                 </span>
               </p>
+              </a>
+
             </article>
           } @empty {
             <!-- SIN RESULTADOS -->
