@@ -30,10 +30,12 @@ export class ReservaService {
   }
   /** Clave única por intento de pago (1 a 100 caracteres). */
   nuevaClaveIdempotencia(): string {
-    return (
-      globalThis.crypto?.randomUUID?.() ??
-      `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    );
+    const c = globalThis.crypto;
+    if (c.randomUUID) {
+      return c.randomUUID(); // requiere contexto seguro (https o localhost)
+    }
+    // Alternativa criptográficamente segura que también funciona sin https: 32 caracteres hex.
+    return Array.from(c.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
   }
   /** Mensaje legible a partir de un error HTTP del backend. */
   mensajeDeError(error: HttpErrorResponse, porDefecto: string): string {
