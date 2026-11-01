@@ -7,9 +7,14 @@ package co.edu.unbosque.marketplace.dto;
  */
 public class DemandaCiudadDTO {
 	private String ciudad;
-	private Long reservas;
+	private Long totalReservas;
 
 	public DemandaCiudadDTO() {
+	}
+
+	public DemandaCiudadDTO(String ciudad, Long totalReservas) {
+		this.ciudad = ciudad;
+		this.totalReservas = totalReservas;
 	}
 
 	public String getCiudad() {
@@ -20,11 +25,11 @@ public class DemandaCiudadDTO {
 		this.ciudad = ciudad;
 	}
 
-	public Long getReservas() {
-		return reservas;
+	public Long getTotalReservas() {
+		return totalReservas;
 	}
 
-	public void setReservas(Long reservas) {
-		this.reservas = reservas;
+	public void setTotalReservas(Long totalReservas) {
+		this.totalReservas = totalReservas;
 	}
 }

@@ -2,7 +2,9 @@ package co.edu.unbosque.marketplace.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import co.edu.unbosque.marketplace.dto.CancelacionDTO;
 import co.edu.unbosque.marketplace.dto.PagoDTO;
 import co.edu.unbosque.marketplace.dto.PaginaDTO;
+import co.edu.unbosque.marketplace.dto.ReservaAdminDTO;
 import co.edu.unbosque.marketplace.dto.ReservaDTO;
 import co.edu.unbosque.marketplace.dto.SolicitudReservaDTO;
 import co.edu.unbosque.marketplace.entity.Alojamiento;
@@ -174,13 +177,13 @@ public class ReservaService {
 
     /**
      * Todas las reservas de la plataforma, o solo las de un estado (vista del
-     * administrador).
+     * administrador), en forma resumida: una sola consulta por página.
      *
      * @see "RF-005, RF-022"
      */
-    public PaginaDTO<ReservaDTO> listarTodas(EstadoReserva estado, Pageable pagina) {
-        return PaginaDTO.de(estado == null ? reservaRepo.findAll(pagina) : reservaRepo.findByEstado(estado, pagina),
-                this::convertirDTO);
+    public PaginaDTO<ReservaAdminDTO> listarTodas(EstadoReserva estado, Pageable pagina) {
+        List<EstadoReserva> estados = estado == null ? List.of(EstadoReserva.values()) : List.of(estado);
+        return PaginaDTO.de(reservaRepo.listarResumenAdmin(estados, pagina), Function.identity());
     }
 
     /**

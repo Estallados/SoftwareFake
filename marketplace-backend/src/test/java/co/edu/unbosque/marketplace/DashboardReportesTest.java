@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
+import co.edu.unbosque.marketplace.entity.EstadoReserva;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.RegistroExportacionRepository;
 
@@ -61,12 +62,41 @@ class DashboardReportesTest extends PruebaIntegracionBase {
 		JsonNode dashboard = llamar(get("/admin/dashboard"), tokenAdmin(), null, 200);
 
 		assertTrue(dashboard.get("totalUsuarios").asLong() >= 3);
+		JsonNode alojamientos = dashboard.get("alojamientos");
+		assertEquals(alojamientoRepo.count(), alojamientos.get("total").asLong());
 		assertEquals(alojamientoRepo.countByEstado(EstadoAlojamiento.ACTIVA),
-				dashboard.get("alojamientosActivos").asLong());
-		assertTrue(dashboard.get("reservasPorEstado").get("CONFIRMADA").asLong() >= 2);
-		assertTrue(dashboard.get("reservasPorEstado").has("CANCELADA"));
-		assertTrue(dashboard.get("ingresosEstimados").decimalValue().signum() > 0);
-		assertTrue(dashboard.get("ciudadesMayorDemanda").isArray());
+				alojamientos.get("porEstado").get("ACTIVA").asLong());
+		for (EstadoAlojamiento estado : EstadoAlojamiento.values()) {
+			assertTrue(alojamientos.get("porEstado").has(estado.name()), estado.name());
+		}
+		JsonNode reservas = dashboard.get("reservas");
+		assertTrue(reservas.get("porEstado").get("CONFIRMADA").asLong() >= 2);
+		long suma = 0;
+		for (EstadoReserva estado : EstadoReserva.values()) {
+			suma += reservas.get("porEstado").get(estado.name()).asLong();
+		}
+		assertEquals(reservas.get("total").asLong(), suma);
+		assertTrue(reservas.has("confirmadasFinalizadas"));
+		JsonNode ciudades = dashboard.get("ciudadesTop");
+		assertTrue(ciudades.isArray() && ciudades.size() <= 5);
+		for (int i = 1; i < ciudades.size(); i++) {
+			assertTrue(ciudades.get(i - 1).get("totalReservas").asLong() >= ciudades.get(i).get("totalReservas")
+					.asLong());
+		}
+	}
+
+	@Test
+	void elDashboardLimitaLasCiudadesTop() throws Exception {
+		Sesion huesped = registrar("HUESPED");
+		for (int i = 0; i < 2; i++) {
+			Long id = crearAlojamientoActivo(registrar("ANFITRION"), unico("Top"), "Casa", 4,
+					new BigDecimal("100000"), Set.of(), "FLEXIBLE");
+			reservaConfirmada(huesped, id, 10, 2);
+		}
+
+		JsonNode dashboard = llamar(get("/admin/dashboard?topCiudades=1"), tokenAdmin(), null, 200);
+
+		assertEquals(1, dashboard.get("ciudadesTop").size());
 	}
 
 	@Test

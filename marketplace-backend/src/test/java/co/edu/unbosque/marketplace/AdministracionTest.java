@@ -100,7 +100,12 @@ class AdministracionTest extends PruebaIntegracionBase {
 
 		JsonNode confirmadas = llamar(get("/admin/reservas?estado=CONFIRMADA&tamanio=100"), admin, null, 200);
 		assertTrue(confirmadas.get("contenido").toString().contains("\"idReserva\":" + idReserva));
-		assertTrue(confirmadas.get("contenido").get(0).hasNonNull("nombreHuesped"));
+		JsonNode fila = confirmadas.get("contenido").get(0);
+		for (String campo : new String[] { "nombreHuesped", "tituloAlojamiento", "ciudad", "nombreAnfitrion",
+				"fechaEntrada", "fechaSalida", "noches", "total", "estado" }) {
+			assertTrue(fila.hasNonNull(campo), campo);
+		}
+		assertFalse(fila.has("desglose") || fila.has("pago") || fila.has("cancelacion"));
 		JsonNode canceladas = llamar(get("/admin/reservas?estado=CANCELADA&tamanio=100"), admin, null, 200);
 		assertFalse(canceladas.get("contenido").toString().contains("\"idReserva\":" + idReserva));
 

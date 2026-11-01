@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import co.edu.unbosque.marketplace.dto.ReservaAdminDTO;
 import co.edu.unbosque.marketplace.entity.EstadoReserva;
 import co.edu.unbosque.marketplace.entity.Reserva;
 
@@ -42,9 +43,6 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
 	public Page<Reserva> findByIdHuesped(Long idHuesped, Pageable pageable);
 
-	/** Todas las reservas en un estado (vista del administrador). */
-	public Page<Reserva> findByEstado(EstadoReserva estado, Pageable pageable);
-
 	/** Cantidad de reservas de un alojamiento en los estados indicados. */
 	public long countByIdAlojamientoAndEstadoIn(Long idAlojamiento, Collection<EstadoReserva> estados);
 
@@ -70,6 +68,30 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 			+ "and r.estado <> co.edu.unbosque.marketplace.entity.EstadoReserva.CANCELADA "
 			+ "group by a.ciudad order by count(r) desc")
 	public List<Object[]> contarPorCiudad();
+
+	/**
+	 * Ciudades con más reservas, contando todos los estados: total descendente y,
+	 * en empate, nombre ascendente. El {@code Pageable} limita la cantidad. Cada
+	 * fila es [ciudad, cantidad].
+	 */
+	@Query("select a.ciudad, count(r) from Reserva r join r.alojamiento a "
+			+ "group by a.ciudad order by count(r) desc, a.ciudad asc")
+	public List<Object[]> contarCiudadesTop(Pageable limite);
+
+	/** Cantidad de reservas en un estado con salida anterior a la fecha. */
+	public long countByEstadoAndFechaSalidaBefore(EstadoReserva estado, LocalDate fecha);
+
+	/**
+	 * Listado resumido del administrador en los estados indicados: una sola
+	 * consulta por página, con los nombres del huésped, el alojamiento y el
+	 * anfitrión.
+	 */
+	@Query(value = "select new co.edu.unbosque.marketplace.dto.ReservaAdminDTO(r.idReserva, h.nombre, a.titulo, "
+			+ "a.ciudad, an.nombre, r.fechaEntrada, r.fechaSalida, r.noches, r.total, r.estado) "
+			+ "from Reserva r left join r.huesped h left join r.alojamiento a left join a.anfitrion an "
+			+ "where r.estado in :estados", countQuery = "select count(r) from Reserva r where r.estado in :estados")
+	public Page<ReservaAdminDTO> listarResumenAdmin(@Param("estados") Collection<EstadoReserva> estados,
+			Pageable pageable);
 
 	@Query("select coalesce(sum(r.total), 0) from Reserva r where r.estado in :estados")
 	public BigDecimal sumarTotales(@Param("estados") Collection<EstadoReserva> estados);

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
@@ -22,6 +23,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -371,6 +374,21 @@ class PublicacionesTest extends PruebaIntegracionBase {
 		JsonNode cotizacion = cotizar(huesped, id, 3, 1, 1, List.of(), 201);
 
 		assertEquals(0, new BigDecimal("3").compareTo(cotizacion.get("porcentajeServicio").decimalValue()));
+	}
+
+	@Test
+	void sePuedeCrearConDatosComoTextoComoLoEnviaElFront() throws Exception {
+		Sesion anfitrion = registrar("ANFITRION");
+		MockMultipartHttpServletRequestBuilder peticion = multipart("/alojamientos");
+		// FormData.append('datos', JSON.stringify(...)) llega sin tipo de contenido
+		peticion.file(new MockMultipartFile("datos", "", null,
+				json.writeValueAsBytes(Map.of("titulo", "Desde el front", "ciudad", "Chía"))));
+		peticion.file(imagen("foto.png", PNG));
+
+		JsonNode creado = llamar(peticion, anfitrion.token(), null, 201);
+
+		assertEquals("Desde el front", creado.get("titulo").asText());
+		assertEquals("Chía", creado.get("ciudad").asText());
 	}
 
 	@Test

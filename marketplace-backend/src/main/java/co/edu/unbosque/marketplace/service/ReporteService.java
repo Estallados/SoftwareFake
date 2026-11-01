@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -8,10 +9,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.edu.unbosque.marketplace.dto.ConteoPorEstadoDTO;
+import co.edu.unbosque.marketplace.dto.ConteoReservasDTO;
 import co.edu.unbosque.marketplace.dto.DashboardDTO;
 import co.edu.unbosque.marketplace.dto.DemandaCiudadDTO;
 import co.edu.unbosque.marketplace.dto.PaginaDTO;
@@ -56,7 +60,9 @@ public class ReporteService {
 	/** Formatos disponibles. */
 	public static final List<String> FORMATOS = List.of("pdf", "excel");
 
-	private static final int CIUDADES_DASHBOARD = 5;
+	/** Ciudades del dashboard por defecto. */
+	public static final int CIUDADES_DASHBOARD = 5;
+	private static final int CIUDADES_MAXIMAS = 50;
 	private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 	private static final List<EstadoPago> PAGOS_COBRADOS = List.of(EstadoPago.APROBADO, EstadoPago.REEMBOLSADO);
 
@@ -81,26 +87,48 @@ public class ReporteService {
 	}
 
 	/**
-	 * Indicadores del dashboard.
+	 * Indicadores del dashboard, todos con consultas agregadas (COUNT y GROUP
+	 * BY). Los conteos por estado traen todos los estados, con 0 si no hay.
 	 *
+	 * @param topCiudades cantidad de ciudades con más reservas (entre 1 y
+	 *                    {@value #CIUDADES_MAXIMAS}).
 	 * @see "CA-022, CA-023, CA-024, CA-025, CA-026"
 	 */
-	public DashboardDTO dashboard() {
+	@Transactional(readOnly = true)
+	public DashboardDTO dashboard(int topCiudades) {
 		DashboardDTO dto = new DashboardDTO();
 		dto.setTotalUsuarios(usuarioRepo.count());
-		dto.setAlojamientosActivos(alojamientoRepo.countByEstado(EstadoAlojamiento.ACTIVA));
 
+		ConteoPorEstadoDTO alojamientos = new ConteoPorEstadoDTO();
+		llenarConteo(alojamientos, EstadoAlojamiento.values(), alojamientoRepo.contarPorEstado());
+		dto.setAlojamientos(alojamientos);
+
+		ConteoReservasDTO reservas = new ConteoReservasDTO();
+		llenarConteo(reservas, EstadoReserva.values(), reservaRepo.contarPorEstado());
+		reservas.setConfirmadasFinalizadas(
+				reservaRepo.countByEstadoAndFechaSalidaBefore(EstadoReserva.CONFIRMADA, LocalDate.now()));
+		dto.setReservas(reservas);
+
+		int limite = Math.min(Math.max(topCiudades, 1), CIUDADES_MAXIMAS);
+		dto.setCiudadesTop(reservaRepo.contarCiudadesTop(PageRequest.of(0, limite)).stream()
+				.map(ReporteService::demandaDesde).toList());
+		return dto;
+	}
+
+	/** Pone 0 en cada estado, aplica las filas [estado, cantidad] y suma el total. */
+	private static void llenarConteo(ConteoPorEstadoDTO conteo, Enum<?>[] estados, List<Object[]> filas) {
 		Map<String, Long> porEstado = new LinkedHashMap<>();
-		for (EstadoReserva estado : EstadoReserva.values()) {
+		for (Enum<?> estado : estados) {
 			porEstado.put(estado.name(), 0L);
 		}
-		for (Object[] fila : reservaRepo.contarPorEstado()) {
-			porEstado.put(fila[0].toString(), (Long) fila[1]);
+		long total = 0;
+		for (Object[] fila : filas) {
+			long cantidad = (Long) fila[1];
+			porEstado.put(fila[0].toString(), cantidad);
+			total += cantidad;
 		}
-		dto.setReservasPorEstado(porEstado);
-		dto.setIngresosEstimados(ingresosEstimados());
-		dto.setCiudadesMayorDemanda(demanda().stream().limit(CIUDADES_DASHBOARD).toList());
-		return dto;
+		conteo.setPorEstado(porEstado);
+		conteo.setTotal(total);
 	}
 
 	/**
@@ -202,8 +230,9 @@ public class ReporteService {
 			break;
 		default:
 			encabezados.addAll(List.of("Ciudad", "Reservas"));
-			for (DemandaCiudadDTO demanda : demanda()) {
-				filas.add(List.of(demanda.getCiudad(), texto(demanda.getReservas())));
+			for (Object[] fila : reservaRepo.contarPorCiudad()) {
+				DemandaCiudadDTO demanda = demandaDesde(fila);
+				filas.add(List.of(demanda.getCiudad(), texto(demanda.getTotalReservas())));
 			}
 			break;
 		}
@@ -213,15 +242,9 @@ public class ReporteService {
 		return pagoRepo.sumarValores(PAGOS_COBRADOS).subtract(cancelacionRepo.sumarReembolsos());
 	}
 
-	private List<DemandaCiudadDTO> demanda() {
-		List<DemandaCiudadDTO> resultado = new ArrayList<>();
-		for (Object[] fila : reservaRepo.contarPorCiudad()) {
-			DemandaCiudadDTO demanda = new DemandaCiudadDTO();
-			demanda.setCiudad(fila[0] == null ? "Sin ciudad" : fila[0].toString());
-			demanda.setReservas((Long) fila[1]);
-			resultado.add(demanda);
-		}
-		return resultado;
+	/** Convierte una fila [ciudad, cantidad] en {@link DemandaCiudadDTO}. */
+	private static DemandaCiudadDTO demandaDesde(Object[] fila) {
+		return new DemandaCiudadDTO(fila[0] == null ? "Sin ciudad" : fila[0].toString(), (Long) fila[1]);
 	}
 
 	private static String texto(Object valor) {

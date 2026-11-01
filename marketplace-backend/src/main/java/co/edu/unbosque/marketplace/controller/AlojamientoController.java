@@ -36,6 +36,10 @@ import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.RespuestaUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -63,6 +67,26 @@ public class AlojamientoController {
 	public AlojamientoController(PublicacionService publicacionService, ObjectMapper objectMapper) {
 		this.publicacionService = publicacionService;
 		this.objectMapper = objectMapper;
+	}
+
+	/** Solo para Swagger: los dos campos del formulario de {@link #crear}. */
+	@Schema(name = "FormularioAlojamiento")
+	static final class FormularioAlojamiento {
+
+		private AlojamientoDTO datos;
+		private List<MultipartFile> archivos;
+
+		@Schema(description = "JSON del alojamiento (solo el título es obligatorio en el borrador). El id, el "
+				+ "estado y el anfitrión se ignoran.", requiredMode = Schema.RequiredMode.REQUIRED)
+		public AlojamientoDTO getDatos() {
+			return datos;
+		}
+
+		@ArraySchema(schema = @Schema(type = "string", format = "binary"), arraySchema = @Schema(description = "De 1 a "
+				+ "15 imágenes JPG, PNG o WEBP de hasta 5 MB; la primera queda como principal"))
+		public List<MultipartFile> getArchivos() {
+			return archivos;
+		}
 	}
 
 	@Operation(summary = "Catálogo: todos los alojamientos disponibles para reservar (público)", description = "Publicaciones ACTIVA con fechas abiertas desde hoy, para la página Explorar o el inicio. "
@@ -158,11 +182,12 @@ public class AlojamientoController {
 	@ApiResponse(responseCode = "413", description = "El archivo supera el tamaño permitido (5 MB por imagen).")
 	@ApiResponse(responseCode = "415", description = "El cuerpo debe enviarse como multipart/form-data.")
 	@ApiResponse(responseCode = "503", description = "No se pudo guardar la imagen. Intenta de nuevo.")
+	// Swagger muestra 'datos' como JSON del alojamiento; el método lo recibe como texto
+	// porque el front lo envía en el FormData sin tipo de contenido
+	@io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = FormularioAlojamiento.class), encoding = @Encoding(name = "datos", contentType = MediaType.APPLICATION_JSON_VALUE)))
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<Object> crear(
-			@Parameter(description = "JSON del alojamiento, por ejemplo {\"titulo\": \"Casa en Villa de Leyva\", "
-					+ "\"ciudad\": \"Villa de Leyva\", \"capacidad\": 4}") @RequestPart("datos") String datos,
-			@RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
+	public ResponseEntity<Object> crear(@Parameter(hidden = true) @RequestPart("datos") String datos,
+			@Parameter(hidden = true) @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
 			Authentication authentication) {
 		AlojamientoDTO alojamiento;
 		try {

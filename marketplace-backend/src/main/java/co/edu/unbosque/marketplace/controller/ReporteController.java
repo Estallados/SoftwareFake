@@ -42,11 +42,12 @@ public class ReporteController {
 		this.reporteService = reporteService;
 	}
 
-	@Operation(summary = "Indicadores: usuarios, alojamientos activos, reservas por estado, ingresos y demanda")
+	@Operation(summary = "Indicadores: usuarios, alojamientos y reservas por estado, y ciudades con más reservas")
 	@ApiResponse(responseCode = "200", description = "Indicadores del dashboard")
 	@GetMapping("/dashboard")
-	public ResponseEntity<Object> dashboard() {
-		return ResponseEntity.ok(reporteService.dashboard());
+	public ResponseEntity<Object> dashboard(
+			@RequestParam(defaultValue = "" + ReporteService.CIUDADES_DASHBOARD) int topCiudades) {
+		return ResponseEntity.ok(reporteService.dashboard(topCiudades));
 	}
 
 	@Operation(summary = "Historial de exportaciones (quién, qué, formato y cuándo)")

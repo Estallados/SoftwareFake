@@ -32,6 +32,10 @@ public interface AlojamientoRepository extends JpaRepository<Alojamiento, Long>,
 	/** Cantidad de publicaciones en un estado (dashboard). */
 	public long countByEstado(EstadoAlojamiento estado);
 
+	/** Cantidad de alojamientos por estado (dashboard). Cada fila es [estado, cantidad]. */
+	@Query("select a.estado, count(a) from Alojamiento a group by a.estado")
+	public List<Object[]> contarPorEstado();
+
 	/**
 	 * Cantidad de alojamientos por tipo, en orden alfabético. Cada fila es
 	 * [tipo, cantidad].

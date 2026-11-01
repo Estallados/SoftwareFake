@@ -1,20 +1,18 @@
 package co.edu.unbosque.marketplace.dto;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Indicadores del dashboard administrativo.
+ * Indicadores del dashboard administrativo, ya calculados con consultas
+ * agregadas (sin listas de entidades).
  *
  * @see "RF-005"
  */
 public class DashboardDTO {
 	private Long totalUsuarios;
-	private Long alojamientosActivos;
-	private Map<String, Long> reservasPorEstado;
-	private BigDecimal ingresosEstimados;
-	private List<DemandaCiudadDTO> ciudadesMayorDemanda;
+	private ConteoPorEstadoDTO alojamientos;
+	private ConteoReservasDTO reservas;
+	private List<DemandaCiudadDTO> ciudadesTop;
 
 	public DashboardDTO() {
 	}
@@ -27,35 +25,27 @@ public class DashboardDTO {
 		this.totalUsuarios = totalUsuarios;
 	}
 
-	public Long getAlojamientosActivos() {
-		return alojamientosActivos;
+	public ConteoPorEstadoDTO getAlojamientos() {
+		return alojamientos;
 	}
 
-	public void setAlojamientosActivos(Long alojamientosActivos) {
-		this.alojamientosActivos = alojamientosActivos;
+	public void setAlojamientos(ConteoPorEstadoDTO alojamientos) {
+		this.alojamientos = alojamientos;
 	}
 
-	public Map<String, Long> getReservasPorEstado() {
-		return reservasPorEstado;
+	public ConteoReservasDTO getReservas() {
+		return reservas;
 	}
 
-	public void setReservasPorEstado(Map<String, Long> reservasPorEstado) {
-		this.reservasPorEstado = reservasPorEstado;
+	public void setReservas(ConteoReservasDTO reservas) {
+		this.reservas = reservas;
 	}
 
-	public BigDecimal getIngresosEstimados() {
-		return ingresosEstimados;
+	public List<DemandaCiudadDTO> getCiudadesTop() {
+		return ciudadesTop;
 	}
 
-	public void setIngresosEstimados(BigDecimal ingresosEstimados) {
-		this.ingresosEstimados = ingresosEstimados;
-	}
-
-	public List<DemandaCiudadDTO> getCiudadesMayorDemanda() {
-		return ciudadesMayorDemanda;
-	}
-
-	public void setCiudadesMayorDemanda(List<DemandaCiudadDTO> ciudadesMayorDemanda) {
-		this.ciudadesMayorDemanda = ciudadesMayorDemanda;
+	public void setCiudadesTop(List<DemandaCiudadDTO> ciudadesTop) {
+		this.ciudadesTop = ciudadesTop;
 	}
 }
