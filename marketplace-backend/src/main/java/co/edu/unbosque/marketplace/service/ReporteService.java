@@ -15,9 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.unbosque.marketplace.dto.ConteoPorEstadoDTO;
-import co.edu.unbosque.marketplace.dto.ConteoReservasDTO;
 import co.edu.unbosque.marketplace.dto.DashboardDTO;
-import co.edu.unbosque.marketplace.dto.DemandaCiudadDTO;
 import co.edu.unbosque.marketplace.dto.PaginaDTO;
 import co.edu.unbosque.marketplace.dto.RegistroExportacionDTO;
 import co.edu.unbosque.marketplace.entity.Alojamiento;
@@ -60,8 +58,6 @@ public class ReporteService {
 	/** Formatos disponibles. */
 	public static final List<String> FORMATOS = List.of("pdf", "excel");
 
-	/** Ciudades del dashboard por defecto. */
-	public static final int CIUDADES_DASHBOARD = 5;
 	private static final int CIUDADES_MAXIMAS = 50;
 	private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 	private static final List<EstadoPago> PAGOS_COBRADOS = List.of(EstadoPago.APROBADO, EstadoPago.REEMBOLSADO);
@@ -96,39 +92,26 @@ public class ReporteService {
 	 */
 	@Transactional(readOnly = true)
 	public DashboardDTO dashboard(int topCiudades) {
-		DashboardDTO dto = new DashboardDTO();
-		dto.setTotalUsuarios(usuarioRepo.count());
-
-		ConteoPorEstadoDTO alojamientos = new ConteoPorEstadoDTO();
-		llenarConteo(alojamientos, EstadoAlojamiento.values(), alojamientoRepo.contarPorEstado());
-		dto.setAlojamientos(alojamientos);
-
-		ConteoReservasDTO reservas = new ConteoReservasDTO();
-		llenarConteo(reservas, EstadoReserva.values(), reservaRepo.contarPorEstado());
-		reservas.setConfirmadasFinalizadas(
-				reservaRepo.countByEstadoAndFechaSalidaBefore(EstadoReserva.CONFIRMADA, LocalDate.now()));
-		dto.setReservas(reservas);
-
+		long finalizadas = reservaRepo.countByEstadoAndFechaSalidaBefore(EstadoReserva.CONFIRMADA, LocalDate.now());
 		int limite = Math.min(Math.max(topCiudades, 1), CIUDADES_MAXIMAS);
-		dto.setCiudadesTop(reservaRepo.contarCiudadesTop(PageRequest.of(0, limite)).stream()
-				.map(ReporteService::demandaDesde).toList());
-		return dto;
+		return new DashboardDTO(usuarioRepo.count(),
+				conteo(EstadoAlojamiento.values(), alojamientoRepo.contarPorEstado(), null),
+				conteo(EstadoReserva.values(), reservaRepo.contarPorEstado(), finalizadas),
+				reservaRepo.contarCiudadesTop(PageRequest.of(0, limite)));
 	}
 
 	/** Pone 0 en cada estado, aplica las filas [estado, cantidad] y suma el total. */
-	private static void llenarConteo(ConteoPorEstadoDTO conteo, Enum<?>[] estados, List<Object[]> filas) {
+	private static ConteoPorEstadoDTO conteo(Enum<?>[] estados, List<Object[]> filas, Long finalizadas) {
 		Map<String, Long> porEstado = new LinkedHashMap<>();
 		for (Enum<?> estado : estados) {
 			porEstado.put(estado.name(), 0L);
 		}
 		long total = 0;
 		for (Object[] fila : filas) {
-			long cantidad = (Long) fila[1];
-			porEstado.put(fila[0].toString(), cantidad);
-			total += cantidad;
+			porEstado.put(fila[0].toString(), (Long) fila[1]);
+			total += (Long) fila[1];
 		}
-		conteo.setPorEstado(porEstado);
-		conteo.setTotal(total);
+		return new ConteoPorEstadoDTO(total, porEstado, finalizadas);
 	}
 
 	/**
@@ -231,8 +214,7 @@ public class ReporteService {
 		default:
 			encabezados.addAll(List.of("Ciudad", "Reservas"));
 			for (Object[] fila : reservaRepo.contarPorCiudad()) {
-				DemandaCiudadDTO demanda = demandaDesde(fila);
-				filas.add(List.of(demanda.getCiudad(), texto(demanda.getTotalReservas())));
+				filas.add(List.of(fila[0] == null ? "Sin ciudad" : fila[0].toString(), texto(fila[1])));
 			}
 			break;
 		}
@@ -240,11 +222,6 @@ public class ReporteService {
 
 	private BigDecimal ingresosEstimados() {
 		return pagoRepo.sumarValores(PAGOS_COBRADOS).subtract(cancelacionRepo.sumarReembolsos());
-	}
-
-	/** Convierte una fila [ciudad, cantidad] en {@link DemandaCiudadDTO}. */
-	private static DemandaCiudadDTO demandaDesde(Object[] fila) {
-		return new DemandaCiudadDTO(fila[0] == null ? "Sin ciudad" : fila[0].toString(), (Long) fila[1]);
 	}
 
 	private static String texto(Object valor) {

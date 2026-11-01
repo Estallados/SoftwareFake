@@ -8,44 +8,6 @@ import java.util.List;
  *
  * @see "RF-005"
  */
-public class DashboardDTO {
-	private Long totalUsuarios;
-	private ConteoPorEstadoDTO alojamientos;
-	private ConteoReservasDTO reservas;
-	private List<DemandaCiudadDTO> ciudadesTop;
-
-	public DashboardDTO() {
-	}
-
-	public Long getTotalUsuarios() {
-		return totalUsuarios;
-	}
-
-	public void setTotalUsuarios(Long totalUsuarios) {
-		this.totalUsuarios = totalUsuarios;
-	}
-
-	public ConteoPorEstadoDTO getAlojamientos() {
-		return alojamientos;
-	}
-
-	public void setAlojamientos(ConteoPorEstadoDTO alojamientos) {
-		this.alojamientos = alojamientos;
-	}
-
-	public ConteoReservasDTO getReservas() {
-		return reservas;
-	}
-
-	public void setReservas(ConteoReservasDTO reservas) {
-		this.reservas = reservas;
-	}
-
-	public List<DemandaCiudadDTO> getCiudadesTop() {
-		return ciudadesTop;
-	}
-
-	public void setCiudadesTop(List<DemandaCiudadDTO> ciudadesTop) {
-		this.ciudadesTop = ciudadesTop;
-	}
+public record DashboardDTO(long totalUsuarios, ConteoPorEstadoDTO alojamientos, ConteoPorEstadoDTO reservas,
+		List<DemandaCiudadDTO> ciudadesTop) {
 }

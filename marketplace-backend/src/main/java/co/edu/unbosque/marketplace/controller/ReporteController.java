@@ -46,7 +46,7 @@ public class ReporteController {
 	@ApiResponse(responseCode = "200", description = "Indicadores del dashboard")
 	@GetMapping("/dashboard")
 	public ResponseEntity<Object> dashboard(
-			@RequestParam(defaultValue = "" + ReporteService.CIUDADES_DASHBOARD) int topCiudades) {
+			@RequestParam(defaultValue = "5") int topCiudades) {
 		return ResponseEntity.ok(reporteService.dashboard(topCiudades));
 	}
 

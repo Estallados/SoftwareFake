@@ -2,32 +2,15 @@ package co.edu.unbosque.marketplace.dto;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
- * Total de una entidad y su cantidad por estado (dashboard). {@code porEstado}
- * trae todos los estados, con 0 en los que no tienen filas.
+ * Total y cantidad por estado (dashboard). {@code porEstado} trae todos los
+ * estados, con 0 si no hay. {@code confirmadasFinalizadas} solo aplica a
+ * reservas; si es nulo no se envía.
  *
  * @see "RF-005"
  */
-public class ConteoPorEstadoDTO {
-	private Long total;
-	private Map<String, Long> porEstado;
-
-	public ConteoPorEstadoDTO() {
-	}
-
-	public Long getTotal() {
-		return total;
-	}
-
-	public void setTotal(Long total) {
-		this.total = total;
-	}
-
-	public Map<String, Long> getPorEstado() {
-		return porEstado;
-	}
-
-	public void setPorEstado(Map<String, Long> porEstado) {
-		this.porEstado = porEstado;
-	}
+public record ConteoPorEstadoDTO(long total, Map<String, Long> porEstado,
+		@JsonInclude(JsonInclude.Include.NON_NULL) Long confirmadasFinalizadas) {
 }

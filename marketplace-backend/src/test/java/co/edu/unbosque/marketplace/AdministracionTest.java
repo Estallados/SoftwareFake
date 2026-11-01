@@ -102,7 +102,7 @@ class AdministracionTest extends PruebaIntegracionBase {
 		assertTrue(confirmadas.get("contenido").toString().contains("\"idReserva\":" + idReserva));
 		JsonNode fila = confirmadas.get("contenido").get(0);
 		for (String campo : new String[] { "nombreHuesped", "tituloAlojamiento", "ciudad", "nombreAnfitrion",
-				"fechaEntrada", "fechaSalida", "noches", "total", "estado" }) {
+				"fechaEntrada", "fechaSalida", "noches", "total", "estado", "completada" }) {
 			assertTrue(fila.hasNonNull(campo), campo);
 		}
 		assertFalse(fila.has("desglose") || fila.has("pago") || fila.has("cancelacion"));

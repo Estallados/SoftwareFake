@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import co.edu.unbosque.marketplace.dto.DemandaCiudadDTO;
 import co.edu.unbosque.marketplace.dto.ReservaAdminDTO;
 import co.edu.unbosque.marketplace.entity.EstadoReserva;
 import co.edu.unbosque.marketplace.entity.Reserva;
@@ -71,12 +72,11 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
 	/**
 	 * Ciudades con más reservas, contando todos los estados: total descendente y,
-	 * en empate, nombre ascendente. El {@code Pageable} limita la cantidad. Cada
-	 * fila es [ciudad, cantidad].
+	 * en empate, nombre ascendente. El {@code Pageable} limita la cantidad.
 	 */
-	@Query("select a.ciudad, count(r) from Reserva r join r.alojamiento a "
-			+ "group by a.ciudad order by count(r) desc, a.ciudad asc")
-	public List<Object[]> contarCiudadesTop(Pageable limite);
+	@Query("select new co.edu.unbosque.marketplace.dto.DemandaCiudadDTO(coalesce(a.ciudad, 'Sin ciudad'), count(r)) "
+			+ "from Reserva r join r.alojamiento a group by a.ciudad order by count(r) desc, a.ciudad asc")
+	public List<DemandaCiudadDTO> contarCiudadesTop(Pageable limite);
 
 	/** Cantidad de reservas en un estado con salida anterior a la fecha. */
 	public long countByEstadoAndFechaSalidaBefore(EstadoReserva estado, LocalDate fecha);
@@ -87,7 +87,9 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 	 * anfitrión.
 	 */
 	@Query(value = "select new co.edu.unbosque.marketplace.dto.ReservaAdminDTO(r.idReserva, h.nombre, a.titulo, "
-			+ "a.ciudad, an.nombre, r.fechaEntrada, r.fechaSalida, r.noches, r.total, r.estado) "
+			+ "a.ciudad, an.nombre, r.fechaEntrada, r.fechaSalida, r.noches, r.total, r.estado, "
+			+ "case when r.estado = co.edu.unbosque.marketplace.entity.EstadoReserva.CONFIRMADA "
+			+ "and r.fechaSalida <= current_date then true else false end) "
 			+ "from Reserva r left join r.huesped h left join r.alojamiento a left join a.anfitrion an "
 			+ "where r.estado in :estados", countQuery = "select count(r) from Reserva r where r.estado in :estados")
 	public Page<ReservaAdminDTO> listarResumenAdmin(@Param("estados") Collection<EstadoReserva> estados,
