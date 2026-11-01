@@ -1,0 +1,178 @@
+<div
+  class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-900/50 p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="pago-titulo"
+>
+  <div class="w-full max-w-lg rounded-3xl bg-white p-7 shadow-2xl">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 id="pago-titulo" class="font-display text-2xl font-bold text-slate-900">Confirma y paga</h2>
+        @if (titulo) {
+          <p class="mt-1 text-sm text-slate-500">{{ titulo }}</p>
+        }
+      </div>
+      <button
+        type="button"
+        (click)="cerrar()"
+        [disabled]="pagando()"
+        aria-label="Cerrar"
+        class="grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </div>
+    <p class="mt-4 text-sm text-slate-600">
+      {{ cotizacion.fechaEntrada | date: 'dd/MM/yyyy' }} → {{ cotizacion.fechaSalida | date: 'dd/MM/yyyy' }}
+      · {{ cotizacion.noches }} {{ cotizacion.noches === 1 ? 'noche' : 'noches' }}
+      · {{ cotizacion.huespedes }} {{ cotizacion.huespedes === 1 ? 'huésped' : 'huéspedes' }}
+    </p>
+    <!-- Desglose -->
+    <dl class="mt-4 space-y-2 border-y border-slate-200 py-4 text-sm text-slate-600">
+      <div class="flex justify-between">
+        <dt>{{ cotizacion.precioNoche | currency: moneda() : 'symbol-narrow' : '1.0-0' }} × {{ cotizacion.noches }} noches</dt>
+        <dd>{{ cotizacion.precioBase | currency: moneda() : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+      @if (cotizacion.descuento > 0) {
+        <div class="flex justify-between text-emerald-700">
+          <dt>Descuento</dt>
+          <dd>−{{ cotizacion.descuento | currency: moneda() : 'symbol-narrow' : '1.0-0' }}</dd>
+        </div>
+      }
+      <div class="flex justify-between">
+        <dt>Limpieza ({{ cotizacion.porcentajeLimpieza }}%)</dt>
+        <dd>{{ cotizacion.valorLimpieza | currency: moneda() : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt>Servicio ({{ cotizacion.porcentajeServicio }}%)</dt>
+        <dd>{{ cotizacion.valorServicio | currency: moneda() : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+      @if (cotizacion.valorAdicionales > 0) {
+        <div class="flex justify-between">
+          <dt>
+            Servicios adicionales
+            @for (s of cotizacion.serviciosAdicionales ?? []; track s.idServicio) {
+              <span class="block text-xs text-slate-400">{{ s.nombre }}</span>
+            }
+          </dt>
+          <dd>{{ cotizacion.valorAdicionales | currency: moneda() : 'symbol-narrow' : '1.0-0' }}</dd>
+        </div>
+      }
+      <div class="flex justify-between pt-2 text-base font-bold text-slate-900">
+        <dt>Total</dt>
+        <dd>{{ cotizacion.total | currency: moneda() : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+    </dl>
+    <p class="mt-2 text-xs text-slate-400">
+      Cotización válida hasta las {{ cotizacion.fechaExpiracion | date: 'HH:mm' }}.
+    </p>
+    <!-- Método de pago -->
+    <div class="mt-5">
+      @if (cargandoConfig()) {
+        <p class="text-sm text-slate-500">Cargando métodos de pago...</p>
+      }
+      <!-- Campos de Stripe: siempre en el DOM para poder montarlos -->
+      <div class="space-y-3" [class.hidden]="!modoStripe()">
+        <div>
+          <label for="titular" class="block text-xs font-bold text-slate-700">Nombre en la tarjeta (opcional)</label>
+          <input
+            id="titular"
+            type="text"
+            autocomplete="cc-name"
+            placeholder="Como aparece en la tarjeta"
+            class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-500"
+            [value]="titular()"
+            (input)="titular.set($any($event.target).value)"
+          />
+        </div>
+        <div>
+          <span class="block text-xs font-bold text-slate-700">Número de tarjeta</span>
+          <div #numeroTarjeta class="mt-1 rounded-xl border border-slate-200 p-3"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <span class="block text-xs font-bold text-slate-700">Vencimiento</span>
+            <div #vencimientoTarjeta class="mt-1 rounded-xl border border-slate-200 p-3"></div>
+          </div>
+          <div>
+            <span class="block text-xs font-bold text-slate-700">CVC</span>
+            <div #cvcTarjeta class="mt-1 rounded-xl border border-slate-200 p-3"></div>
+          </div>
+        </div>
+      </div>
+      @if (errorTarjeta()) {
+        <p class="mt-2 text-xs text-red-600">{{ errorTarjeta() }}</p>
+      }
+      @if (modoStripe()) {
+        <p class="mt-2 text-xs text-slate-400">
+          Modo de prueba: usa 4242 4242 4242 4242, una fecha futura y cualquier CVC.
+        </p>
+      } @else if (config()) {
+        <label for="metodo-prueba" class="block text-xs font-bold text-slate-700">Método de pago de prueba</label>
+        <select
+          id="metodo-prueba"
+          class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"
+          (change)="elegirMetodo($any($event.target).value)"
+        >
+          @for (m of config()!.metodosPrueba; track m.metodoPago) {
+            <option [value]="m.metodoPago" [selected]="m.metodoPago === metodoPrueba()">{{ etiqueta(m) }}</option>
+          }
+        </select>
+        @if (!config()!.metodosPrueba.length) {
+          <p class="mt-2 text-xs text-red-600">El servidor no devolvió métodos de prueba.</p>
+        }
+        <p class="mt-2 text-xs text-slate-400">
+          Pago simulado: no se cobra a ninguna tarjeta real. Para escribir los datos de la tarjeta,
+          el backend debe tener configurada su clave de Stripe.
+        </p>
+      }
+    </div>
+    @if (error()) {
+      <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+        {{ error() }}
+        @if (conflicto()) {
+          <button
+            type="button"
+            (click)="recotizar.emit()"
+            class="mt-2 block rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-700"
+          >
+            Cotizar de nuevo
+          </button>
+        }
+      </div>
+    }
+    @if (config() && !puedePagar() && !pagando()) {
+      <p class="mt-4 text-center text-xs text-slate-500">
+        @if (modoStripe()) {
+          Completa los datos de la tarjeta para habilitar el pago.
+        } @else {
+          Elige un método de pago de prueba para habilitar el pago.
+        }
+      </p>
+    }
+    <div class="mt-6 flex gap-3">
+      <button
+        type="button"
+        (click)="cerrar()"
+        [disabled]="pagando()"
+        class="flex-1 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="pagar()"
+        [disabled]="!puedePagar()"
+        class="flex-[2] rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        @if (pagando()) {
+          Procesando pago...
+        } @else {
+          Pagar {{ cotizacion.total | currency: moneda() : 'symbol-narrow' : '1.0-0' }}
+        }
+      </button>
+    </div>
+  </div>
+</div>

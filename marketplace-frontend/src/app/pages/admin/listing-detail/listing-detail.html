@@ -6,157 +6,183 @@
   </span>
   Volver a alojamientos
 </button>
-
-<div class="flex items-end justify-between">
-  <div>
-    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Detalle administrativo</p>
-    <h1 class="font-display mt-2 text-3xl font-bold">{{ listing().name }}</h1>
-    <p class="mt-2 text-sm text-slate-500">{{ listing().city }} · {{ listing().id }}</p>
+@if (loading()) {
+  <p class="text-sm text-slate-500">Cargando alojamiento...</p>
+} @else if (errorCarga()) {
+  <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center" role="alert">
+    <p class="text-red-600">No se pudo cargar el alojamiento.</p>
+    <button type="button" (click)="cargar()" class="mt-4 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800">
+      Reintentar
+    </button>
   </div>
-  <div class="flex items-center gap-3">
-    <span [class]="badgeClass()">{{ listing().approvalStatus ?? 'Aprobado' }}</span>
-
-    @if (isPendingApproval()) {
-      <button
-        type="button"
-        (click)="askApproval(true)"
-        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
-      >
-        Aprobar alojamiento
-      </button>
-      <button
-        type="button"
-        (click)="askApproval(false)"
-        class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700 transition-all hover:bg-red-100"
-      >
-        Rechazar alojamiento
-      </button>
-    } @else if (listing().status !== 'Pausado') {
-      <button
-        type="button"
-        (click)="askAction()"
-        class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all"
-        [class]="listing().status === 'Bloqueado' ? 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800' : 'bg-red-50 text-red-700 hover:bg-red-100'"
-      >
-        {{ listing().status === 'Bloqueado' ? 'Activar publicación' : 'Bloquear publicación' }}
-      </button>
-    }
+} @else if (listing(); as l) {
+  <div class="flex items-end justify-between">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Detalle administrativo</p>
+      <h1 class="font-display mt-2 text-3xl font-bold">{{ l.titulo }}</h1>
+      <p class="mt-2 text-sm text-slate-500">{{ l.ciudad }} · #{{ l.idAlojamiento }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span [class]="badgeClass()">{{ etiqueta() }}</span>
+      @for (a of disponibles(); track a) {
+        <button
+          type="button"
+          (click)="pedirAccion(a)"
+          class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all"
+          [class]="acciones[a].peligro ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800'"
+        >
+          {{ acciones[a].titulo }}
+        </button>
+      }
+    </div>
   </div>
-</div>
-
-<div class="mt-8 grid h-72 grid-cols-2 gap-3 overflow-hidden rounded-2xl">
-  <img [src]="listing().image" [alt]="listing().name" class="h-full w-full object-cover" />
-  <div class="grid grid-cols-2 gap-3">
-    <img [src]="photos.interior" alt="" class="h-full w-full object-cover" />
-    <img [src]="photos.finca" alt="" class="h-full w-full object-cover" />
-  </div>
-</div>
-
-<div class="mt-6 grid grid-cols-2 gap-6">
-  <section class="rounded-2xl border border-slate-200 bg-white p-7">
-    <h2 class="font-display text-xl font-bold">Información principal</h2>
-    <p class="mt-4 text-sm leading-6 text-slate-600">{{ listing().description }}</p>
-    <div class="mt-6 grid grid-cols-2 gap-5 text-sm">
-      @for (i of info(); track i.label) {
-        <div>
-          <span class="text-xs text-slate-500">{{ i.label }}</span>
-          <strong class="block">{{ i.value }}</strong>
+  @if (imagenes().length) {
+    <div class="mt-8 grid h-72 gap-3 overflow-hidden rounded-2xl" [class]="imagenes().length > 1 ? 'grid-cols-2' : 'grid-cols-1'">
+      <img [src]="imagenes()[0]" [alt]="l.titulo" class="h-full w-full object-cover" />
+      @if (imagenes().length > 1) {
+        <div class="grid gap-3" [class]="imagenes().length > 2 ? 'grid-cols-2' : 'grid-cols-1'">
+          @for (img of imagenes().slice(1); track img) {
+            <img [src]="img" alt="" class="h-full w-full object-cover" />
+          }
         </div>
       }
     </div>
-    <h3 class="mt-7 font-bold">Servicios</h3>
-    <div class="mt-3 flex flex-wrap gap-2">
-      @for (s of listing().services; track s) {
-        <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ s }}</span>
+  }
+  <div class="mt-6 grid grid-cols-2 gap-6">
+    <section class="rounded-2xl border border-slate-200 bg-white p-7">
+      <h2 class="font-display text-xl font-bold">Información principal</h2>
+      <p class="mt-4 text-sm leading-6 text-slate-600">{{ l.descripcion }}</p>
+      <div class="mt-6 grid grid-cols-2 gap-5 text-sm">
+        @for (i of info(); track i.label) {
+          <div>
+            <span class="text-xs text-slate-500">{{ i.label }}</span>
+            <strong class="block">{{ i.value }}</strong>
+          </div>
+        }
+      </div>
+      <h3 class="mt-7 font-bold">Servicios</h3>
+      <div class="mt-3 flex flex-wrap gap-2">
+        @for (s of l.amenidades ?? []; track s) {
+          <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ s }}</span>
+        } @empty {
+          <span class="text-sm text-slate-500">Sin servicios indicados.</span>
+        }
+      </div>
+      @if (l.serviciosAdicionales?.length) {
+        <h3 class="mt-6 font-bold">Servicios adicionales</h3>
+        <ul class="mt-3 space-y-2 text-sm">
+          @for (s of l.serviciosAdicionales ?? []; track s.idServicio) {
+            <li class="flex justify-between">
+              <span class="text-slate-600">{{ s.nombre }}</span>
+              <strong>{{ s.costo | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+            </li>
+          }
+        </ul>
       }
+    </section>
+    <div class="space-y-6">
+      <section class="rounded-2xl border border-slate-200 bg-white p-7">
+        <h2 class="font-display text-xl font-bold">Información comercial</h2>
+        <div class="mt-5 space-y-3 text-sm">
+          <p class="flex justify-between"><span class="text-slate-500">Precio por noche</span><strong>{{ l.precioNoche | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong></p>
+          <p class="flex justify-between">
+            <span class="text-slate-500">Calificación</span>
+            <strong>
+              @if (l.promedioCalificacion != null) {
+                ★ {{ l.promedioCalificacion | number: '1.1-1' }}
+              } @else {
+                Sin calificar
+              }
+            </strong>
+          </p>
+          <p class="flex justify-between"><span class="text-slate-500">Reseñas</span><strong>{{ l.cantidadResenas ?? 0 }}</strong></p>
+        </div>
+      </section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-7">
+        <h2 class="font-display text-xl font-bold">Anfitrión</h2>
+        <div class="mt-5 space-y-3 text-sm">
+          <p><span class="block text-xs text-slate-500">Nombre</span><strong>{{ l.nombreAnfitrion }}</strong></p>
+          @if (valorDe(l, 'correoAnfitrion', 'emailAnfitrion'); as correo) {
+            <p><span class="block text-xs text-slate-500">Correo</span><strong>{{ correo }}</strong></p>
+          }
+          @if (valorDe(l, 'idAnfitrion', 'idPropietario'); as idAnfitrion) {
+            <p><span class="block text-xs text-slate-500">Identificador interno</span><strong>{{ idAnfitrion }}</strong></p>
+          }
+        </div>
+      </section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-7 text-sm">
+        <h2 class="font-display text-xl font-bold">Información administrativa</h2>
+        <p class="mt-5 flex justify-between"><span class="text-slate-500">Estado actual</span><strong>{{ etiqueta() }}</strong></p>
+        @if (estado() === 'PAUSADA') {
+          <div class="mt-5 rounded-xl bg-slate-100 p-4 text-slate-600">
+            Pausado por el anfitrión. Esta condición no equivale a un bloqueo administrativo.
+          </div>
+        }
+        <h3 class="mt-6 font-bold">Historial de estados</h3>
+        <ul class="mt-3 space-y-3">
+          @for (h of historial(); track $index) {
+            <li class="rounded-xl bg-slate-50 p-3">
+              <span class="block text-xs text-slate-500">{{ valorDe(h, 'fecha', 'fechaCambio', 'fechaHora', 'fechaCreacion') | date: 'dd/MM/yyyy HH:mm' }}</span>
+              <strong>
+                @if (valorDe(h, 'estadoAnterior'); as anterior) {
+                  {{ anterior }} →
+                }
+                {{ valorDe(h, 'estadoNuevo', 'estado', 'estadoActual') }}
+              </strong>
+              @if (valorDe(h, 'motivo', 'observacion'); as motivo) {
+                <span class="mt-1 block text-slate-600">{{ motivo }}</span>
+              }
+            </li>
+          } @empty {
+            <li class="text-slate-500">Sin movimientos registrados.</li>
+          }
+        </ul>
+      </section>
     </div>
-    <h3 class="mt-6 font-bold">Reglas básicas</h3>
-    <p class="mt-2 text-sm text-slate-500">No fumar · No fiestas · Entrada después de las 15:00</p>
-  </section>
-
-  <div class="space-y-6">
-    <section class="rounded-2xl border border-slate-200 bg-white p-7">
-      <h2 class="font-display text-xl font-bold">Información comercial</h2>
-      <div class="mt-5 space-y-3 text-sm">
-        <p class="flex justify-between"><span class="text-slate-500">Precio por noche</span><strong>{{ listing().price }}</strong></p>
-        <p class="flex justify-between"><span class="text-slate-500">Calificación</span><strong>★ {{ listing().rating }}</strong></p>
-        <p class="flex justify-between"><span class="text-slate-500">Reseñas</span><strong>{{ listing().reviews }}</strong></p>
-        <p class="flex justify-between"><span class="text-slate-500">Reservas asociadas</span><strong>{{ listing().reservations }}</strong></p>
-      </div>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white p-7">
-      <h2 class="font-display text-xl font-bold">Anfitrión</h2>
-      <div class="mt-5 space-y-3 text-sm">
-        <p><span class="block text-xs text-slate-500">Nombre</span><strong>{{ listing().host }}</strong></p>
-        <p><span class="block text-xs text-slate-500">Correo</span><strong>{{ listing().hostEmail }}</strong></p>
-        <p><span class="block text-xs text-slate-500">Identificador interno</span><strong>{{ listing().hostId }}</strong></p>
-        <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ listing().hostStatus }}</span>
-      </div>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white p-7 text-sm">
-      <h2 class="font-display text-xl font-bold">Información administrativa</h2>
-      <p class="mt-5 flex justify-between"><span class="text-slate-500">Publicación</span><strong>{{ listing().published }}</strong></p>
-      <p class="mt-3 flex justify-between"><span class="text-slate-500">Última actualización</span><strong>{{ listing().updated }}</strong></p>
-      <p class="mt-3 flex justify-between"><span class="text-slate-500">Fecha de envío</span><strong>{{ listing().submitted ?? listing().published }}</strong></p>
-      <p class="mt-3 flex justify-between"><span class="text-slate-500">Estado de aprobación</span><strong>{{ listing().approvalStatus ?? 'Aprobado' }}</strong></p>
-
-      @if (listing().rejectionReason) {
-        <div class="mt-5 rounded-xl bg-red-50 p-4 text-red-700">
-          <strong>Observación:</strong> {{ listing().rejectionReason }}
-        </div>
-      }
-      @if (listing().status === 'Pausado') {
-        <div class="mt-5 rounded-xl bg-slate-100 p-4 text-slate-600">
-          Pausado por el anfitrión. Esta condición no equivale a un bloqueo administrativo.
-        </div>
-      }
-    </section>
   </div>
-</div>
-
-<!-- Modal de confirmación -->
-@if (modal(); as m) {
-  <div class="fixed inset-0 z-[70] grid place-items-center bg-slate-950/55 p-6 backdrop-blur-sm">
+}
+@if (config(); as c) {
+  <div class="fixed inset-0 z-[70] grid place-items-center bg-slate-950/55 p-6 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="accion-titulo">
     <div class="w-full max-w-md rounded-[28px] bg-white p-8 shadow-2xl">
       <div class="flex justify-between">
         <div>
-          <h2 class="font-display text-3xl font-bold">{{ m.title }}</h2>
-          <p class="mt-3 text-sm leading-6 text-slate-500">{{ m.text }}</p>
+          <h2 id="accion-titulo" class="font-display text-3xl font-bold">{{ c.titulo }}</h2>
+          <p class="mt-2 text-sm font-semibold text-slate-700">{{ listing()?.titulo }}</p>
+          <p class="mt-3 text-sm leading-6 text-slate-500">{{ c.texto }}</p>
         </div>
-        <button type="button" (click)="closeAction()" aria-label="Cerrar" class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100">
+        <button type="button" (click)="cancelarAccion()" [disabled]="enviando()" aria-label="Cerrar" class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100 disabled:opacity-40">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>
       </div>
-
-      @if (m.needsReason) {
+      @if (c.requiereMotivo) {
         <label class="mt-6 block">
-          <span class="mb-2 block text-sm font-bold">{{ m.label }} <span class="text-red-500">*</span></span>
+          <span class="mb-2 block text-sm font-bold">{{ c.etiquetaMotivo }} <span class="text-red-500">*</span></span>
           <textarea
-            [value]="reason()"
-            (input)="reason.set($any($event.target).value)"
+            [value]="motivo()"
+            (input)="motivo.set($any($event.target).value)"
             rows="3"
             placeholder="Describe brevemente el motivo..."
             class="w-full rounded-xl border border-slate-200 p-4 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           ></textarea>
         </label>
       }
-
+      @if (errorAccion()) {
+        <p class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{{ errorAccion() }}</p>
+      }
       <div class="mt-7 flex gap-3">
-        <button type="button" (click)="closeAction()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50">
+        <button type="button" (click)="cancelarAccion()" [disabled]="enviando()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50 disabled:opacity-45">
           Cancelar
         </button>
         <button
           type="button"
-          (click)="confirmAction()"
-          [disabled]="m.needsReason && !reason().trim()"
+          (click)="confirmarAccion()"
+          [disabled]="!puedeConfirmar()"
           class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all disabled:cursor-not-allowed disabled:opacity-45"
-          [class]="m.needsReason ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800'"
+          [class]="c.peligro ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800'"
         >
-          {{ m.confirm }}
+          {{ enviando() ? 'Procesando...' : c.confirmar }}
         </button>
       </div>
     </div>

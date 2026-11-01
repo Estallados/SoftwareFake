@@ -1,188 +1,150 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { photos } from '../../../services/mockData';
-
-export type ListingStatus = 'Activo' | 'Pausado' | 'Bloqueado' | 'Pendiente' | 'Rechazado';
-export type ApprovalStatus = 'Aprobado' | 'Pendiente de aprobación' | 'Rechazado';
-
-export interface AdminListing {
-  id: string;
-  name: string;
-  image: string;
-  description: string;
-  type: string;
-  city: string;
-  location: string;
-  capacity: number;
-  rooms: number;
-  baths: number;
-  services: string[];
-  price: string;
-  rating: number | string;
-  reviews: number;
-  reservations: number;
-  host: string;
-  hostEmail: string;
-  hostId: string;
-  hostStatus: string;
-  status: ListingStatus;
-  approvalStatus?: ApprovalStatus;
-  rejectionReason?: string;
-  submitted?: string;
-  published: string;
-  updated: string;
-}
-
-type ListingActionKind = 'approveListing' | 'rejectListing' | 'blockListing' | 'activateListing';
-
-const ACTIONS = {
-  approveListing: {
-    title: 'Aprobar alojamiento',
-    text: '¿Confirmas que deseas aprobar esta publicación?',
-    label: '',
-    confirm: 'Confirmar aprobación',
-    needsReason: false,
-  },
-  rejectListing: {
-    title: 'Rechazar alojamiento',
-    text: 'La publicación no aparecerá en los resultados públicos.',
-    label: 'Motivo del rechazo',
-    confirm: 'Confirmar rechazo',
-    needsReason: true,
-  },
-  blockListing: {
-    title: 'Bloquear publicación',
-    text: 'Esta acción impedirá que el alojamiento aparezca en las búsquedas mientras esté bloqueado.',
-    label: 'Motivo del bloqueo',
-    confirm: 'Confirmar bloqueo',
-    needsReason: true,
-  },
-  activateListing: {
-    title: 'Activar publicación',
-    text: '¿Deseas habilitar nuevamente esta publicación?',
-    label: '',
-    confirm: 'Confirmar activación',
-    needsReason: false,
-  },
-};
-
+import { catchError, map } from 'rxjs';
+import { Alojamiento } from '../../../models/alojamientoDto';
+import { HistorialEstadoAlojamiento } from '../../../models/historialEstadoAlojamientoDto';
+import {
+  ACCIONES_ALOJAMIENTO as ACCIONES, AccionAlojamiento, AdminService, accionesDe, claseBadge, conEstado, estadoDe,
+  etiquetaEstado, valorDe,
+} from '../../../services/admin.service';
+import { AlojamientoService } from '../../../services/alojamiento.service';
 @Component({
   selector: 'app-admin-listing-detail',
   standalone: true,
   templateUrl: './listing-detail.html',
+  imports: [CurrencyPipe, DatePipe, DecimalPipe],
 })
-export class ListingDetail {
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-
-  readonly photos = photos;
-
+export class ListingDetail implements OnInit {
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly admin = inject(AdminService);
+  private readonly alojamientoService = inject(AlojamientoService);
   /** Parámetro :id de la ruta admin/alojamientos/:id */
-  readonly id = this.route.snapshot.paramMap.get('id');
-
-  // TODO: cargar el alojamiento desde el backend usando `id`
-  listing = signal<AdminListing>({
-    id: '',
-    name: '',
-    image: '',
-    description: '',
-    type: '',
-    city: '',
-    location: '',
-    capacity: 0,
-    rooms: 0,
-    baths: 0,
-    services: [],
-    price: '',
-    rating: '',
-    reviews: 0,
-    reservations: 0,
-    host: '',
-    hostEmail: '',
-    hostId: '',
-    hostStatus: '',
-    status: 'Activo',
-    published: '',
-    updated: '',
-  });
-
+  readonly id = Number(this.route.snapshot.paramMap.get('id'));
+  readonly acciones = ACCIONES;
+  readonly valorDe = valorDe;
+  listing = signal<Alojamiento | null>(null);
+  historial = signal<HistorialEstadoAlojamiento[]>([]);
+  loading = signal(true);
+  errorCarga = signal(false);
+  estado = computed(() => estadoDe(this.listing()));
+  etiqueta = computed(() => etiquetaEstado(this.estado()));
+  badgeClass = computed(() => claseBadge(this.estado()));
+  disponibles = computed(() => accionesDe(this.estado()));
+  imagenes = computed(() => (this.listing()?.imagenes ?? []).slice(0, 3));
   info = computed(() => {
     const l = this.listing();
+    if (!l) {
+      return [];
+    }
     return [
-      { label: 'Tipo', value: l.type },
-      { label: 'Ciudad', value: l.city },
-      { label: 'Ubicación', value: l.location },
-      { label: 'Capacidad', value: `${l.capacity} huéspedes` },
-      { label: 'Habitaciones', value: String(l.rooms) },
-      { label: 'Baños', value: String(l.baths) },
-    ];
+      { label: 'Tipo', value: l.tipo },
+      { label: 'Ciudad', value: l.ciudad },
+      { label: 'Ubicación', value: valorDe(l, 'direccion', 'ubicacion') },
+      { label: 'Capacidad', value: `${l.capacidad} huéspedes` },
+      { label: 'Habitaciones', value: l.habitaciones != null ? String(l.habitaciones) : '' },
+      { label: 'Camas', value: l.camas != null ? String(l.camas) : '' },
+      { label: 'Baños', value: l.banos != null ? String(l.banos) : '' },
+    ].filter((fila) => !!fila.value);
   });
-
-  isPendingApproval = computed(() => this.listing().approvalStatus === 'Pendiente de aprobación');
-
-  badgeClass = computed(() => {
-    const s = this.listing().status;
-    const tone =
-      s === 'Activo'
-        ? 'bg-emerald-50 text-emerald-700'
-        : s === 'Bloqueado'
-          ? 'bg-red-50 text-red-700'
-          : s === 'Pausado'
-            ? 'bg-slate-100 text-slate-600'
-            : 'bg-amber-50 text-amber-700';
-    return 'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + tone;
+  // ---- Modal de moderación ----
+  accion = signal<AccionAlojamiento | null>(null);
+  enviando = signal(false);
+  errorAccion = signal<string | null>(null);
+  motivo = signal('');
+  config = computed(() => {
+    const a = this.accion();
+    return a ? ACCIONES[a] : null;
   });
-
-  // ---- Modal de confirmación ----
-  action = signal<ListingActionKind | null>(null);
-  reason = signal('');
-  modal = computed(() => {
-    const a = this.action();
-    return a ? ACTIONS[a] : null;
+  puedeConfirmar = computed(() => {
+    const c = this.config();
+    return !!c && !this.enviando() && (!c.requiereMotivo || this.motivo().trim().length > 0);
   });
-
-  back() {
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.cancelarAccion();
+  }
+  ngOnInit(): void {
+    this.cargar();
+  }
+  cargar(): void {
+    if (!Number.isInteger(this.id) || this.id <= 0) {
+      this.errorCarga.set(true);
+      this.loading.set(false);
+      return;
+    }
+    this.loading.set(true);
+    this.errorCarga.set(false);
+    this.alojamientoService
+      .obtener(this.id)
+      .pipe(
+        // Si el detalle público no sirve para este estado, se busca en el listado de admin.
+        catchError(() =>
+          this.admin.todosLosAlojamientos().pipe(
+            map(({ alojamientos }) => {
+              const a = alojamientos.find((x) => x.idAlojamiento === this.id);
+              if (!a) {
+                throw new Error('Alojamiento no encontrado');
+              }
+              return a;
+            }),
+          ),
+        ),
+      )
+      .subscribe({
+        next: (a) => {
+          this.listing.set(a);
+          this.loading.set(false);
+          this.cargarHistorial();
+        },
+        error: (error) => {
+          console.error('Error al cargar el alojamiento:', error);
+          this.errorCarga.set(true);
+          this.loading.set(false);
+        },
+      });
+  }
+  private cargarHistorial(): void {
+    this.alojamientoService.historial(this.id).subscribe({
+      next: (h) => this.historial.set(h ?? []),
+      error: () => this.historial.set([]), // el historial es informativo: no bloquea la página
+    });
+  }
+  back(): void {
     this.router.navigateByUrl('/admin/alojamientos');
   }
-
-  askApproval(approved: boolean) {
-    this.reason.set('');
-    this.action.set(approved ? 'approveListing' : 'rejectListing');
+  pedirAccion(tipo: AccionAlojamiento): void {
+    this.errorAccion.set(null);
+    this.motivo.set('');
+    this.accion.set(tipo);
   }
-
-  askAction() {
-    this.reason.set('');
-    this.action.set(this.listing().status === 'Bloqueado' ? 'activateListing' : 'blockListing');
-  }
-
-  closeAction() {
-    this.action.set(null);
-  }
-
-  confirmAction() {
-    const a = this.action();
-    if (!a) return;
-    const today = new Date().toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-
-    if (a === 'approveListing' || a === 'rejectListing') {
-      const approved = a === 'approveListing';
-      this.listing.update((l) => ({
-        ...l,
-        status: (approved ? 'Activo' : 'Pendiente') as ListingStatus,
-        approvalStatus: (approved ? 'Aprobado' : 'Rechazado') as ApprovalStatus,
-        rejectionReason: approved ? undefined : this.reason(),
-        updated: today,
-        published: approved ? today : l.published,
-      }));
-    } else {
-      const next: ListingStatus = a === 'blockListing' ? 'Bloqueado' : 'Activo';
-      this.listing.update((l) => ({ ...l, status: next, updated: today }));
+  cancelarAccion(): void {
+    if (!this.enviando()) {
+      this.accion.set(null);
     }
-    this.action.set(null);
-    // TODO: guardar en el backend, registrar auditoría y avisar
+  }
+  confirmarAccion(): void {
+    const tipo = this.accion();
+    const actual = this.listing();
+    if (!tipo || !actual || !this.puedeConfirmar()) {
+      return;
+    }
+    const motivo = this.motivo().trim();
+    this.enviando.set(true);
+    this.errorAccion.set(null);
+    this.admin.ejecutarAccion(tipo, this.id, motivo).subscribe({
+      next: (actualizado) => {
+        this.listing.set(conEstado({ ...actual, ...actualizado }, ACCIONES[tipo].resultado));
+        this.alojamientoService.limpiarCache(); // Inicio y Explorar deben ver el cambio
+        this.cargarHistorial();
+        this.enviando.set(false);
+        this.accion.set(null);
+      },
+      error: (error) => {
+        this.errorAccion.set(this.admin.mensajeDeError(error, 'No se pudo completar la acción.'));
+        this.enviando.set(false);
+      },
+    });
   }
 }

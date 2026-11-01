@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { map, Observable, tap } from 'rxjs';
+import { map, Observable, shareReplay, tap } from 'rxjs';
 import { Alojamiento } from '../models/alojamientoDto';
 import { API_URL } from './api-url';
 import { SessionService } from './session.service';
@@ -28,6 +28,8 @@ export class FavoritoService {
   /** Ids con una petición en curso (evita dobles clics). */
   private readonly pendientes = new Set<number>();
   private temporizadorMensaje?: ReturnType<typeof setTimeout>;
+  /** Listas ya pedidas, por usuario y página. Se vacía al agregar o quitar un favorito. */
+  private readonly cacheListas = new Map<string, Observable<Alojamiento[]>>();
   // ==================== HTTP ====================
   /**
    * GET /favoritos?pagina=&tamanio=
@@ -35,16 +37,23 @@ export class FavoritoService {
    * Devuelve una lista simple y sincroniza el estado compartido `favoritos`.
    */
   listar(pagina = 0, tamanio = 20): Observable<Alojamiento[]> {
-    return this.http
-      .get<PaginaFavoritos>(this.baseUrl, { params: { pagina, tamanio } })
-      .pipe(
-        map((r) =>
-          (r.contenido ?? r.content ?? []).map((item) =>
-            'alojamiento' in item ? item.alojamiento : item,
-          ),
-        ),
-        tap((lista) => this.sincronizar(lista)),
-      );
+    const clave = `${this.session.correo()}|${pagina}|${tamanio}`;
+    const guardada = this.cacheListas.get(clave);
+    if (guardada) {
+      return guardada;
+    }
+    const peticion$ = this.http.get<PaginaFavoritos>(this.baseUrl, { params: { pagina, tamanio } }).pipe(
+      map((r) =>
+        (r.contenido ?? r.content ?? []).map((item) => ('alojamiento' in item ? item.alojamiento : item)),
+      ),
+      tap({
+        next: (lista) => this.sincronizar(lista),
+        error: () => this.cacheListas.delete(clave), // los fallos no se guardan
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.cacheListas.set(clave, peticion$);
+    return peticion$;
   }
   private sincronizar(lista: Alojamiento[]): void {
     const ids = lista
@@ -58,14 +67,18 @@ export class FavoritoService {
    * Errores: 404 si el alojamiento no existe.
    */
   agregar(idAlojamiento: number): Observable<unknown> {
-    return this.http.post<unknown>(`${this.baseUrl}/${idAlojamiento}`, null);
+    return this.http
+      .post<unknown>(`${this.baseUrl}/${idAlojamiento}`, null)
+      .pipe(tap(() => this.cacheListas.clear()));
   }
   /**
    * DELETE /favoritos/{idAlojamiento}
    * Errores: 404 si el alojamiento no estaba en favoritos.
    */
   eliminar(idAlojamiento: number): Observable<unknown> {
-    return this.http.delete<unknown>(`${this.baseUrl}/${idAlojamiento}`);
+    return this.http
+      .delete<unknown>(`${this.baseUrl}/${idAlojamiento}`)
+      .pipe(tap(() => this.cacheListas.clear()));
   }
   // ==================== API PARA LOS COMPONENTES ====================
   /** Trae los favoritos del huésped una vez por usuario, para pintar los corazones. */

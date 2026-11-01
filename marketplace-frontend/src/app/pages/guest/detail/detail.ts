@@ -8,6 +8,11 @@ import {CurrencyPipe, DatePipe, DecimalPipe} from '@angular/common';
 import {Resena, ResumenResenas} from '../../../models/resenaDto';
 import {FavoritoService} from '../../../services/favorito.service';
 import {SessionService} from '../../../services/session.service';
+import {ReservaService} from '../../../services/reserva.service';
+import {Cotizacion} from '../../../models/cotizacionDto';
+import {Reserva} from '../../../models/reservaDto';
+import {HttpErrorResponse} from '@angular/common/http';
+import {PagoReserva} from '../pago-reserva/pago-reserva';
 @Component({
   selector: 'app-detail',
   standalone: true,
@@ -16,7 +21,8 @@ import {SessionService} from '../../../services/session.service';
     CurrencyPipe,
     DatePipe,
     DecimalPipe,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    PagoReserva
   ]
 })
 export class Detail implements OnInit {
@@ -26,8 +32,8 @@ export class Detail implements OnInit {
   private readonly alojamientoService = inject(AlojamientoService);
   private readonly favoritoService = inject(FavoritoService);
   protected readonly session = inject(SessionService);
+  private readonly reservaService = inject(ReservaService);
   private readonly fb = inject(FormBuilder);
-
   // ==================== Alojamiento ====================
   readonly photos = photos;
   amenities: string[] = [];
@@ -78,7 +84,10 @@ export class Detail implements OnInit {
   // ==================== Reserva ====================
   serviciosSeleccionados = signal<number[]>([]);
   enviando = false;
-  solicitudEnviada = false;
+  /** Cotización vigente: mientras exista se muestra el modal de pago. */
+  cotizacion: Cotizacion | null = null;
+  reservaConfirmada: Reserva | null = null;
+  errorReserva: string | null = null;
   errorFechas = false;
   reservaForm = this.fb.group({
     fechaEntrada: ['', Validators.required],
@@ -283,7 +292,8 @@ export class Detail implements OnInit {
   }
   // ==================== Envío de reserva ====================
   reserve(): void {
-    this.solicitudEnviada = false;
+    this.reservaConfirmada = null;
+    this.errorReserva = null;
     this.errorFechas = false;
     this.reservaForm.markAllAsTouched();
     if (this.reservaForm.invalid || !this.stay) {
@@ -305,20 +315,48 @@ export class Detail implements OnInit {
       return;
     }
     if (huespedes > (this.stay.capacidad ?? 0)) {
+      this.errorReserva = `Este alojamiento admite hasta ${this.stay.capacidad ?? 0} huéspedes.`;
       return;
     }
-    const solicitud = {
-      idAlojamiento: this.stay.idAlojamiento,
-      fechaEntrada,
-      fechaSalida,
-      huespedes,
-      noches: this.noches,
-      subtotal: this.subtotal,
-      serviciosAdicionales: this.serviciosSeleccionados(),
-      totalServiciosAdicionales: this.totalServiciosAdicionales,
-      total: this.total
-    };
-    console.log('Solicitud de reserva:', solicitud);
-    // TODO: enviar la solicitud al servicio de reservas.
+    const idAlojamiento = this.stay.idAlojamiento;
+    if (idAlojamiento == null) {
+      this.errorReserva = 'No se pudo identificar el alojamiento.';
+      return;
+    }
+    this.enviando = true;
+    this.reservaService
+      .cotizar({
+        idAlojamiento,
+        fechaEntrada,
+        fechaSalida,
+        huespedes,
+        serviciosSeleccionados: this.serviciosSeleccionados(),
+      })
+      .subscribe({
+        next: (cotizacion) => {
+          this.cotizacion = cotizacion;
+          this.enviando = false;
+          this.cdr.detectChanges();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.errorReserva = this.reservaService.mensajeDeError(error, 'No se pudo cotizar la estancia.');
+          this.enviando = false;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+  /** El pago se aprobó y la reserva quedó CONFIRMADA. */
+  onReservado(reserva: Reserva): void {
+    this.cotizacion = null;
+    this.reservaConfirmada = reserva;
+    this.cdr.detectChanges();
+  }
+  cerrarPago(): void {
+    this.cotizacion = null;
+  }
+  /** Cierra el modal y pide una cotización nueva con los mismos datos del formulario. */
+  recotizar(): void {
+    this.cotizacion = null;
+    this.reserve();
   }
 }

@@ -388,14 +388,19 @@
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
                 </svg>
-                Enviando solicitud...
+                Calculando cotización...
               } @else {
                 Solicitar reserva
               }
             </button>
             <p class="mt-3 text-center text-xs text-slate-500">
-              Aún no se realizará ningún cobro.
+              El cobro se realiza en el siguiente paso, después de ver el desglose.
             </p>
+            @if (errorReserva) {
+              <p class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+                {{ errorReserva }}
+              </p>
+            }
             <!-- Resumen del precio -->
             <div class="mt-6 space-y-4 border-t border-slate-200 pt-5">
               <h3 class="text-sm font-bold text-slate-900">
@@ -449,7 +454,7 @@
               </div>
             </div>
             <!-- Confirmación de solicitud -->
-            @if (solicitudEnviada) {
+            @if (reservaConfirmada; as r) {
               <div
                 class="mt-5 flex items-start gap-3 rounded-xl border
                  border-emerald-200 bg-emerald-50 p-4"
@@ -471,10 +476,10 @@
                 </svg>
                 <div>
                   <p class="text-sm font-bold text-emerald-900">
-                    ¡Solicitud enviada!
+                    ¡Reserva confirmada!
                   </p>
                   <p class="mt-1 text-sm text-emerald-800">
-                    Tu solicitud de reserva se ha procesado correctamente.
+                    Tu reserva #{{ r.idReserva }} quedó pagada. Dirección: {{ r.ubicacion }}.
                   </p>
                 </div>
               </div>
@@ -692,4 +697,13 @@
       </div>
     </section>
   </main>
+}
+@if (cotizacion) {
+  <app-pago-reserva
+    [cotizacion]="cotizacion"
+    [titulo]="stay?.titulo ?? ''"
+    (reservado)="onReservado($event)"
+    (cerrado)="cerrarPago()"
+    (recotizar)="recotizar()"
+  />
 }

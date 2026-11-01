@@ -1,175 +1,162 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-
-export type ListingStatus = 'Activo' | 'Pausado' | 'Bloqueado' | 'Pendiente' | 'Rechazado';
-export type ApprovalStatus = 'Aprobado' | 'Pendiente de aprobación' | 'Rechazado';
-
-export interface AdminListing {
-  id: string;
-  name: string;
-  image: string;
-  host: string;
-  city: string;
-  type: string;
-  price: string;
-  rating: number | string;
-  status: ListingStatus;
-  approvalStatus?: ApprovalStatus;
-  rejectionReason?: string;
-  submitted?: string;
-  published: string;
-  updated: string;
-}
-
-type ListingActionKind = 'approveListing' | 'rejectListing' | 'blockListing' | 'activateListing';
-
-const ACTIONS = {
-  approveListing: {
-    title: 'Aprobar alojamiento',
-    text: '¿Confirmas que deseas aprobar esta publicación?',
-    label: '',
-    confirm: 'Confirmar aprobación',
-    needsReason: false,
-  },
-  rejectListing: {
-    title: 'Rechazar alojamiento',
-    text: 'La publicación no aparecerá en los resultados públicos.',
-    label: 'Motivo del rechazo',
-    confirm: 'Confirmar rechazo',
-    needsReason: true,
-  },
-  blockListing: {
-    title: 'Bloquear publicación',
-    text: 'Esta acción impedirá que el alojamiento aparezca en las búsquedas mientras esté bloqueado.',
-    label: 'Motivo del bloqueo',
-    confirm: 'Confirmar bloqueo',
-    needsReason: true,
-  },
-  activateListing: {
-    title: 'Activar publicación',
-    text: '¿Deseas habilitar nuevamente esta publicación?',
-    label: '',
-    confirm: 'Confirmar activación',
-    needsReason: false,
-  },
-};
-
+import { Alojamiento } from '../../../models/alojamientoDto';
+import {
+  ACCIONES_ALOJAMIENTO as ACCIONES, AccionAlojamiento, AdminService, ESTADOS_ALOJAMIENTO, accionesDe, claseBadge,
+  conEstado, estadoDe, etiquetaEstado,
+} from '../../../services/admin.service';
+import { AlojamientoService } from '../../../services/alojamiento.service';
 @Component({
   selector: 'app-admin-listings',
   standalone: true,
   templateUrl: './listings.html',
+  imports: [CurrencyPipe, DecimalPipe],
 })
-export class Listings {
-  private router = inject(Router);
-
-  // TODO: reemplazar por los alojamientos del backend
-  listings = signal<AdminListing[]>([]);
-
+export class Listings implements OnInit {
+  private readonly router = inject(Router);
+  private readonly admin = inject(AdminService);
+  private readonly alojamientoService = inject(AlojamientoService);
+  private readonly TAMANIO = 10;
+  readonly acciones = ACCIONES;
+  readonly estados = ESTADOS_ALOJAMIENTO;
+  readonly headers = [
+    'Alojamiento', 'Anfitrión', 'Ciudad', 'Tipo', 'Precio / noche', 'Capacidad', 'Estado', 'Calificación', 'Acciones',
+  ];
+  listings = signal<Alojamiento[]>([]);
+  loading = signal(true);
+  errorCarga = signal(false);
   search = signal('');
   statusFilter = signal('Todos');
   typeFilter = signal('Todos');
   cityFilter = signal('Todas');
-
-  readonly headers = [
-    'Imagen y alojamiento', 'Anfitrión', 'Ciudad', 'Tipo', 'Precio / noche',
-    'Fecha de envío', 'Estado', 'Calificación', 'Acciones',
-  ];
-
-  cities = computed(() => Array.from(new Set(this.listings().map((l) => l.city))));
-
+  pagina = signal(0);
+  types = computed(() => this.unicos((l) => l.tipo));
+  cities = computed(() => this.unicos((l) => l.ciudad));
   filtered = computed(() => {
-    const term = this.search().toLowerCase();
+    const term = this.search().trim().toLowerCase();
     return this.listings().filter(
       (l) =>
-        `${l.name} ${l.host}`.toLowerCase().includes(term) &&
-        (this.statusFilter() === 'Todos' ||
-          l.status === this.statusFilter() ||
-          l.approvalStatus === this.statusFilter()) &&
-        (this.typeFilter() === 'Todos' || l.type === this.typeFilter()) &&
-        (this.cityFilter() === 'Todas' || l.city === this.cityFilter()),
+        `${l.titulo} ${l.nombreAnfitrion ?? ''} ${l.ciudad ?? ''}`.toLowerCase().includes(term) &&
+        (this.statusFilter() === 'Todos' || estadoDe(l) === this.statusFilter()) &&
+        (this.typeFilter() === 'Todos' || l.tipo === this.typeFilter()) &&
+        (this.cityFilter() === 'Todas' || l.ciudad === this.cityFilter()),
     );
   });
-
-  pendingCount = computed(
-    () => this.listings().filter((l) => l.approvalStatus === 'Pendiente de aprobación').length,
-  );
-  approvedCount = computed(
-    () => this.listings().filter((l) => !l.approvalStatus || l.approvalStatus === 'Aprobado').length,
-  );
-  rejectedCount = computed(
-    () => this.listings().filter((l) => l.approvalStatus === 'Rechazado').length,
-  );
-
-  // ---- Modal de confirmación ----
-  action = signal<{ kind: ListingActionKind; id: string } | null>(null);
-  reason = signal('');
-  modal = computed(() => {
-    const a = this.action();
-    return a ? ACTIONS[a.kind] : null;
+  totalPaginas = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.TAMANIO)));
+  paginaActual = computed(() => Math.min(this.pagina(), this.totalPaginas() - 1));
+  visibles = computed(() => {
+    const inicio = this.paginaActual() * this.TAMANIO;
+    return this.filtered().slice(inicio, inicio + this.TAMANIO);
   });
-
-  open(id: string) {
-    this.router.navigate(['/admin/alojamientos', id]);
+  paginasVisibles = computed(() => {
+    const total = this.totalPaginas();
+    const inicio = Math.max(0, Math.min(this.paginaActual() - 2, total - 5));
+    return Array.from({ length: Math.min(total, inicio + 5) - inicio }, (_, i) => inicio + i);
+  });
+  pendingCount = computed(() => this.contar('PENDIENTE_REVISION'));
+  activeCount = computed(() => this.contar('ACTIVA'));
+  blockedCount = computed(() => this.contar('BLOQUEADA'));
+  // ---- Modal de moderación ----
+  accion = signal<{ tipo: AccionAlojamiento; stay: Alojamiento } | null>(null);
+  enviando = signal(false);
+  errorAccion = signal<string | null>(null);
+  motivo = signal('');
+  config = computed(() => {
+    const a = this.accion();
+    return a ? ACCIONES[a.tipo] : null;
+  });
+  puedeConfirmar = computed(() => {
+    const c = this.config();
+    return !!c && !this.enviando() && (!c.requiereMotivo || this.motivo().trim().length > 0);
+  });
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.cancelarAccion();
   }
-
-  askApproval(id: string, approved: boolean) {
-    this.reason.set('');
-    this.action.set({ kind: approved ? 'approveListing' : 'rejectListing', id });
+  ngOnInit(): void {
+    this.cargar();
   }
-
-  askAction(l: AdminListing) {
-    this.reason.set('');
-    this.action.set({ kind: l.status === 'Bloqueado' ? 'activateListing' : 'blockListing', id: l.id });
+  cargar(): void {
+    this.loading.set(true);
+    this.errorCarga.set(false);
+    this.admin.todosLosAlojamientos().subscribe({
+      next: ({ alojamientos }) => {
+        this.listings.set(alojamientos);
+        this.loading.set(false);
+      },
+      error: (error) => {
+        console.error('Error al cargar los alojamientos:', error);
+        this.errorCarga.set(true);
+        this.loading.set(false);
+      },
+    });
   }
-
-  closeAction() {
-    this.action.set(null);
-  }
-
-  confirmAction() {
-    const a = this.action();
-    if (!a) return;
-    const today = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-
-    if (a.kind === 'approveListing' || a.kind === 'rejectListing') {
-      const approved = a.kind === 'approveListing';
-      this.listings.update((list) =>
-        list.map((l) =>
-          l.id === a.id
-            ? {
-              ...l,
-              status: (approved ? 'Activo' : 'Pendiente') as ListingStatus,
-              approvalStatus: (approved ? 'Aprobado' : 'Rechazado') as ApprovalStatus,
-              rejectionReason: approved ? undefined : this.reason(),
-              updated: today,
-              published: approved ? today : l.published,
-            }
-            : l,
-        ),
-      );
-    } else {
-      const next: ListingStatus = a.kind === 'blockListing' ? 'Bloqueado' : 'Activo';
-      this.listings.update((list) =>
-        list.map((l) => (l.id === a.id ? { ...l, status: next, updated: today } : l)),
-      );
+  // ---- Filtros (cada cambio vuelve a la primera página) ----
+  buscar(valor: string): void { this.search.set(valor); this.pagina.set(0); }
+  filtrarEstado(valor: string): void { this.statusFilter.set(valor); this.pagina.set(0); }
+  filtrarTipo(valor: string): void { this.typeFilter.set(valor); this.pagina.set(0); }
+  filtrarCiudad(valor: string): void { this.cityFilter.set(valor); this.pagina.set(0); }
+  irAPagina(pagina: number): void {
+    if (pagina >= 0 && pagina < this.totalPaginas()) {
+      this.pagina.set(pagina);
     }
-    this.action.set(null);
-    // TODO: guardar en el backend, registrar auditoría y avisar
   }
-
-  badgeClass(l: AdminListing) {
-    const tone =
-      l.approvalStatus === 'Rechazado'
-        ? 'bg-red-50 text-red-700'
-        : l.approvalStatus === 'Pendiente de aprobación'
-          ? 'bg-amber-50 text-amber-700'
-          : l.status === 'Activo'
-            ? 'bg-emerald-50 text-emerald-700'
-            : l.status === 'Bloqueado'
-              ? 'bg-red-50 text-red-700'
-              : l.status === 'Pausado'
-                ? 'bg-slate-100 text-slate-600'
-                : 'bg-amber-50 text-amber-700';
-    return 'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + tone;
+  open(id: number | undefined): void {
+    if (id != null) {
+      this.router.navigate(['/admin/alojamientos', id]);
+    }
+  }
+  // ---- Presentación ----
+  accionesDe(l: Alojamiento): AccionAlojamiento[] {
+    return accionesDe(estadoDe(l));
+  }
+  etiqueta(l: Alojamiento): string {
+    return etiquetaEstado(estadoDe(l));
+  }
+  badgeClass(l: Alojamiento): string {
+    return claseBadge(estadoDe(l));
+  }
+  // ---- Moderación ----
+  pedirAccion(tipo: AccionAlojamiento, stay: Alojamiento): void {
+    this.errorAccion.set(null);
+    this.motivo.set('');
+    this.accion.set({ tipo, stay });
+  }
+  cancelarAccion(): void {
+    if (!this.enviando()) {
+      this.accion.set(null);
+    }
+  }
+  confirmarAccion(): void {
+    const a = this.accion();
+    const id = a?.stay.idAlojamiento;
+    if (!a || id == null || !this.puedeConfirmar()) {
+      return;
+    }
+    const motivo = this.motivo().trim();
+    this.enviando.set(true);
+    this.errorAccion.set(null);
+    this.admin.ejecutarAccion(a.tipo, id, motivo).subscribe({
+      next: (actualizado) => {
+        const nuevo = conEstado({ ...a.stay, ...actualizado }, ACCIONES[a.tipo].resultado);
+        this.listings.update((lista) => lista.map((l) => (l.idAlojamiento === id ? nuevo : l)));
+        this.alojamientoService.limpiarCache(); // Inicio y Explorar deben ver el cambio
+        this.enviando.set(false);
+        this.accion.set(null);
+      },
+      error: (error) => {
+        this.errorAccion.set(this.admin.mensajeDeError(error, 'No se pudo completar la acción.'));
+        this.enviando.set(false);
+      },
+    });
+  }
+  private contar(estado: string): number {
+    return this.listings().filter((l) => estadoDe(l) === estado).length;
+  }
+  private unicos(valor: (l: Alojamiento) => string | undefined): string[] {
+    return [...new Set(this.listings().map(valor).filter((v): v is string => !!v?.trim()))].sort((a, b) =>
+      a.localeCompare(b, 'es'),
+    );
   }
 }
