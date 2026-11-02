@@ -107,25 +107,99 @@
       }
       @if (modoStripe()) {
         <p class="mt-2 text-xs text-slate-400">
-          Modo de prueba: usa 4242 4242 4242 4242, una fecha futura y cualquier CVC.
+          Modo de prueba. Aprobada: 4242 4242 4242 4242 · Fondos insuficientes: 4000 0000 0000 9995 ·
+          Rechazada: 4000 0000 0000 0002. Usa una fecha futura y cualquier CVC.
         </p>
       } @else if (config()) {
-        <label for="metodo-prueba" class="block text-xs font-bold text-slate-700">Método de pago de prueba</label>
-        <select
-          id="metodo-prueba"
-          class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"
-          (change)="elegirMetodo($any($event.target).value)"
-        >
-          @for (m of config()!.metodosPrueba; track m.metodoPago) {
-            <option [value]="m.metodoPago" [selected]="m.metodoPago === metodoPrueba()">{{ etiqueta(m) }}</option>
-          }
-        </select>
-        @if (!config()!.metodosPrueba.length) {
-          <p class="mt-2 text-xs text-red-600">El servidor no devolvió métodos de prueba.</p>
-        }
-        <p class="mt-2 text-xs text-slate-400">
-          Pago simulado: no se cobra a ninguna tarjeta real. Para escribir los datos de la tarjeta,
-          el backend debe tener configurada su clave de Stripe.
+        <!-- Modo SIMULADO: se escriben los datos y se elige qué resultado simular -->
+        <div class="space-y-3">
+          <div>
+            <label for="titular-sim" class="block text-xs font-bold text-slate-700">Nombre en la tarjeta (opcional)</label>
+            <input
+              id="titular-sim"
+              type="text"
+              autocomplete="cc-name"
+              placeholder="Como aparece en la tarjeta"
+              class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-500"
+              [value]="titular()"
+              (input)="titular.set($any($event.target).value)"
+            />
+          </div>
+          <div>
+            <label for="numero-sim" class="flex items-center justify-between text-xs font-bold text-slate-700">
+              Número de tarjeta
+              @if (marca()) {
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{{ etiquetaMarca() }}</span>
+              }
+            </label>
+            <input
+              id="numero-sim"
+              type="text"
+              inputmode="numeric"
+              autocomplete="cc-number"
+              placeholder="1234 5678 9012 3456"
+              maxlength="23"
+              class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-500"
+              [value]="numeroSim()"
+              (input)="onNumero($any($event.target))"
+            />
+            @if (errorNumeroSim()) {
+              <p class="mt-1 text-xs text-red-600">{{ errorNumeroSim() }}</p>
+            }
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="vencimiento-sim" class="block text-xs font-bold text-slate-700">Vencimiento (MM/AA)</label>
+              <input
+                id="vencimiento-sim"
+                type="text"
+                inputmode="numeric"
+                autocomplete="cc-exp"
+                placeholder="MM/AA"
+                maxlength="5"
+                class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-500"
+                [value]="vencimientoSim()"
+                (input)="onVencimiento($any($event.target))"
+              />
+              @if (errorVencimientoSim()) {
+                <p class="mt-1 text-xs text-red-600">{{ errorVencimientoSim() }}</p>
+              }
+            </div>
+            <div>
+              <label for="cvc-sim" class="block text-xs font-bold text-slate-700">CVC</label>
+              <input
+                id="cvc-sim"
+                type="text"
+                inputmode="numeric"
+                autocomplete="cc-csc"
+                [placeholder]="marca() === 'amex' ? '4 dígitos' : '3 dígitos'"
+                maxlength="4"
+                class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-500"
+                [value]="cvcSim()"
+                (input)="onCvc($any($event.target))"
+              />
+            </div>
+          </div>
+          <div>
+            <label for="resultado-sim" class="block text-xs font-bold text-slate-700">Resultado de la simulación</label>
+            <select
+              id="resultado-sim"
+              class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"
+              (change)="elegirMetodo($any($event.target).value)"
+            >
+              @for (r of resultados(); track r.valor) {
+                <option [value]="r.valor" [selected]="r.valor === metodoPrueba()">{{ r.texto }}</option>
+              }
+            </select>
+            @if (!resultados().length) {
+              <p class="mt-1 text-xs text-red-600">El servidor no devolvió métodos de prueba.</p>
+            }
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-slate-400">
+          Pago simulado: los datos de la tarjeta solo se validan en tu navegador (no se envían ni se guardan) y el
+          resultado lo define la opción elegida. No escribas tarjetas reales. Para cobros de prueba con Stripe, el
+          backend debe tener configurada su clave.
         </p>
       }
     </div>
@@ -144,13 +218,7 @@
       </div>
     }
     @if (config() && !puedePagar() && !pagando()) {
-      <p class="mt-4 text-center text-xs text-slate-500">
-        @if (modoStripe()) {
-          Completa los datos de la tarjeta para habilitar el pago.
-        } @else {
-          Elige un método de pago de prueba para habilitar el pago.
-        }
-      </p>
+      <p class="mt-4 text-center text-xs text-slate-500">Completa los datos de la tarjeta para habilitar el pago.</p>
     }
     <div class="mt-6 flex gap-3">
       <button
