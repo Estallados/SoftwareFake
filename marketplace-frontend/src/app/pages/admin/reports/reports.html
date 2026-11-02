@@ -5,165 +5,49 @@
     <p class="mt-2 text-sm text-slate-500">Genera consultas administrativas y registra cada exportación solicitada.</p>
   </div>
 </div>
-
-<!-- Filtros del reporte -->
+<!-- Exportar -->
 <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-  <div class="grid grid-cols-3 gap-5">
-    <label class="block">
+  <div class="flex items-end justify-between gap-6">
+    <label class="block w-full max-w-sm">
       <span class="text-sm font-bold">Tipo de reporte</span>
       <select
-        [ngModel]="report()"
-        (ngModelChange)="report.set($event); generated.set(false)"
+        (change)="report.set($any($event.target).value); mensaje.set(null)"
         class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
       >
-        @for (item of reportTypes; track item) {
-          <option [value]="item">{{ item }}</option>
+        @for (item of reportTypes; track item.valor) {
+          <option [value]="item.valor" [selected]="item.valor === report()">{{ item.texto }}</option>
         }
       </select>
     </label>
-
-    <label class="block">
-      <span class="text-sm font-bold">Fecha desde</span>
-      <input
-        type="date"
-        [ngModel]="from()"
-        (ngModelChange)="from.set($event)"
-        class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-      />
-    </label>
-
-    <label class="block">
-      <span class="text-sm font-bold">Fecha hasta</span>
-      <input
-        type="date"
-        [ngModel]="to()"
-        (ngModelChange)="to.set($event)"
-        class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-      />
-    </label>
-
-    <label class="block">
-      <span class="text-sm font-bold">Estado</span>
-      <select
-        [ngModel]="status()"
-        (ngModelChange)="status.set($event)"
-        [disabled]="statusDisabled()"
-        class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+    <div class="flex gap-3">
+      <button
+        type="button"
+        (click)="exportReport('pdf')"
+        [disabled]="exportando() !== null"
+        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        @for (item of statuses; track item) {
-          <option [value]="item">{{ item }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="block">
-      <span class="text-sm font-bold">Ciudad</span>
-      <select
-        [ngModel]="city()"
-        (ngModelChange)="city.set($event)"
-        class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+        {{ exportando() === 'pdf' ? 'Generando PDF...' : 'Exportar PDF' }}
+      </button>
+      <button
+        type="button"
+        (click)="exportReport('excel')"
+        [disabled]="exportando() !== null"
+        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        @for (item of cities; track item) {
-          <option [value]="item">{{ item }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="block">
-      <span class="text-sm font-bold">Tipo de alojamiento</span>
-      <select
-        [ngModel]="propertyType()"
-        (ngModelChange)="propertyType.set($event)"
-        [disabled]="propertyDisabled()"
-        class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm disabled:bg-slate-50 disabled:text-slate-400"
-      >
-        @for (item of propertyTypes; track item) {
-          <option [value]="item">{{ item }}</option>
-        }
-      </select>
-    </label>
+        {{ exportando() === 'excel' ? 'Generando Excel...' : 'Exportar Excel' }}
+      </button>
+    </div>
   </div>
-
-  <div class="mt-6 flex justify-end">
-    <button
-      type="button"
-      (click)="generate()"
-      class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
+  @if (mensaje(); as m) {
+    <p
+      class="mt-5 rounded-xl border p-3 text-sm"
+      [class]="m.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'"
+      [attr.role]="m.ok ? 'status' : 'alert'"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 3v18h18" />
-        <path d="m7 16 4-5 4 3 5-7" />
-      </svg>
-      Generar reporte
-    </button>
-  </div>
+      {{ m.texto }}
+    </p>
+  }
 </section>
-
-<!-- Vista previa -->
-@if (generated()) {
-  <section class="mt-7">
-    <div class="flex items-end justify-between">
-      <div>
-        <h2 class="font-display text-xl font-bold">Vista previa · Reporte de {{ report().toLowerCase() }}</h2>
-        <p class="mt-1 text-xs text-slate-500">{{ filterSummary() }}</p>
-      </div>
-      <div class="flex gap-3">
-        <button
-          type="button"
-          (click)="exportReport('PDF')"
-          class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:border-emerald-300 hover:bg-emerald-50"
-        >
-          Exportar PDF
-        </button>
-        <button
-          type="button"
-          (click)="exportReport('Excel')"
-          class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
-        >
-          Exportar Excel
-        </button>
-      </div>
-    </div>
-
-    <div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-        <tr>
-          @for (h of preview().headers; track h) {
-            <th class="px-5 py-4 font-bold">{{ h }}</th>
-          }
-        </tr>
-        </thead>
-        <tbody>
-          @for (row of preview().rows; track $index) {
-            <tr class="border-t border-slate-100 hover:bg-slate-50">
-              @for (cell of row; track $index; let j = $index) {
-                <td class="px-5 py-5">
-                  @if (j === 0) {
-                    <strong>{{ cell }}</strong>
-                  } @else if (preview().headers[j] === 'Estado') {
-                    <span [class]="badgeClass(cell)">{{ cell }}</span>
-                  } @else {
-                    {{ cell }}
-                  }
-                </td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-      <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
-        <span>Mostrando {{ preview().rows.length }} resultados</span>
-        <div class="flex gap-2">
-          <span class="rounded-lg border px-3 py-2 text-slate-300">Anterior</span>
-          <span class="rounded-lg bg-emerald-700 px-3 py-2 text-white">1</span>
-          <span class="rounded-lg border px-3 py-2 text-slate-300">Siguiente</span>
-        </div>
-      </div>
-    </div>
-  </section>
-}
-
 <!-- Historial de exportaciones -->
 <section class="mt-10">
   <div class="flex items-end justify-between">
@@ -171,9 +55,8 @@
       <h2 class="font-display text-xl font-bold">Historial de exportaciones</h2>
       <p class="mt-1 text-sm text-slate-500">Trazabilidad de reportes solicitados por el administrador.</p>
     </div>
-    <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ history().length }} registros</span>
+    <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ totalElementos() }} registros</span>
   </div>
-
   <div class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
     <table class="w-full text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
@@ -184,30 +67,58 @@
       </tr>
       </thead>
       <tbody>
-        @for (item of history(); track item.id) {
-          <tr class="border-t border-slate-100 hover:bg-slate-50">
-            <td class="px-5 py-5"><strong>Reporte de {{ item.report.toLowerCase() }}</strong></td>
-            <td class="px-5 py-5">
-              <span
-                class="inline-flex rounded-full px-3 py-1 text-xs font-bold"
-                [class]="item.format === 'PDF' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'"
-              >
-                {{ item.format }}
-              </span>
+        @if (loadingHistory()) {
+          <tr><td colspan="4" class="px-5 py-10 text-center text-slate-500">Cargando historial...</td></tr>
+        } @else if (errorHistory()) {
+          <tr>
+            <td colspan="4" class="px-5 py-10 text-center">
+              <p class="text-red-600" role="alert">No se pudo cargar el historial.</p>
+              <button type="button" (click)="cargarHistorial()" class="mt-3 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800">
+                Reintentar
+              </button>
             </td>
-            <td class="px-5 py-5">Administrador LR</td>
-            <td class="px-5 py-5">{{ item.date }}</td>
-            <td class="px-5 py-5"><p class="max-w-sm text-xs leading-5 text-slate-500">{{ item.filters }}</p></td>
           </tr>
+        } @else {
+          @for (item of history(); track $index) {
+            <tr class="border-t border-slate-100 hover:bg-slate-50">
+              <td class="px-5 py-5"><strong>Reporte de {{ reporteDe(item).toLowerCase() }}</strong></td>
+              <td class="px-5 py-5">
+                <span
+                  class="inline-flex rounded-full px-3 py-1 text-xs font-bold"
+                  [class]="formatoDe(item) === 'PDF' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'"
+                >
+                  {{ formatoDe(item) }}
+                </span>
+              </td>
+              <td class="px-5 py-5">{{ usuarioDe(item) }}</td>
+              <td class="px-5 py-5 whitespace-nowrap">{{ fechaDe(item) | date: 'dd/MM/yyyy HH:mm' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="px-5 py-10 text-center text-slate-500">Aún no hay exportaciones registradas.</td></tr>
+          }
         }
       </tbody>
     </table>
     <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-xs text-slate-500">
-      <span>Mostrando {{ history().length }} resultados</span>
+      <span>Mostrando {{ history().length }} de {{ totalElementos() }} registros</span>
       <div class="flex gap-2">
-        <span class="rounded-lg border px-3 py-2 text-slate-300">Anterior</span>
-        <span class="rounded-lg bg-emerald-700 px-3 py-2 text-white">1</span>
-        <span class="rounded-lg border px-3 py-2 text-slate-300">Siguiente</span>
+        <button type="button" (click)="irAPagina(pagina() - 1)" [disabled]="pagina() === 0 || loadingHistory()" class="rounded-lg border px-3 py-2 disabled:text-slate-300">
+          Anterior
+        </button>
+        @for (p of paginasVisibles(); track p) {
+          <button
+            type="button"
+            (click)="irAPagina(p)"
+            [disabled]="loadingHistory()"
+            [class]="p === pagina() ? 'rounded-lg bg-emerald-700 px-3 py-2 text-white' : 'rounded-lg border px-3 py-2 hover:bg-slate-50'"
+            [attr.aria-current]="p === pagina() ? 'page' : null"
+          >
+            {{ p + 1 }}
+          </button>
+        }
+        <button type="button" (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas() - 1 || loadingHistory()" class="rounded-lg border px-3 py-2 disabled:text-slate-300">
+          Siguiente
+        </button>
       </div>
     </div>
   </div>

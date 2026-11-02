@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, shareReplay, switchMap, tap } from 'rxjs';
+import { Observable, catchError, forkJoin, from, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { Alojamiento } from '../models/alojamientoDto';
 import { ConfiguracionTarifa } from '../models/configuracionTarifaDto';
 import { EstadoAlojamiento } from '../models/estadoAlojamientoDto';
@@ -311,9 +311,56 @@ export class AdminService {
   auditoria(filtros: FiltrosAuditoria = {}): Observable<EventoAuditoria[]> {
     return this.lista<EventoAuditoria>(`${this.base}/auditoria`, { ...filtros });
   }
+  /** Una página de eventos de auditoría con sus totales, del más reciente al más antiguo. */
+  auditoriaPagina(pagina = 0, tamanio = 20, filtros: FiltrosAuditoria = {}): Observable<Pagina<EventoAuditoria>> {
+    return this.paginado<EventoAuditoria>(`${this.base}/auditoria`, { ...filtros, pagina, tamanio });
+  }
   /** Detalle de un evento de auditoría. */
   evento(id: number): Observable<EventoAuditoria> {
     return this.cacheado(`${this.base}/auditoria/${id}`, () => this.http.get<EventoAuditoria>(`${this.base}/auditoria/${id}`));
+  }
+  // ================= Reportes =================
+  /** Historial de exportaciones (quién, qué, formato y cuándo). Cada registro se lee con valorDe. */
+  historialExportaciones(pagina = 0, tamanio = 20): Observable<Pagina<Record<string, unknown>>> {
+    return this.paginado<Record<string, unknown>>(`${this.base}/reportes/historial`, { pagina, tamanio });
+  }
+  /**
+   * Descarga un reporte. tipo: usuarios, alojamientos, reservas, ingresos o demanda; formato: pdf o excel.
+   * Registra la exportación en el historial, por eso invalida ese listado y la auditoría.
+   */
+  exportarReporte(tipo: string, formato: 'pdf' | 'excel'): Observable<{ blob: Blob; nombre: string }> {
+    return this.http
+      .get(`${this.base}/reportes/${tipo}`, { params: { formato }, responseType: 'blob', observe: 'response' })
+      .pipe(
+        map((r) => ({
+          blob: r.body as Blob,
+          nombre: this.nombreDeArchivo(r.headers.get('Content-Disposition'), tipo, formato),
+        })),
+        tap(() => this.invalidar('reportes', 'auditoria')),
+        // Con responseType blob, el cuerpo del error llega como Blob: se vuelve a leer como JSON.
+        catchError((e: HttpErrorResponse) =>
+          e.error instanceof Blob
+            ? from(e.error.text()).pipe(
+              switchMap((texto) =>
+                throwError(
+                  () => new HttpErrorResponse({ error: this.comoJson(texto), status: e.status, statusText: e.statusText }),
+                ),
+              ),
+            )
+            : throwError(() => e),
+        ),
+      );
+  }
+  private nombreDeArchivo(cabecera: string | null, tipo: string, formato: string): string {
+    const encontrado = cabecera?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    return encontrado ? decodeURIComponent(encontrado[1]) : `reporte-${tipo}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+  }
+  private comoJson(texto: string): unknown {
+    try {
+      return JSON.parse(texto);
+    } catch {
+      return texto;
+    }
   }
   // ================= Utilidades =================
   /** Mensaje legible a partir de un error HTTP del backend. */
