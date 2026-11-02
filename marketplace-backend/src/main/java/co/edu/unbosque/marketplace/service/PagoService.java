@@ -22,6 +22,7 @@ import co.edu.unbosque.marketplace.entity.EstadoPago;
 import co.edu.unbosque.marketplace.entity.Pago;
 import co.edu.unbosque.marketplace.entity.Reserva;
 import co.edu.unbosque.marketplace.repository.PagoRepository;
+import co.edu.unbosque.marketplace.util.LimitesTexto;
 
 /**
  * Pagos simulados con Stripe. Nunca hace cobros reales. Las llamadas a la API
@@ -163,7 +164,7 @@ public class PagoService {
 		pago.setEstado(resultado.estado());
 		pago.setReferencia(resultado.referencia());
 		pago.setProveedor(resultado.proveedor());
-		pago.setDetalle(resultado.detalle());
+		pago.setDetalle(LimitesTexto.recortar(resultado.detalle(), LimitesTexto.CORTO));
 		pago.setFecha(LocalDateTime.now());
 		return pagoRepo.save(pago);
 	}
@@ -197,7 +198,7 @@ public class PagoService {
 			pago.setValorReembolsado(valor);
 			pago.setReferenciaReembolso(resultado.referencia());
 		}
-		pago.setDetalle(resultado.detalle());
+		pago.setDetalle(LimitesTexto.recortar(resultado.detalle(), LimitesTexto.CORTO));
 		pagoRepo.save(pago);
 	}
 

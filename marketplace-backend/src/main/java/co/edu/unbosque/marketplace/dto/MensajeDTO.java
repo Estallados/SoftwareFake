@@ -13,6 +13,8 @@ public class MensajeDTO {
 	private LocalDateTime fechaEnvio;
 	private Long idConversacion;
 	private Long idUsuario;
+	/** Nombre de quien envió el mensaje. */
+	private String nombreUsuario;
 
 	public MensajeDTO() {
 	}
@@ -55,5 +57,13 @@ public class MensajeDTO {
 
 	public void setIdUsuario(Long idUsuario) {
 		this.idUsuario = idUsuario;
+	}
+
+	public String getNombreUsuario() {
+		return nombreUsuario;
+	}
+
+	public void setNombreUsuario(String nombreUsuario) {
+		this.nombreUsuario = nombreUsuario;
 	}
 }

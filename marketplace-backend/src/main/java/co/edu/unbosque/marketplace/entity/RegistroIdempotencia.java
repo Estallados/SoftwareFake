@@ -50,6 +50,7 @@ public class RegistroIdempotencia {
 	@Enumerated(EnumType.STRING)
 	private EstadoIdempotencia estado;
 	private Integer codigoRespuesta;
+	@Column(columnDefinition = "TEXT")
 	private String cuerpoRespuesta;
 	private LocalDateTime fechaCreacion;
 

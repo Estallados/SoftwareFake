@@ -70,7 +70,7 @@ public class UsuarioController {
 	// Actualizar el perfil propio: solo nombre y teléfono
 	@Operation(summary = "Actualizar el perfil propio", description = "Solo cambia nombre y teléfono; los demás campos enviados se ignoran.")
 	@ApiResponse(responseCode = "200", description = "Perfil actualizado correctamente.")
-	@ApiResponse(responseCode = "400", description = "Envía un nombre no vacío y/o un teléfono de 7 a 15 dígitos.")
+	@ApiResponse(responseCode = "400", description = "Envía un nombre no vacío (máximo 255 caracteres) y/o un teléfono de 7 a 15 dígitos.")
 	@ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
 	@PutMapping("/perfil")
 	public ResponseEntity<Object> actualizarPerfil(@RequestBody UsuarioDTO cambios, Authentication authentication) {
@@ -79,7 +79,7 @@ public class UsuarioController {
 				cambios.getTelefono())) {
 		case 0 -> mensaje(HttpStatus.OK, "Perfil actualizado correctamente.");
 		case 1 -> mensaje(HttpStatus.NOT_FOUND, USUARIO_NO_ENCONTRADO);
-		default -> mensaje(HttpStatus.BAD_REQUEST, "Envía un nombre no vacío y/o un teléfono " + "de 7 a 15 dígitos.");
+		default -> mensaje(HttpStatus.BAD_REQUEST, "Envía un nombre no vacío (máximo 255 caracteres) y/o un teléfono de 7 a 15 dígitos.");
 		};
 	}
 

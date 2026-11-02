@@ -297,8 +297,8 @@ public class AuthController {
 			mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
 		case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST,
 				"Datos incompletos o inválidos: "
-						+ "nombre, correo válido y contraseña son obligatorios; el teléfono, si se envía, debe tener "
-						+ "de 7 a 15 dígitos.");
+						+ "nombre (máximo 255 caracteres), correo válido (máximo 150) y contraseña son obligatorios; "
+						+ "el teléfono, si se envía, debe tener de 7 a 15 dígitos.");
 		case UsuarioService.CONTRASENIA_DEBIL -> mensaje(HttpStatus.BAD_REQUEST, MENSAJE_CONTRASENIA_DEBIL);
 		case UsuarioService.ROL_NO_PERMITIDO ->
 			mensaje(HttpStatus.FORBIDDEN, "Solo puedes registrarte como HUESPED o ANFITRION.");

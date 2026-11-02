@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -164,14 +165,26 @@ public class IdempotenciaService {
 		} catch (JsonProcessingException e) {
 			LOG.error("No se pudo guardar la respuesta de la operación {}", registro.getOperacion(), e);
 		}
-		String cuerpoRespuesta = cuerpo;
-		// Se actualiza la fila recién leída en esta transacción, no la copia de la
-		// transacción anterior
+		try {
+			completar(registro, respuesta, cuerpo);
+		} catch (DataAccessException e) {
+			// La acción ya se hizo (por ejemplo, la reserva quedó pagada): no se
+			// convierte en error; se guarda el registro sin el cuerpo.
+			LOG.error("No se pudo guardar la respuesta de la operación {}", registro.getOperacion(), e);
+			completar(registro, respuesta, null);
+		}
+	}
+
+	/**
+	 * Marca el registro como completado. Se actualiza la fila recién leída en
+	 * esta transacción, no la copia de la transacción anterior.
+	 */
+	private void completar(RegistroIdempotencia registro, ResponseEntity<?> respuesta, String cuerpo) {
 		transaccionPropia
 				.executeWithoutResult(estado -> registroRepo.findById(registro.getIdRegistro()).ifPresent(guardado -> {
 					guardado.setEstado(EstadoIdempotencia.COMPLETADA);
 					guardado.setCodigoRespuesta(respuesta.getStatusCode().value());
-					guardado.setCuerpoRespuesta(cuerpoRespuesta);
+					guardado.setCuerpoRespuesta(cuerpo);
 				}));
 	}
 

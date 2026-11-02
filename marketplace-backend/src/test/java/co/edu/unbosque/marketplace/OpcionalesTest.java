@@ -69,15 +69,21 @@ class OpcionalesTest extends PruebaIntegracionBase {
 				Map.of("idAlojamiento", id, "mensaje", "¿Tiene parqueadero?"), 201);
 		long idConversacion = conversacion.get("idConversacion").asLong();
 		assertEquals(anfitrion.id(), conversacion.get("idAnfitrion").asLong());
+		assertEquals("Usuario HUESPED", conversacion.get("nombreUsuario").asText());
+		assertEquals("Usuario ANFITRION", conversacion.get("nombreAnfitrion").asText());
+		JsonNode lista = llamar(get("/conversaciones"), anfitrion.token(), null, 200);
+		assertEquals("Usuario HUESPED", lista.get("contenido").get(0).get("nombreUsuario").asText());
 
 		JsonNode respuesta = llamar(post("/conversaciones/" + idConversacion + "/mensajes"), anfitrion.token(),
 				Map.of("contenido", "Sí, cubierto"), 201);
 		assertEquals(anfitrion.id(), respuesta.get("idUsuario").asLong());
+		assertEquals("Usuario ANFITRION", respuesta.get("nombreUsuario").asText());
 		assertTrue(respuesta.has("fechaEnvio"));
 
 		JsonNode mensajes = llamar(get("/conversaciones/" + idConversacion + "/mensajes"), huesped.token(), null, 200);
 		assertEquals(2, mensajes.get("totalElementos").asInt());
 		assertEquals(huesped.id(), mensajes.get("contenido").get(0).get("idUsuario").asLong());
+		assertEquals("Usuario HUESPED", mensajes.get("contenido").get(0).get("nombreUsuario").asText());
 		assertEquals("Sí, cubierto", mensajes.get("contenido").get(1).get("contenido").asText());
 	}
 

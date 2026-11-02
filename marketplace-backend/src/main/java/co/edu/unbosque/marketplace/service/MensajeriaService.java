@@ -1,6 +1,9 @@
 package co.edu.unbosque.marketplace.service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
@@ -18,6 +21,7 @@ import co.edu.unbosque.marketplace.entity.Mensaje;
 import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.ConversacionRepository;
 import co.edu.unbosque.marketplace.repository.MensajeRepository;
+import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -35,16 +39,19 @@ public class MensajeriaService {
 	private final ConversacionRepository conversacionRepo;
 	private final MensajeRepository mensajeRepo;
 	private final AlojamientoRepository alojamientoRepo;
+	private final UsuarioRepository usuarioRepo;
 	private final NotificacionService notificacionService;
 	private final TiempoRealService tiempoReal;
 	private final ModelMapper modelMapper;
 
 	public MensajeriaService(ConversacionRepository conversacionRepo, MensajeRepository mensajeRepo,
-			AlojamientoRepository alojamientoRepo, NotificacionService notificacionService,
+			AlojamientoRepository alojamientoRepo, UsuarioRepository usuarioRepo,
+			NotificacionService notificacionService,
 			TiempoRealService tiempoReal, ModelMapper modelMapper) {
 		this.conversacionRepo = conversacionRepo;
 		this.mensajeRepo = mensajeRepo;
 		this.alojamientoRepo = alojamientoRepo;
+		this.usuarioRepo = usuarioRepo;
 		this.notificacionService = notificacionService;
 		this.tiempoReal = tiempoReal;
 		this.modelMapper = modelMapper;
@@ -88,7 +95,7 @@ public class MensajeriaService {
 		if (datos.getMensaje() != null && !datos.getMensaje().isBlank()) {
 			guardarMensaje(conversacion, datos.getMensaje(), idUsuario);
 		}
-		return Resultado.exito(modelMapper.map(conversacion, ConversacionDTO.class));
+		return Resultado.exito(convertirDTO(conversacion));
 	}
 
 	/** Indica si el usuario ya tiene una conversación sobre el alojamiento. */
@@ -99,8 +106,7 @@ public class MensajeriaService {
 
 	/** Conversaciones en las que participa el usuario. */
 	public PaginaDTO<ConversacionDTO> listar(Long idUsuario, Pageable pagina) {
-		return PaginaDTO.de(conversacionRepo.buscarDeParticipante(idUsuario, pagina),
-				c -> modelMapper.map(c, ConversacionDTO.class));
+		return PaginaDTO.de(conversacionRepo.buscarDeParticipante(idUsuario, pagina), this::convertirDTO);
 	}
 
 	/**
@@ -114,8 +120,9 @@ public class MensajeriaService {
 		if (!carga.esExito()) {
 			return Resultado.error(carga.getCodigo(), carga.getMensaje());
 		}
+		Map<Long, String> nombres = nombres(carga.getDato());
 		return Resultado.exito(PaginaDTO.de(mensajeRepo.findByIdConversacion(idConversacion, pagina),
-				m -> modelMapper.map(m, MensajeDTO.class)));
+				m -> convertirDTO(m, nombres)));
 	}
 
 	/**
@@ -148,7 +155,7 @@ public class MensajeriaService {
 		mensaje.setIdUsuario(idRemitente);
 		mensaje.setContenido(contenido.trim());
 		mensaje.setFechaEnvio(LocalDateTime.now());
-		MensajeDTO guardado = modelMapper.map(mensajeRepo.save(mensaje), MensajeDTO.class);
+		MensajeDTO guardado = convertirDTO(mensajeRepo.save(mensaje), nombres(conversacion));
 
 		Long destinatario = idRemitente.equals(conversacion.getIdUsuario()) ? conversacion.getIdAnfitrion()
 				: conversacion.getIdUsuario();
@@ -157,6 +164,28 @@ public class MensajeriaService {
 		notificacionService.enviar(destinatario, NotificacionService.MENSAJE_RECIBIDO,
 				"Tienes un mensaje nuevo en la conversación " + conversacion.getIdConversacion() + ".");
 		return guardado;
+	}
+
+	private ConversacionDTO convertirDTO(Conversacion conversacion) {
+		ConversacionDTO dto = modelMapper.map(conversacion, ConversacionDTO.class);
+		Map<Long, String> nombres = nombres(conversacion);
+		dto.setNombreUsuario(nombres.get(conversacion.getIdUsuario()));
+		dto.setNombreAnfitrion(nombres.get(conversacion.getIdAnfitrion()));
+		return dto;
+	}
+
+	private MensajeDTO convertirDTO(Mensaje mensaje, Map<Long, String> nombres) {
+		MensajeDTO dto = modelMapper.map(mensaje, MensajeDTO.class);
+		dto.setNombreUsuario(nombres.get(mensaje.getIdUsuario()));
+		return dto;
+	}
+
+	/** Nombres de los dos participantes, por id (una consulta). */
+	private Map<Long, String> nombres(Conversacion conversacion) {
+		Map<Long, String> nombres = new HashMap<>();
+		usuarioRepo.findAllById(List.of(conversacion.getIdUsuario(), conversacion.getIdAnfitrion()))
+				.forEach(u -> nombres.put(u.getIdUsuario(), u.getNombre()));
+		return nombres;
 	}
 
 	private Resultado<Conversacion> cargarComoParticipante(Long idConversacion, Long idUsuario) {

@@ -53,6 +53,7 @@ import co.edu.unbosque.marketplace.repository.ReservaRepository;
 import co.edu.unbosque.marketplace.repository.ServicioAdicionalRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
+import co.edu.unbosque.marketplace.util.LimitesTexto;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -578,6 +579,9 @@ public class PublicacionService {
         if (motivo == null || motivo.isBlank()) {
             return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo del rechazo es obligatorio.");
         }
+        if (LimitesTexto.excede(motivo, LimitesTexto.MOTIVO)) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, LimitesTexto.MOTIVO_LARGO);
+        }
         Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
         if (alojamiento.isEmpty()) {
             return Resultado.error(Resultado.NO_ENCONTRADO, NO_EXISTE);
@@ -604,6 +608,9 @@ public class PublicacionService {
     public Resultado<AlojamientoDTO> bloquear(Long idAlojamiento, Long idAdmin, String motivo) {
         if (motivo == null || motivo.isBlank()) {
             return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo del bloqueo es obligatorio.");
+        }
+        if (LimitesTexto.excede(motivo, LimitesTexto.MOTIVO)) {
+            return Resultado.error(Resultado.DATOS_INVALIDOS, LimitesTexto.MOTIVO_LARGO);
         }
         Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
         if (alojamiento.isEmpty()) {
@@ -661,7 +668,7 @@ public class PublicacionService {
         }
         if (!servicioValido(datos)) {
             return Resultado.error(Resultado.DATOS_INVALIDOS,
-                    "El servicio adicional necesita un nombre y un costo positivo.");
+                    "El servicio adicional necesita un nombre (máximo 255 caracteres) y un costo positivo.");
         }
         ServicioAdicional servicio = new ServicioAdicional();
         servicio.setIdAlojamiento(idAlojamiento);
@@ -694,7 +701,7 @@ public class PublicacionService {
         }
         if (!servicioValido(datos)) {
             return Resultado.error(Resultado.DATOS_INVALIDOS,
-                    "El servicio adicional necesita un nombre y un costo positivo.");
+                    "El servicio adicional necesita un nombre (máximo 255 caracteres) y un costo positivo.");
         }
         servicio.get().setNombre(datos.getNombre().trim());
         servicio.get().setCosto(datos.getCosto());
@@ -904,6 +911,21 @@ public class PublicacionService {
         if (creacion && (datos.getTitulo() == null || datos.getTitulo().isBlank())) {
             return "El título es obligatorio.";
         }
+        if (LimitesTexto.excede(datos.getTitulo(), LimitesTexto.CORTO)
+                || LimitesTexto.excede(datos.getUbicacion(), LimitesTexto.CORTO)
+                || LimitesTexto.excede(datos.getCiudad(), LimitesTexto.CORTO)
+                || LimitesTexto.excede(datos.getTipo(), LimitesTexto.CORTO)) {
+            return "El título, la ubicación, la ciudad y el tipo pueden tener máximo " + LimitesTexto.CORTO
+                    + " caracteres.";
+        }
+        if (LimitesTexto.excede(datos.getDescripcion(), LimitesTexto.LARGO)
+                || LimitesTexto.excede(datos.getReglas(), LimitesTexto.LARGO)) {
+            return "La descripción y las reglas pueden tener máximo " + LimitesTexto.LARGO + " caracteres.";
+        }
+        if (datos.getAmenidades() != null
+                && datos.getAmenidades().stream().anyMatch(a -> LimitesTexto.excede(a, LimitesTexto.CORTO))) {
+            return "Cada amenidad puede tener máximo " + LimitesTexto.CORTO + " caracteres.";
+        }
         if (datos.getCapacidad() != null && datos.getCapacidad() <= 0) {
             return "La capacidad debe ser mayor que cero.";
         }
@@ -1056,7 +1078,8 @@ public class PublicacionService {
     }
 
     private static boolean servicioValido(ServicioAdicionalDTO datos) {
-        return datos != null && datos.getNombre() != null && !datos.getNombre().isBlank() && datos.getCosto() != null
+        return datos != null && datos.getNombre() != null && !datos.getNombre().isBlank()
+                && !LimitesTexto.excede(datos.getNombre(), LimitesTexto.CORTO) && datos.getCosto() != null
                 && datos.getCosto().signum() > 0;
     }
 

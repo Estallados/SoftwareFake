@@ -11,6 +11,7 @@ import co.edu.unbosque.marketplace.dto.NotificacionDTO;
 import co.edu.unbosque.marketplace.dto.PaginaDTO;
 import co.edu.unbosque.marketplace.entity.Notificacion;
 import co.edu.unbosque.marketplace.repository.NotificacionRepository;
+import co.edu.unbosque.marketplace.util.LimitesTexto;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -66,7 +67,7 @@ public class NotificacionService {
 		Notificacion notificacion = new Notificacion();
 		notificacion.setIdUsuario(idUsuario);
 		notificacion.setTipo(tipo);
-		notificacion.setMensaje(mensaje);
+		notificacion.setMensaje(LimitesTexto.recortar(mensaje, LimitesTexto.MEDIO));
 		notificacion.setFecha(LocalDateTime.now());
 		notificacion.setLeida(false);
 		tiempoReal.enviarAUsuario(idUsuario, TiempoRealService.NOTIFICACIONES,

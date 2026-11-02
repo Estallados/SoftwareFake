@@ -24,6 +24,7 @@ import co.edu.unbosque.marketplace.repository.AlojamientoRepository;
 import co.edu.unbosque.marketplace.repository.CancelacionRepository;
 import co.edu.unbosque.marketplace.repository.PoliticaCancelacionRepository;
 import co.edu.unbosque.marketplace.repository.ReservaRepository;
+import co.edu.unbosque.marketplace.util.LimitesTexto;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -98,6 +99,9 @@ public class CancelacionService {
 	public Resultado<CancelacionDTO> cancelar(Long idReserva, String motivo, Long idActor) {
 		if (motivo == null || motivo.isBlank()) {
 			return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo de la cancelación es obligatorio.");
+		}
+		if (LimitesTexto.excede(motivo, LimitesTexto.MOTIVO)) {
+			return Resultado.error(Resultado.DATOS_INVALIDOS, LimitesTexto.MOTIVO_LARGO);
 		}
 		Optional<Reserva> reservaOpt = reservaRepo.findById(idReserva).filter(r -> r.getIdHuesped().equals(idActor));
 		if (reservaOpt.isEmpty()) {

@@ -31,6 +31,7 @@ import co.edu.unbosque.marketplace.exception.SmallException;
 import co.edu.unbosque.marketplace.exception.SymbolException;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
+import co.edu.unbosque.marketplace.util.LimitesTexto;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
@@ -153,7 +154,9 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	 */
 	private int registrar(UsuarioDTO data, Role rol, Long idActor, String accion) {
 		if (data == null || esVacio(data.getNombre()) || esVacio(data.getCorreo()) || esVacio(data.getContrasenia())
-				|| !telefonoValido(data.getTelefono())) {
+				|| !telefonoValido(data.getTelefono())
+				|| LimitesTexto.excede(data.getNombre(), LimitesTexto.CORTO)
+				|| LimitesTexto.excede(data.getCorreo(), LimitesTexto.CORREO)) {
 			auditarRechazo(idActor, accion, "Datos incompletos o inválidos");
 			return DATOS_INVALIDOS;
 		}
@@ -385,6 +388,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	 */
 	public int actualizarPerfil(String correo, String nombre, String telefono) {
 		if ((nombre == null && telefono == null) || (nombre != null && nombre.isBlank())
+				|| LimitesTexto.excede(nombre, LimitesTexto.CORTO)
 				|| (telefono != null && !telefonoValido(telefono))) {
 			return 2;
 		}
@@ -434,6 +438,9 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	public Resultado<UsuarioDTO> restringir(Long idUsuario, String motivo, Long idAdmin) {
 		if (esVacio(motivo)) {
 			return Resultado.error(Resultado.DATOS_INVALIDOS, "El motivo de la restricción es obligatorio.");
+		}
+		if (LimitesTexto.excede(motivo, LimitesTexto.MOTIVO)) {
+			return Resultado.error(Resultado.DATOS_INVALIDOS, LimitesTexto.MOTIVO_LARGO);
 		}
 		Optional<Usuario> usuario = usuarioRepo.findById(idUsuario);
 		if (usuario.isEmpty()) {
