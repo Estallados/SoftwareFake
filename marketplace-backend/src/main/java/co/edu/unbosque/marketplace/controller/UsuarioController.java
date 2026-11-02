@@ -116,7 +116,7 @@ public class UsuarioController {
 		case UsuarioService.CORREO_DUPLICADO ->
 			mensaje(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico.");
 		case UsuarioService.CONTRASENIA_DEBIL ->
-			mensaje(HttpStatus.BAD_REQUEST, "La contraseña debe tener al menos 8 caracteres, "
+			mensaje(HttpStatus.BAD_REQUEST, "La contraseña debe tener entre 8 y 64 caracteres, "
 					+ "una mayúscula, una minúscula, un número y un símbolo.");
 		case UsuarioService.DATOS_INVALIDOS -> mensaje(HttpStatus.BAD_REQUEST, "Datos incompletos o inválidos.");
 		default -> mensaje(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo crear el administrador.");

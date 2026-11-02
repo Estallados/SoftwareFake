@@ -56,7 +56,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-	private static final String MENSAJE_CONTRASENIA_DEBIL = "La contraseña debe tener al menos 8 caracteres, "
+	private static final String MENSAJE_CONTRASENIA_DEBIL = "La contraseña debe tener entre 8 y 64 caracteres, "
 			+ "una mayúscula, una minúscula, un número y un símbolo.";
 
 	/** Valida las credenciales contra la base de datos (BCrypt). */
@@ -278,7 +278,7 @@ public class AuthController {
 			+ "requiereVerificacion=true}; se envió el código")
 	@ApiResponse(responseCode = "400", description = "Datos incompletos o inválidos: nombre, correo válido y "
 			+ "contraseña son obligatorios; el teléfono, si se envía, debe tener de 7 a 15 dígitos. | La contraseña "
-			+ "debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.")
+			+ "debe tener entre 8 y 64 caracteres, una mayúscula, una minúscula, un número y un símbolo.")
 	@ApiResponse(responseCode = "403", description = "Solo puedes registrarte como HUESPED o ANFITRION.")
 	@ApiResponse(responseCode = "409", description = "Ya existe un usuario con ese correo electrónico.")
 	@ApiResponse(responseCode = "500", description = "Error desconocido al registrar el usuario.")
@@ -395,7 +395,7 @@ public class AuthController {
 	@Operation(summary = "Restablecer la contraseña con el token de recuperación")
 	@ApiResponse(responseCode = "200", description = "Contraseña actualizada. Ya puedes iniciar sesión.")
 	@ApiResponse(responseCode = "400", description = "El enlace de recuperación no es válido o ya venció. | La "
-			+ "contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo. | "
+			+ "contraseña debe tener entre 8 y 64 caracteres, una mayúscula, una minúscula, un número y un símbolo. | "
 			+ "Debes enviar el token y la contraseña nueva.")
 	@PostMapping("/restablecer")
 	public ResponseEntity<Object> restablecer(@RequestBody RestablecerContraseniaDTO datos) {

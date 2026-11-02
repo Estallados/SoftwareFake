@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.exception;
 
+import java.nio.charset.StandardCharsets;
 import java.util.InputMismatchException;
 
 /**
@@ -12,7 +13,7 @@ public class ExceptionCheker {
 	 * 
 	 * @param a La contraseña a validar.
 	 * @throws CapitalException   Si no contiene al menos una letra mayúscula.
-	 * @throws CharacterException Si no tiene al menos 8 caracteres.
+	 * @throws CharacterException Si no tiene entre 8 y 64 caracteres.
 	 * @throws NumberException    Si no contiene al menos un número.
 	 * @throws SymbolException    Si no contiene al menos un símbolo especial.
 	 * @throws SmallException     Si no contiene al menos una letra minúscula.
@@ -78,13 +79,15 @@ public class ExceptionCheker {
 	}
 
 	/**
-	 * Verifica que la contraseña tenga al menos 8 caracteres.
-	 * 
+	 * Verifica que la contraseña tenga entre 8 y 64 caracteres. BCrypt solo usa
+	 * los primeros 72 bytes: sin el máximo, dos contraseñas distintas con el
+	 * mismo comienzo abrirían la misma cuenta.
+	 *
 	 * @param a La contraseña a validar.
-	 * @throws CharacterException Si la longitud es menor a 8 caracteres.
+	 * @throws CharacterException Si tiene menos de 8 o más de 64 caracteres.
 	 */
 	public static void checkerCharacter(String a) throws CharacterException {
-		if (a.length() < 8) {
+		if (a.length() < 8 || a.length() > 64 || a.getBytes(StandardCharsets.UTF_8).length > 72) {
 			throw new CharacterException();
 		}
 	}

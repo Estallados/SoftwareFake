@@ -93,8 +93,12 @@ public final class RespuestaUtil {
 
 	/**
 	 * Página saneada: página &gt;= 0 y tamaño entre 1 y {@link #TAMANIO_MAXIMO}.
+	 * La página se limita para que el desplazamiento (página × tamaño) quepa en
+	 * un int; si no, la consulta falla con 500.
 	 */
 	public static Pageable pagina(int pagina, int tamanio, Sort orden) {
-		return PageRequest.of(Math.max(pagina, 0), Math.min(Math.max(tamanio, 1), TAMANIO_MAXIMO), orden);
+		int tamanioValido = Math.min(Math.max(tamanio, 1), TAMANIO_MAXIMO);
+		int paginaValida = Math.min(Math.max(pagina, 0), Integer.MAX_VALUE / tamanioValido - 1);
+		return PageRequest.of(paginaValida, tamanioValido, orden);
 	}
 }

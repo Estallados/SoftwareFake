@@ -84,6 +84,10 @@ public class PublicacionService {
             + "el anfitrión debe agregarlas antes de publicarlo.";
     private static final int LATITUD_MAXIMA = 90;
     private static final int LONGITUD_MAXIMA = 180;
+    /** Tope del precio por noche y de cada servicio adicional (columnas NUMERIC). */
+    private static final BigDecimal MONTO_MAXIMO = new BigDecimal("1000000000");
+    private static final String SERVICIO_INVALIDO = "El servicio adicional necesita un nombre (máximo 255 "
+            + "caracteres) y un costo positivo de máximo 1.000.000.000.";
     /** Máximo de imágenes por alojamiento. */
     public static final int MAXIMO_IMAGENES = 15;
     private static final List<EstadoReserva> RESERVAS_VIGENTES = List.of(EstadoReserva.CONFIRMADA,
@@ -667,8 +671,7 @@ public class PublicacionService {
             return Resultado.error(carga.getCodigo(), carga.getMensaje());
         }
         if (!servicioValido(datos)) {
-            return Resultado.error(Resultado.DATOS_INVALIDOS,
-                    "El servicio adicional necesita un nombre (máximo 255 caracteres) y un costo positivo.");
+            return Resultado.error(Resultado.DATOS_INVALIDOS, SERVICIO_INVALIDO);
         }
         ServicioAdicional servicio = new ServicioAdicional();
         servicio.setIdAlojamiento(idAlojamiento);
@@ -700,8 +703,7 @@ public class PublicacionService {
             return Resultado.error(Resultado.NO_ENCONTRADO, "El servicio adicional no existe.");
         }
         if (!servicioValido(datos)) {
-            return Resultado.error(Resultado.DATOS_INVALIDOS,
-                    "El servicio adicional necesita un nombre (máximo 255 caracteres) y un costo positivo.");
+            return Resultado.error(Resultado.DATOS_INVALIDOS, SERVICIO_INVALIDO);
         }
         servicio.get().setNombre(datos.getNombre().trim());
         servicio.get().setCosto(datos.getCosto());
@@ -934,8 +936,9 @@ public class PublicacionService {
                 || (datos.getBanos() != null && datos.getBanos() < 0)) {
             return "Las habitaciones, las camas y los baños no pueden ser negativos.";
         }
-        if (datos.getPrecioNoche() != null && datos.getPrecioNoche().signum() <= 0) {
-            return "El precio por noche debe ser positivo.";
+        if (datos.getPrecioNoche() != null
+                && (datos.getPrecioNoche().signum() <= 0 || datos.getPrecioNoche().compareTo(MONTO_MAXIMO) > 0)) {
+            return "El precio por noche debe ser positivo y de máximo 1.000.000.000.";
         }
         if ((datos.getPorcentajeLimpieza() != null && !TarifaService.porcentajeValido(datos.getPorcentajeLimpieza()))
                 || (datos.getPorcentajeServicio() != null
@@ -1080,7 +1083,7 @@ public class PublicacionService {
     private static boolean servicioValido(ServicioAdicionalDTO datos) {
         return datos != null && datos.getNombre() != null && !datos.getNombre().isBlank()
                 && !LimitesTexto.excede(datos.getNombre(), LimitesTexto.CORTO) && datos.getCosto() != null
-                && datos.getCosto().signum() > 0;
+                && datos.getCosto().signum() > 0 && datos.getCosto().compareTo(MONTO_MAXIMO) <= 0;
     }
 
     private static void agregarSiFalta(List<String> faltantes, String valor, String nombre) {
