@@ -1,269 +1,686 @@
-import { Component, computed, inject, signal } from '@angular/core';
+
+import {
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnInit,
+  signal
+} from '@angular/core';
+
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize, forkJoin } from 'rxjs';
 
-export type ListingStatus = 'Activo' | 'Pausado' | 'Bloqueado' | 'Pendiente' | 'Rechazado';
+import {
+  AlojamientoRespuesta,
+  CalendarioDisponibilidad,
+  DatosPeriodoDisponibilidad,
+  PeriodoDisponibilidad,
+  PublicacionHostService
+} from '../../../services/publicacion-host.service';
 
-export interface AvailabilityListing {
-  id: string;
-  name: string;
-  image: string;
-  city: string;
-  type: string;
-  status: ListingStatus;
-}
+import { API_URL } from '../../../services/api-url';
 
-export interface AvailabilityReservation {
-  code: string;
-  start: string; // AAAA-MM-DD
-  end: string; // AAAA-MM-DD
-  guests: number;
-  status: 'Confirmada' | 'Cancelada' | 'Finalizada';
-}
+// ======================================
+// TIPOS DEL CALENDARIO
+// ======================================
 
-export interface CalendarMonth {
-  label: string;
-  prefix: string; // AAAA-MM
-  days: number;
-  offset: number; // casillas vacías antes del día 1 (Lun = 0)
-}
+type EstadoDia =
+  | 'pasado'
+  | 'reservado'
+  | 'disponible'
+  | 'no-ofrecido';
 
-export interface CalendarDay {
-  key: string;
-  day: number;
-  reserved: boolean;
-  blocked: boolean;
-  past: boolean;
-  selected: boolean;
-  status: string;
+interface DiaCalendario {
+  numero: number;
+  fecha: string;
+  estado: EstadoDia;
 }
 
 @Component({
   selector: 'app-host-availability',
   standalone: true,
-  templateUrl: './availability.html',
+  imports: [FormsModule],
+  templateUrl: './availability.html'
 })
-export class Availability {
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+export class Availability implements OnInit {
 
-  /** Parámetro :id de la ruta host/alojamientos/:id/disponibilidad */
-  readonly id = this.route.snapshot.paramMap.get('id');
+  // ======================================
+  // INYECCIÓN DE DEPENDENCIAS
+  // ======================================
 
-  // TODO: cargar desde el backend usando `id`
-  listing = signal<AvailabilityListing>({
-    id: '',
-    name: '',
-    image: '',
-    city: '',
-    type: '',
-    status: 'Activo',
-  });
-  reservation = signal<AvailabilityReservation | null>(null);
-  blockedDates = signal<string[]>([]);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly publicaciones = inject(PublicacionHostService);
+  private readonly apiUrl = inject(API_URL);
 
-  /** Fecha mínima seleccionable (antes de esta fecha los días son "no disponibles").
-   *  TODO: usar la fecha actual real */
-  readonly minDate = '2025-07-05';
+  // ======================================
+  // ESTADO DE LA PÁGINA
+  // ======================================
 
-  readonly months: CalendarMonth[] = [
-    { label: 'Julio 2025', prefix: '2025-07', days: 31, offset: 1 },
-    { label: 'Agosto 2025', prefix: '2025-08', days: 31, offset: 4 },
+  readonly idAlojamiento = signal(0);
+
+  readonly alojamiento =
+    signal<AlojamientoRespuesta | null>(null);
+
+  readonly disponibilidad =
+    signal<CalendarioDisponibilidad | null>(null);
+
+  readonly cargando = signal(false);
+  readonly guardando = signal(false);
+  readonly eliminando = signal(false);
+
+  readonly error = signal('');
+  readonly exito = signal('');
+
+  readonly formularioAbierto = signal(false);
+
+  readonly periodoPorEliminar =
+    signal<PeriodoDisponibilidad | null>(null);
+
+  readonly idEdicion = signal<number | null>(null);
+  readonly fechaSeleccionada = signal('');
+
+  formulario: DatosPeriodoDisponibilidad = {
+    fechaInicio: '',
+    fechaFin: ''
+  };
+
+  readonly diasSemana = [
+    'Lun', 'Mar', 'Mié',
+    'Jue', 'Vie', 'Sáb', 'Dom'
   ];
-  readonly weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  readonly legend = [
-    { color: 'bg-emerald-100 ring-emerald-200', label: 'Disponible' },
-    { color: 'bg-red-100 ring-red-200', label: 'Reservado' },
-    { color: 'bg-slate-400 ring-slate-400', label: 'Bloqueado' },
-    { color: 'bg-slate-100 ring-slate-200', label: 'No seleccionable' },
-  ];
 
-  monthIndex = signal(0);
-  selectedDate = signal('');
-  blockOpen = signal(false);
-  releaseOpen = signal(false);
-  range = { start: '', end: '', reason: '' };
-  error = signal('');
+  // Fecha local para evitar desfases por UTC
+  readonly hoy = this.fechaISO(new Date());
 
-  month = computed(() => this.months[this.monthIndex()]);
-  emptyCells = computed(() => Array.from({ length: this.month().offset }, (_, i) => i));
-
-  // ---- Fechas ----
-  private dateKeys(start: string, end: string): string[] {
-    if (!start || !end) return [];
-    const result: string[] = [];
-    const current = new Date(`${start}T12:00:00`);
-    const limit = new Date(`${end}T12:00:00`);
-    while (current <= limit && result.length < 62) {
-      result.push(current.toISOString().slice(0, 10));
-      current.setDate(current.getDate() + 1);
-    }
-    return result;
-  }
-
-  reservedDates = computed(() => {
-    const r = this.reservation();
-    return r && r.status === 'Confirmada' ? this.dateKeys(r.start, r.end) : [];
-  });
-
-  calendar = computed<CalendarDay[]>(() => {
-    const m = this.month();
-    const reservedSet = new Set(this.reservedDates());
-    const blockedSet = new Set(this.blockedDates());
-    return Array.from({ length: m.days }, (_, i) => {
-      const day = i + 1;
-      const key = `${m.prefix}-${String(day).padStart(2, '0')}`;
-      const reserved = reservedSet.has(key);
-      const blocked = blockedSet.has(key);
-      const past = key < this.minDate;
-      return {
-        key,
-        day,
-        reserved,
-        blocked,
-        past,
-        selected: this.selectedDate() === key,
-        status: reserved
-          ? 'Reservado'
-          : blocked
-            ? 'Bloqueado'
-            : past
-              ? 'No disponible'
-              : 'Disponible',
-      };
-    });
-  });
-
-  selectedReserved = computed(() => this.reservedDates().includes(this.selectedDate()));
-  selectedBlocked = computed(() => this.blockedDates().includes(this.selectedDate()));
-  selectedPast = computed(() => !!this.selectedDate() && this.selectedDate() < this.minDate);
-  isBlockedListing = computed(() => this.listing().status === 'Bloqueado');
-
-  selectedLabel = computed(() =>
-    this.selectedReserved()
-      ? 'Reservada'
-      : this.selectedBlocked()
-        ? 'Bloqueada'
-        : this.selectedPast()
-          ? 'No seleccionable'
-          : 'Disponible',
+  readonly mesActual = signal(
+    new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1
+    )
   );
 
-  selectedBadgeClass = computed(() => {
-    const tone = this.selectedReserved()
-      ? 'bg-red-50 text-red-700'
-      : this.selectedBlocked() || this.selectedPast()
-        ? 'bg-slate-100 text-slate-600'
-        : 'bg-emerald-50 text-emerald-700';
-    return 'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + tone;
+  // ======================================
+  // TÍTULO DEL MES
+  // ======================================
+
+  readonly tituloMes = computed(() => {
+
+    const texto = new Intl.DateTimeFormat('es-CO', {
+      month: 'long',
+      year: 'numeric'
+    }).format(this.mesActual());
+
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
   });
 
-  listingBadgeClass = computed(() => {
-    const s = this.listing().status;
-    const tone =
-      s === 'Activo'
-        ? 'bg-emerald-50 text-emerald-700'
-        : s === 'Bloqueado'
-          ? 'bg-red-50 text-red-700'
-          : 'bg-amber-50 text-amber-700';
-    return 'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + tone;
+  // ======================================
+  // PERÍODOS DISPONIBLES
+  // ======================================
+
+  readonly periodos = computed(() =>
+    [...(this.disponibilidad()?.periodos ?? [])]
+      .sort((a, b) =>
+        a.fechaInicio.localeCompare(b.fechaInicio)
+      )
+  );
+
+  // ======================================
+  // FECHAS RESERVADAS
+  // ======================================
+
+  readonly reservados = computed(
+    () => this.disponibilidad()?.reservados ?? []
+  );
+
+  // ======================================
+  // IMAGEN DEL ALOJAMIENTO
+  // ======================================
+
+  readonly imagen = computed(() => {
+
+    const a = this.alojamiento();
+
+    const ruta =
+      a?.detalleImagenes?.find(i => i.principal)?.url
+      ?? a?.detalleImagenes?.[0]?.url
+      ?? a?.imagenes?.[0];
+
+    if (!ruta) return '';
+
+    return /^https?:\/\//i.test(ruta)
+      ? ruta
+      : `${this.apiUrl}${ruta.startsWith('/') ? '' : '/'}${ruta}`;
   });
 
-  dayClass(d: CalendarDay) {
-    const state = d.reserved
-      ? 'border-red-200 bg-red-50 text-red-800'
-      : d.blocked
-        ? 'border-slate-400 bg-slate-200 text-slate-700'
-        : d.past
-          ? 'border-slate-100 bg-slate-50 text-slate-300'
-          : 'border-emerald-100 bg-emerald-50 text-emerald-800 hover:border-emerald-400';
-    return (
-      'min-h-20 rounded-xl border p-3 text-left text-sm transition ' +
-      (d.selected ? 'ring-2 ring-emerald-700 ring-offset-2 ' : '') +
-      state
+  // ======================================
+  // CONSTRUCCIÓN DEL CALENDARIO
+  // ======================================
+
+  readonly calendario = computed<(DiaCalendario | null)[]>(() => {
+
+    const mes = this.mesActual();
+
+    const year = mes.getFullYear();
+    const month = mes.getMonth();
+
+    const primero = new Date(year, month, 1);
+
+    const desplazamiento =
+      (primero.getDay() + 6) % 7;
+
+    const diasMes =
+      new Date(year, month + 1, 0).getDate();
+
+    const celdas: (DiaCalendario | null)[] =
+      Array(desplazamiento).fill(null);
+
+    for (let numero = 1; numero <= diasMes; numero++) {
+
+      const fecha = this.fechaISO(
+        new Date(year, month, numero)
+      );
+
+      const reservado = this.reservados().some(r =>
+        fecha >= r.fechaEntrada &&
+        fecha < r.fechaSalida
+      );
+
+      const ofrecido = this.periodos().some(p =>
+        fecha >= p.fechaInicio &&
+        fecha < p.fechaFin
+      );
+
+      const estado: EstadoDia =
+        fecha < this.hoy
+          ? 'pasado'
+          : reservado
+            ? 'reservado'
+            : ofrecido
+              ? 'disponible'
+              : 'no-ofrecido';
+
+      celdas.push({
+        numero,
+        fecha,
+        estado
+      });
+    }
+
+    return celdas;
+  });
+
+  // ======================================
+  // FECHA SELECCIONADA
+  // ======================================
+
+  readonly fechaDetalle = computed(() => {
+
+    const fecha = this.fechaSeleccionada();
+
+    if (!fecha) return null;
+
+    return this.calendario().find(
+      d => d?.fecha === fecha
+    ) ?? null;
+  });
+
+  // ======================================
+  // INICIALIZAR COMPONENTE
+  // ======================================
+
+  ngOnInit(): void {
+
+    this.route.paramMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+
+        const id = Number(params.get('id'));
+
+        if (!Number.isSafeInteger(id) || id <= 0) {
+          this.error.set(
+            'El ID del alojamiento no es válido.'
+          );
+          return;
+        }
+
+        this.idAlojamiento.set(id);
+
+        this.alojamiento.set(null);
+        this.disponibilidad.set(null);
+
+        this.formularioAbierto.set(false);
+        this.periodoPorEliminar.set(null);
+
+        this.exito.set('');
+
+        this.cargarDatos();
+      });
+  }
+
+  // ======================================
+  // CONSULTAR BACKEND
+  // ======================================
+
+  cargarDatos(): void {
+
+    const id = this.idAlojamiento();
+
+    if (!id) return;
+
+    this.cargando.set(true);
+    this.error.set('');
+
+    forkJoin({
+      alojamiento:
+        this.publicaciones.obtenerAlojamiento(id),
+
+      calendario:
+        this.publicaciones.obtenerDisponibilidad(id)
+    })
+      .pipe(
+        finalize(() => this.cargando.set(false))
+      )
+      .subscribe({
+
+        next: ({ alojamiento, calendario }) => {
+
+          this.alojamiento.set(alojamiento);
+          this.disponibilidad.set(calendario);
+        },
+
+        error: err => {
+          this.error.set(this.mensajeError(err));
+        }
+      });
+  }
+
+  // ======================================
+  // NAVEGACIÓN ENTRE MESES
+  // ======================================
+
+  cambiarMes(pasos: number): void {
+
+    const mes = this.mesActual();
+
+    this.mesActual.set(
+      new Date(
+        mes.getFullYear(),
+        mes.getMonth() + pasos,
+        1
+      )
+    );
+
+    this.fechaSeleccionada.set('');
+  }
+
+  seleccionarDia(dia: DiaCalendario): void {
+    this.fechaSeleccionada.set(dia.fecha);
+  }
+
+  // ======================================
+  // ESTILOS DE LOS DÍAS
+  // ======================================
+
+  claseDia(dia: DiaCalendario): string {
+
+    const estados: Record<EstadoDia, string> = {
+
+      pasado:
+        'bg-slate-50 text-slate-400 border-slate-100',
+
+      reservado:
+        'bg-red-50 text-red-700 border-red-200',
+
+      disponible:
+        'bg-emerald-50 text-emerald-800 border-emerald-200',
+
+      'no-ofrecido':
+        'bg-amber-50 text-amber-800 border-amber-200'
+    };
+
+    return `
+      min-h-20 rounded-xl border p-2
+      text-left transition hover:shadow-sm
+      ${estados[dia.estado]}
+      ${
+      this.fechaSeleccionada() === dia.fecha
+        ? 'ring-2 ring-emerald-600 ring-offset-2'
+        : ''
+    }
+    `;
+  }
+
+  etiquetaDia(estado: EstadoDia): string {
+
+    return {
+      pasado: 'Pasado',
+      reservado: 'Reservado',
+      disponible: 'Disponible',
+      'no-ofrecido': 'No habilitado'
+    }[estado];
+  }
+
+  // ======================================
+  // CREAR DISPONIBILIDAD
+  // ======================================
+
+  abrirCrear(): void {
+
+    this.idEdicion.set(null);
+
+    this.formulario = {
+      fechaInicio: '',
+      fechaFin: ''
+    };
+
+    this.error.set('');
+    this.exito.set('');
+
+    this.formularioAbierto.set(true);
+  }
+
+  // ======================================
+  // EDITAR DISPONIBILIDAD
+  // ======================================
+
+  abrirEditar(periodo: PeriodoDisponibilidad): void {
+
+    this.idEdicion.set(periodo.idPeriodo);
+
+    this.formulario = {
+      fechaInicio: periodo.fechaInicio,
+      fechaFin: periodo.fechaFin
+    };
+
+    this.error.set('');
+    this.exito.set('');
+
+    this.formularioAbierto.set(true);
+  }
+
+  cerrarFormulario(): void {
+
+    if (!this.guardando()) {
+      this.formularioAbierto.set(false);
+    }
+  }
+
+  // ======================================
+  // GUARDAR PERÍODO EN EL BACKEND
+  // ======================================
+
+  guardarPeriodo(): void {
+
+    if (this.guardando()) return;
+
+    const { fechaInicio, fechaFin } = this.formulario;
+
+    if (
+      !fechaInicio ||
+      !fechaFin ||
+      fechaFin <= fechaInicio
+    ) {
+
+      this.error.set(
+        'Selecciona fechas válidas: la fecha final debe ser posterior a la inicial.'
+      );
+      return;
+    }
+
+    if (fechaFin <= this.hoy) {
+
+      this.error.set(
+        'El período debe incluir al menos una noche futura.'
+      );
+      return;
+    }
+
+    const solapa = this.periodos().some(p =>
+
+      p.idPeriodo !== this.idEdicion() &&
+
+      fechaInicio <= p.fechaFin &&
+
+      fechaFin >= p.fechaInicio
+    );
+
+    if (solapa) {
+
+      this.error.set(
+        'El período se cruza o comparte límite con otro existente. Modifica el período anterior.'
+      );
+
+      return;
+    }
+
+    const id = this.idAlojamiento();
+    const editando = this.idEdicion();
+
+    this.guardando.set(true);
+    this.error.set('');
+    this.exito.set('');
+
+    const datos = {
+      fechaInicio,
+      fechaFin
+    };
+
+    const solicitud = editando === null
+
+      ? this.publicaciones.agregarPeriodoDisponibilidad(
+        id,
+        datos
+      )
+
+      : this.publicaciones.actualizarPeriodoDisponibilidad(
+        id,
+        editando,
+        datos
+      );
+
+    solicitud
+      .pipe(
+        finalize(() => this.guardando.set(false))
+      )
+      .subscribe({
+
+        next: () => {
+
+          this.formularioAbierto.set(false);
+
+          this.exito.set(
+            editando === null
+              ? 'Período registrado correctamente.'
+              : 'Período actualizado correctamente.'
+          );
+
+          this.refrescarCalendario();
+        },
+
+        error: err => {
+          this.error.set(this.mensajeError(err));
+        }
+      });
+  }
+
+  // ======================================
+  // SOLICITAR ELIMINACIÓN
+  // ======================================
+
+  solicitarEliminar(periodo: PeriodoDisponibilidad): void {
+
+    this.error.set('');
+
+    this.periodoPorEliminar.set(periodo);
+  }
+
+  // ======================================
+  // ELIMINAR PERÍODO EN EL BACKEND
+  // ======================================
+
+  confirmarEliminar(): void {
+
+    const periodo = this.periodoPorEliminar();
+
+    if (!periodo || this.eliminando()) return;
+
+    this.eliminando.set(true);
+    this.error.set('');
+
+    this.publicaciones
+      .eliminarPeriodoDisponibilidad(
+        this.idAlojamiento(),
+        periodo.idPeriodo
+      )
+      .pipe(
+        finalize(() => this.eliminando.set(false))
+      )
+      .subscribe({
+
+        next: () => {
+
+          this.periodoPorEliminar.set(null);
+
+          this.exito.set(
+            'Período eliminado correctamente.'
+          );
+
+          this.refrescarCalendario();
+        },
+
+        error: err => {
+
+          this.periodoPorEliminar.set(null);
+
+          this.error.set(
+            this.mensajeError(err)
+          );
+        }
+      });
+  }
+
+  // ======================================
+  // ACTUALIZAR CALENDARIO
+  // ======================================
+
+  private refrescarCalendario(): void {
+
+    this.publicaciones
+      .obtenerDisponibilidad(this.idAlojamiento())
+      .subscribe({
+
+        next: data => {
+          this.disponibilidad.set(data);
+        },
+
+        error: err => {
+
+          this.error.set(
+            `El cambio se guardó, pero no se pudo actualizar el calendario: ${this.mensajeError(err)}`
+          );
+        }
+      });
+  }
+
+  // ======================================
+  // FORMATO DE FECHAS
+  // ======================================
+
+  private fechaISO(fecha: Date): string {
+
+    const anio = fecha.getFullYear();
+
+    const mes = String(
+      fecha.getMonth() + 1
+    ).padStart(2, '0');
+
+    const dia = String(
+      fecha.getDate()
+    ).padStart(2, '0');
+
+    return `${anio}-${mes}-${dia}`;
+  }
+
+  // ======================================
+  // MANEJO DE ERRORES
+  // ======================================
+
+  private mensajeError(err: unknown): string {
+
+    if (err instanceof HttpErrorResponse) {
+
+      if (err.status === 0) {
+        return 'No se pudo conectar con el backend en localhost:8081.';
+      }
+
+      if (err.status === 401) {
+        return 'La sesión expiró. Inicia sesión nuevamente.';
+      }
+
+      if (err.status === 403) {
+        return 'No tienes permiso para modificar este alojamiento.';
+      }
+
+      if (err.status === 404) {
+        return 'El alojamiento o período no existe.';
+      }
+
+      if (err.status === 409) {
+        return this.mensajeServidor(err)
+          || 'Hay un conflicto con otro período o una reserva.';
+      }
+
+      return this.mensajeServidor(err)
+        || `Error HTTP ${err.status}.`;
+    }
+
+    return 'Ocurrió un error inesperado.';
+  }
+
+  private mensajeServidor(
+    err: HttpErrorResponse
+  ): string {
+
+    return typeof err.error?.mensaje === 'string'
+      ? err.error.mensaje
+
+      : typeof err.error?.message === 'string'
+        ? err.error.message
+        : '';
+  }
+
+  // ======================================
+  // NAVEGACIÓN ENTRE PÁGINAS
+  // ======================================
+
+  volver(): void {
+
+    void this.router.navigateByUrl(
+      '/host/alojamientos'
     );
   }
 
-  // ---- Navegación del calendario ----
-  prevMonth() {
-    this.monthIndex.update((i) => Math.max(0, i - 1));
+  verDetalles(): void {
+
+    void this.router.navigate([
+      '/host/alojamientos',
+      this.idAlojamiento()
+    ]);
   }
 
-  nextMonth() {
-    this.monthIndex.update((i) => Math.min(this.months.length - 1, i + 1));
-  }
+  editarAlojamiento(): void {
 
-  // ---- Bloquear fechas ----
-  openBlock() {
-    this.error.set('');
-    this.blockOpen.set(true);
-  }
-
-  setRange(field: 'start' | 'end' | 'reason', event: Event) {
-    this.range = { ...this.range, [field]: (event.target as HTMLInputElement).value };
-  }
-
-  confirmBlock() {
-    this.error.set('');
-    const { start, end } = this.range;
-    if (!start || !end) {
-      this.error.set('Selecciona una fecha inicial y una fecha final.');
-      return;
-    }
-    if (start > end) {
-      this.error.set('La fecha inicial no puede ser posterior a la fecha final.');
-      return;
-    }
-    const requested = this.dateKeys(start, end);
-    if (!requested.length || requested.some((d) => this.reservedDates().includes(d))) {
-      this.error.set('El período incluye fechas reservadas y no puede bloquearse.');
-      return;
-    }
-    if (requested.some((d) => d < this.minDate)) {
-      this.error.set('El período incluye fechas pasadas o no seleccionables.');
-      return;
-    }
-    this.blockedDates.update((list) => Array.from(new Set([...list, ...requested])));
-    this.blockOpen.set(false);
-    this.selectedDate.set(start);
-    this.range = { start: '', end: '', reason: '' };
-    // TODO: guardar en el backend y avisar "Las fechas se bloquearon correctamente"
-  }
-
-  // ---- Liberar fechas (todo el rango bloqueado contiguo) ----
-  releaseSelectedRange() {
-    if (!this.selectedBlocked() || this.selectedReserved()) return;
-    const blocked = new Set(this.blockedDates());
-    const connected = new Set([this.selectedDate()]);
-    const walk = (direction: number) => {
-      const cursor = new Date(`${this.selectedDate()}T12:00:00`);
-      for (;;) {
-        cursor.setDate(cursor.getDate() + direction);
-        const key = cursor.toISOString().slice(0, 10);
-        if (!blocked.has(key)) break;
-        connected.add(key);
-      }
-    };
-    walk(-1);
-    walk(1);
-    this.blockedDates.update((list) => list.filter((d) => !connected.has(d)));
-    this.releaseOpen.set(false);
-    // TODO: guardar en el backend y avisar "Las fechas vuelven a estar disponibles"
-  }
-
-  // ---- Navegación ----
-  viewReservation(code: string) {
-    this.router.navigate(['/host/reservas', code]);
-  }
-
-  back() {
-    this.router.navigateByUrl('/host/alojamientos');
-  }
-
-  details() {
-    this.router.navigate(['/host/alojamientos', this.id]);
-  }
-
-  edit() {
-    this.router.navigate(['/host/alojamientos', this.id, 'editar']);
+    void this.router.navigate([
+      '/host/alojamientos',
+      this.idAlojamiento(),
+      'editar'
+    ]);
   }
 }

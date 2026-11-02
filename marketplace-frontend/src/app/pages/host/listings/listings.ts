@@ -7,10 +7,7 @@ import {
   signal
 } from '@angular/core';
 
-import {
-  HttpErrorResponse
-} from '@angular/common/http';
-
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
 import {
@@ -23,13 +20,9 @@ import {
 
 import {
   AlojamientoRespuesta,
-  PublicacionHostService,
-  EstadoAlojamiento
+  EstadoAlojamiento,
+  PublicacionHostService
 } from '../../../services/publicacion-host.service';
-
-// ======================================
-// TIPOS
-// ======================================
 
 export type FiltroAlojamiento =
   | 'TODOS'
@@ -42,61 +35,46 @@ export type FiltroAlojamiento =
 })
 export class Listings implements OnInit {
 
-  // ======================================
-  // SERVICIOS
-  // ======================================
-
   private readonly router = inject(Router);
-
-  private readonly publicaciones =
-    inject(PublicacionHostService);
+  private readonly publicaciones = inject(PublicacionHostService);
 
   // ======================================
-  // ALOJAMIENTOS REALES
+  // ESTADOS DEL COMPONENTE
   // ======================================
 
   readonly listings = signal<AlojamientoRespuesta[]>([]);
-
   readonly cargando = signal(false);
-
   readonly error = signal('');
-
   readonly filtro = signal<FiltroAlojamiento>('TODOS');
 
   // ======================================
-  // OPCIONES DE FILTRADO
+  // FILTROS
   // ======================================
 
   readonly filtros: {
     valor: FiltroAlojamiento;
     nombre: string;
   }[] = [
-
     {
       valor: 'TODOS',
       nombre: 'Todos los alojamientos'
     },
-
-    {
-      valor: 'BORRADOR',
-      nombre: 'Borradores'
-    },
-
-    {
-      valor: 'PENDIENTE_REVISION',
-      nombre: 'Pendientes de revisión'
-    },
-
     {
       valor: 'ACTIVA',
-      nombre: 'Activos'
+      nombre: 'Disponibles'
     },
-
+    {
+      valor: 'PENDIENTE_REVISION',
+      nombre: 'En revisión'
+    },
+    {
+      valor: 'BORRADOR',
+      nombre: 'Sin publicar'
+    },
     {
       valor: 'PAUSADA',
       nombre: 'Pausados'
     },
-
     {
       valor: 'BLOQUEADA',
       nombre: 'Bloqueados'
@@ -104,44 +82,31 @@ export class Listings implements OnInit {
   ];
 
   // ======================================
-  // MÉTRICAS
+  // CONTADORES
   // ======================================
 
-  readonly total = computed(() =>
-    this.listings().length
-  );
+  readonly total = computed(() => this.listings().length);
 
-  readonly active = computed(() =>
-    this.contar('ACTIVA')
-  );
-
-  readonly paused = computed(() =>
-    this.contar('PAUSADA')
-  );
-
-  readonly blocked = computed(() =>
-    this.contar('BLOQUEADA')
-  );
+  readonly active = computed(() => this.contar('ACTIVA'));
 
   readonly pending = computed(() =>
     this.contar('PENDIENTE_REVISION')
   );
 
-  readonly drafts = computed(() =>
-    this.contar('BORRADOR')
-  );
+  readonly drafts = computed(() => this.contar('BORRADOR'));
 
-  private contar(
-    estado: EstadoAlojamiento
-  ): number {
+  readonly paused = computed(() => this.contar('PAUSADA'));
 
+  readonly blocked = computed(() => this.contar('BLOQUEADA'));
+
+  private contar(estado: EstadoAlojamiento): number {
     return this.listings().filter(
       alojamiento => alojamiento.estado === estado
     ).length;
   }
 
   // ======================================
-  // FILTRAR LOS ALOJAMIENTOS
+  // FILTRAR ALOJAMIENTOS
   // ======================================
 
   readonly alojamientosFiltrados = computed(() => {
@@ -153,23 +118,19 @@ export class Listings implements OnInit {
     }
 
     return this.listings().filter(
-      alojamiento =>
-        alojamiento.estado === estadoSeleccionado
+      alojamiento => alojamiento.estado === estadoSeleccionado
     );
   });
 
   cambiarFiltro(evento: Event): void {
 
-    const select =
-      evento.target as HTMLSelectElement;
+    const select = evento.target as HTMLSelectElement;
 
-    this.filtro.set(
-      select.value as FiltroAlojamiento
-    );
+    this.filtro.set(select.value as FiltroAlojamiento);
   }
 
   // ======================================
-  // INICIALIZAR
+  // INICIALIZACIÓN
   // ======================================
 
   ngOnInit(): void {
@@ -177,44 +138,31 @@ export class Listings implements OnInit {
   }
 
   // ======================================
-  // OBTENER ALOJAMIENTOS DEL BACKEND
+  // OBTENER ALOJAMIENTOS DESDE SPRING BOOT
   // ======================================
 
   cargarAlojamientos(): void {
 
-    if (this.cargando()) {
-      return;
-    }
+    if (this.cargando()) return;
 
     this.cargando.set(true);
     this.error.set('');
 
-    // El backend devuelve resultados paginados.
-    // Obtenemos todas las páginas para calcular
-    // correctamente los contadores y filtros.
-
     this.publicaciones
       .obtenerMisAlojamientos(0, 100)
       .pipe(
-
         timeout(15000),
 
         expand(respuesta => {
 
-          const siguiente =
-            respuesta.pagina + 1;
+          const siguiente = respuesta.pagina + 1;
 
-          if (
-            siguiente >= respuesta.totalPaginas
-          ) {
+          if (siguiente >= respuesta.totalPaginas) {
             return EMPTY;
           }
 
           return this.publicaciones
-            .obtenerMisAlojamientos(
-              siguiente,
-              100
-            )
+            .obtenerMisAlojamientos(siguiente, 100)
             .pipe(timeout(15000));
         }),
 
@@ -226,183 +174,132 @@ export class Listings implements OnInit {
           [] as AlojamientoRespuesta[]
         ),
 
-        finalize(() => {
-          this.cargando.set(false);
-        })
+        finalize(() => this.cargando.set(false))
       )
       .subscribe({
-
-        next: (alojamientos) => {
-
+        next: alojamientos => {
           this.listings.set(alojamientos);
         },
-
-        error: (err: unknown) => {
-
-          this.error.set(
-            this.obtenerMensajeError(err)
-          );
+        error: err => {
+          this.error.set(this.obtenerMensajeError(err));
         }
       });
   }
 
   // ======================================
-  // MOSTRAR ESTADOS
+  // ETIQUETAS DE ESTADO
   // ======================================
 
   nombreEstado(estado: string): string {
 
-    switch (estado) {
+    const nombres: Record<string, string> = {
+      BORRADOR: 'Borrador',
+      PENDIENTE_REVISION: 'Pendiente de revisión',
+      ACTIVA: 'Disponible',
+      PAUSADA: 'Pausado',
+      BLOQUEADA: 'Bloqueado'
+    };
 
-      case 'BORRADOR':
-        return 'Borrador';
-
-      case 'PENDIENTE_REVISION':
-        return 'Pendiente de revisión';
-
-      case 'ACTIVA':
-        return 'Activo';
-
-      case 'PAUSADA':
-        return 'Pausado';
-
-      case 'BLOQUEADA':
-        return 'Bloqueado';
-
-      default:
-        return estado;
-    }
+    return nombres[estado] ?? estado;
   }
 
   // ======================================
-  // COLORES DE LOS ESTADOS
+  // COLORES DE ESTADO
   // ======================================
 
-  badgeClass(
-    l: AlojamientoRespuesta
-  ): string {
+  badgeClass(l: AlojamientoRespuesta): string {
 
     const base =
-      'inline-flex rounded-full px-3 py-1 ' +
-      'text-xs font-bold ';
+      'inline-flex rounded-full px-3 py-1 text-xs font-bold ';
 
     switch (l.estado) {
 
       case 'ACTIVA':
-
-        return base +
-          'bg-emerald-50 text-emerald-700';
+        return base + 'bg-emerald-50 text-emerald-700';
 
       case 'PENDIENTE_REVISION':
-
-        return base +
-          'bg-amber-50 text-amber-700';
+        return base + 'bg-amber-50 text-amber-700';
 
       case 'BORRADOR':
-
-        return base +
-          'bg-slate-100 text-slate-700';
+        return base + 'bg-slate-100 text-slate-700';
 
       case 'PAUSADA':
-
-        return base +
-          'bg-blue-50 text-blue-700';
+        return base + 'bg-blue-50 text-blue-700';
 
       case 'BLOQUEADA':
-
-        return base +
-          'bg-red-50 text-red-700';
+        return base + 'bg-red-50 text-red-700';
 
       default:
-
-        return base +
-          'bg-slate-100 text-slate-600';
+        return base + 'bg-slate-100 text-slate-600';
     }
   }
 
   // ======================================
-  // PRECIO EN PESOS COLOMBIANOS
+  // FORMATEAR PRECIO
   // ======================================
 
-  formatearPrecio(
-    precio?: number
-  ): string {
+  formatearPrecio(precio?: number): string {
 
-    if (
-      precio === null ||
-      precio === undefined
-    ) {
+    if (precio === null || precio === undefined) {
       return 'Sin definir';
     }
 
-    return new Intl.NumberFormat(
-      'es-CO',
-      {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0
-      }
-    ).format(precio);
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0
+    }).format(precio);
   }
 
   // ======================================
-  // FECHAS
+  // FORMATEAR FECHA
   // ======================================
 
-  formatearFecha(
-    valor?: string
-  ): string {
+  formatearFecha(valor?: string): string {
 
-    if (!valor) {
-      return 'Sin información';
-    }
+    if (!valor) return 'Sin información';
 
-    // LocalDateTime de Java no lleva zona horaria.
     const fecha = new Date(valor);
 
     if (Number.isNaN(fecha.getTime())) {
       return valor;
     }
 
-    return fecha.toLocaleDateString(
-      'es-CO',
-      {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      }
-    );
+    return fecha.toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
   }
 
   // ======================================
   // IMAGEN PRINCIPAL
   // ======================================
 
-  obtenerImagen(
-    alojamiento: AlojamientoRespuesta
-  ): string | null {
+  obtenerImagen(alojamiento: AlojamientoRespuesta): string | null {
+
+    const imagenPrincipal =
+      alojamiento.detalleImagenes?.find(
+        imagen => imagen.principal
+      )?.url;
 
     const imagen =
+      imagenPrincipal ??
       alojamiento.imagenes?.[0] ??
       alojamiento.detalleImagenes?.[0]?.url;
 
-    if (!imagen) {
-      return null;
-    }
+    if (!imagen) return null;
 
-    // URL absoluta enviada por Spring Boot.
-    if (
-      /^https?:\/\//i.test(imagen)
-    ) {
+    // Imágenes de Cloudinary o URL absoluta.
+    if (/^https?:\/\//i.test(imagen)) {
       return imagen;
     }
 
-    // Ruta relativa a la raíz del servidor.
+    // Imágenes relativas servidas por Spring Boot.
     if (imagen.startsWith('/')) {
       return `http://localhost:8081${imagen}`;
     }
 
-    // Ruta relativa sin barra inicial.
     return `http://localhost:8081/${imagen}`;
   }
 
@@ -410,21 +307,15 @@ export class Listings implements OnInit {
   // CALIFICACIÓN
   // ======================================
 
-  mostrarCalificacion(
-    alojamiento: AlojamientoRespuesta
-  ): string {
+  mostrarCalificacion(alojamiento: AlojamientoRespuesta): string {
 
-    const promedio =
-      alojamiento.promedioCalificacion;
+    const promedio = alojamiento.promedioCalificacion;
 
-    if (
-      promedio === null ||
-      promedio === undefined
-    ) {
+    if (promedio === null || promedio === undefined) {
       return 'Sin calificaciones';
     }
 
-    return `★ ${promedio.toFixed(1)}`;
+    return promedio.toFixed(1);
   }
 
   // ======================================
@@ -432,22 +323,18 @@ export class Listings implements OnInit {
   // ======================================
 
   create(): void {
-
-    void this.router.navigateByUrl(
-      '/host/alojamientos/crear'
-    );
+    void this.router.navigateByUrl('/host/alojamientos/crear');
   }
 
   details(id: number): void {
-
     void this.router.navigate([
       '/host/alojamientos',
       id
     ]);
   }
 
+  // BOTÓN EDITAR -> NUEVO COMPONENTE UPDATE
   edit(id: number): void {
-
     void this.router.navigate([
       '/host/alojamientos',
       id,
@@ -456,7 +343,6 @@ export class Listings implements OnInit {
   }
 
   availability(id: number): void {
-
     void this.router.navigate([
       '/host/alojamientos',
       id,
@@ -465,68 +351,34 @@ export class Listings implements OnInit {
   }
 
   // ======================================
-  // ERRORES DE SPRING BOOT
+  // ERRORES
   // ======================================
 
-  private obtenerMensajeError(
-    error: unknown
-  ): string {
+  private obtenerMensajeError(err: unknown): string {
 
-    if (
-      error instanceof Error &&
-      error.name === 'TimeoutError'
-    ) {
+    if (err instanceof Error && err.name === 'TimeoutError') {
       return 'El servidor tardó demasiado en responder.';
     }
 
-    if (
-      error instanceof HttpErrorResponse
-    ) {
+    if (err instanceof HttpErrorResponse) {
 
-      if (error.status === 0) {
-
-        return (
-          'No se pudo conectar con Spring Boot ' +
-          'en http://localhost:8081.'
-        );
+      if (err.status === 0) {
+        return 'No se pudo conectar con Spring Boot en localhost:8081.';
       }
 
-      if (error.status === 401) {
-
-        return (
-          'Tu sesión ha expirado. ' +
-          'Inicia sesión nuevamente.'
-        );
+      if (err.status === 401) {
+        return 'Tu sesión ha expirado. Inicia sesión nuevamente.';
       }
 
-      if (error.status === 403) {
-
-        return (
-          'No tienes permiso para consultar ' +
-          'los alojamientos de este anfitrión.'
-        );
+      if (err.status === 403) {
+        return 'No tienes permisos para consultar los alojamientos.';
       }
 
-      const respuesta: unknown =
-        error.error;
-
-      if (
-        respuesta !== null &&
-        typeof respuesta === 'object' &&
-        'message' in respuesta
-      ) {
-
-        const mensaje =
-          (respuesta as {
-            message?: unknown
-          }).message;
-
-        if (
-          typeof mensaje === 'string'
-        ) {
-          return mensaje;
-        }
+      if (typeof err.error?.message === 'string') {
+        return err.error.message;
       }
+
+      return `Error HTTP ${err.status} al consultar alojamientos.`;
     }
 
     return 'No se pudieron cargar tus alojamientos.';

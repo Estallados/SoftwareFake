@@ -1,1 +1,1037 @@
-<p>update works!</p>
+
+<!-- ====================================== -->
+<!-- INVERSIONES LR - ACTUALIZAR ALOJAMIENTO -->
+<!-- ====================================== -->
+
+<main class="mx-auto w-full max-w-[1100px] px-5 py-10 sm:px-8 lg:px-12">
+
+  <!-- ENCABEZADO -->
+
+  <div class="flex flex-wrap items-start justify-between gap-4">
+
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
+        Inversiones LR
+      </p>
+
+      <h1 class="mt-2 text-3xl font-bold text-slate-900">
+        Actualizar alojamiento
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-500">
+        Modifica la información, las fotografías y la disponibilidad de tu propiedad.
+      </p>
+    </div>
+
+    <span [class]="claseEstado()">
+      {{ nombreEstado(estado()) }}
+    </span>
+
+  </div>
+
+  <!-- MENSAJES -->
+
+  @if (error()) {
+    <div
+      role="alert"
+      class="mt-6 rounded-xl border border-red-200
+             bg-red-50 p-4 text-sm font-medium text-red-700"
+    >
+      {{ error() }}
+    </div>
+  }
+
+  @if (mensaje()) {
+    <div
+      role="status"
+      class="mt-6 rounded-xl border border-emerald-200
+             bg-emerald-50 p-4 text-sm font-medium text-emerald-800"
+    >
+      {{ mensaje() }}
+    </div>
+  }
+
+  <!-- CARGANDO -->
+
+  @if (cargando()) {
+
+    <div
+      class="mt-8 rounded-2xl border border-slate-200
+             bg-white p-12 text-center"
+    >
+
+      <div
+        class="mx-auto mb-4 size-9 animate-spin rounded-full
+               border-4 border-emerald-100 border-t-emerald-700"
+      ></div>
+
+      <p class="font-semibold text-slate-700">
+        Cargando alojamiento...
+      </p>
+
+    </div>
+
+  } @else if (cargaExitosa()) {
+
+    <!-- INFORMACIÓN DEL REGISTRO -->
+
+    <div class="mt-7 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <p class="font-bold text-emerald-800">
+        Alojamiento #{{ id }}
+      </p>
+      <p class="mt-1 text-sm text-emerald-700">
+        Estás editando una propiedad existente. No se creará otro alojamiento.
+      </p>
+    </div>
+
+    <form
+      #edicionForm="ngForm"
+      (ngSubmit)="guardar(edicionForm)"
+      novalidate
+      class="mt-7 space-y-7"
+    >
+
+      <!-- ====================================== -->
+      <!-- 1. INFORMACIÓN GENERAL -->
+      <!-- ====================================== -->
+
+      <section
+        class="rounded-3xl border border-slate-200 bg-white
+               p-6 shadow-sm sm:p-8"
+      >
+
+        <div class="border-b border-slate-100 pb-5">
+          <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">
+            Paso 01
+          </p>
+
+          <h2 class="mt-2 text-xl font-bold text-slate-900">
+            Información del alojamiento
+          </h2>
+
+          <p class="mt-1 text-sm text-slate-500">
+            Actualiza los datos principales de tu propiedad.
+          </p>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+          <!-- TÍTULO -->
+
+          <label class="block sm:col-span-2">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Nombre del alojamiento *
+            </span>
+
+            <input
+              type="text"
+              name="titulo"
+              required
+              maxlength="150"
+              [(ngModel)]="draft.titulo"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              placeholder="Ejemplo: Casa campestre con piscina"
+              class="w-full rounded-xl border border-slate-200
+                     bg-white px-4 py-3 text-sm text-slate-800
+                     outline-none transition focus:border-emerald-500
+                     focus:ring-2 focus:ring-emerald-100
+                     disabled:bg-slate-100"
+            />
+
+          </label>
+
+          <!-- CIUDAD -->
+
+          <label class="block">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Ciudad
+            </span>
+
+            <input
+              type="text"
+              name="ciudad"
+              [(ngModel)]="draft.ciudad"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              placeholder="Ejemplo: Bogotá"
+              class="w-full rounded-xl border border-slate-200
+                     bg-white px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500
+                     focus:ring-2 focus:ring-emerald-100
+                     disabled:bg-slate-100"
+            />
+
+          </label>
+
+          <!-- TIPO -->
+
+          <label class="block">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Tipo de alojamiento
+            </span>
+
+            <input
+              type="text"
+              name="tipo"
+              list="tiposAlojamiento"
+              [(ngModel)]="draft.tipo"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              placeholder="Casa, apartamento, cabaña..."
+              class="w-full rounded-xl border border-slate-200
+                     bg-white px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500
+                     focus:ring-2 focus:ring-emerald-100
+                     disabled:bg-slate-100"
+            />
+
+            <datalist id="tiposAlojamiento">
+              <option value="Casa"></option>
+              <option value="Apartamento"></option>
+              <option value="Cabaña"></option>
+              <option value="Finca"></option>
+              <option value="Habitación"></option>
+              <option value="Hotel"></option>
+            </datalist>
+
+          </label>
+
+          <!-- DIRECCIÓN -->
+
+          <label class="block sm:col-span-2">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Dirección o ubicación
+            </span>
+
+            <input
+              type="text"
+              name="ubicacion"
+              [(ngModel)]="draft.ubicacion"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              placeholder="Dirección del alojamiento"
+              class="w-full rounded-xl border border-slate-200
+                     bg-white px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500
+                     focus:ring-2 focus:ring-emerald-100
+                     disabled:bg-slate-100"
+            />
+
+          </label>
+
+          <!-- DESCRIPCIÓN -->
+
+          <label class="block sm:col-span-2">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Descripción
+            </span>
+
+            <textarea
+              name="descripcion"
+              rows="5"
+              [(ngModel)]="draft.descripcion"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              placeholder="Describe los espacios, las comodidades y lo que hace especial a tu alojamiento."
+              class="w-full resize-y rounded-xl border
+                     border-slate-200 bg-white px-4 py-3
+                     text-sm outline-none
+                     focus:border-emerald-500
+                     focus:ring-2 focus:ring-emerald-100
+                     disabled:bg-slate-100"
+            ></textarea>
+
+          </label>
+
+        </div>
+
+      </section>
+
+      <!-- ====================================== -->
+      <!-- 2. CAPACIDAD Y PRECIO -->
+      <!-- ====================================== -->
+
+      <section
+        class="rounded-3xl border border-slate-200 bg-white
+               p-6 shadow-sm sm:p-8"
+      >
+
+        <div class="border-b border-slate-100 pb-5">
+          <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">
+            Paso 02
+          </p>
+
+          <h2 class="mt-2 text-xl font-bold text-slate-900">
+            Características y precio
+          </h2>
+
+          <p class="mt-1 text-sm text-slate-500">
+            Define la capacidad y el valor por noche.
+          </p>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Huéspedes
+            </span>
+            <input
+              type="number"
+              name="capacidad"
+              min="1"
+              step="1"
+              [(ngModel)]="draft.capacidad"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Habitaciones
+            </span>
+            <input
+              type="number"
+              name="habitaciones"
+              min="0"
+              step="1"
+              [(ngModel)]="draft.habitaciones"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Camas
+            </span>
+            <input
+              type="number"
+              name="camas"
+              min="0"
+              step="1"
+              [(ngModel)]="draft.camas"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Baños
+            </span>
+            <input
+              type="number"
+              name="banos"
+              min="0"
+              step="1"
+              [(ngModel)]="draft.banos"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            />
+          </label>
+
+          <label class="block sm:col-span-2">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Precio por noche (COP)
+            </span>
+
+            <div class="relative">
+
+              <span
+                class="absolute left-4 top-1/2 -translate-y-1/2
+                       font-semibold text-emerald-700"
+              >
+                $
+              </span>
+
+              <input
+                type="number"
+                name="precioNoche"
+                min="1"
+                step="1"
+                [(ngModel)]="draft.precioNoche"
+                [disabled]="guardando() || estado() === 'BLOQUEADA'"
+                placeholder="150000"
+                class="w-full rounded-xl border border-slate-200
+                       py-3 pl-9 pr-4 text-sm outline-none
+                       focus:border-emerald-500
+                       disabled:bg-slate-100"
+              />
+
+            </div>
+
+          </label>
+
+        </div>
+
+      </section>
+
+      <!-- ====================================== -->
+      <!-- 3. SERVICIOS -->
+      <!-- ====================================== -->
+
+      <section
+        class="rounded-3xl border border-slate-200
+               bg-white p-6 shadow-sm sm:p-8"
+      >
+
+        <div class="border-b border-slate-100 pb-5">
+          <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">
+            Paso 03
+          </p>
+
+          <h2 class="mt-2 text-xl font-bold text-slate-900">
+            Servicios y comodidades
+          </h2>
+
+          <p class="mt-1 text-sm text-slate-500">
+            Selecciona los servicios que ofrece tu alojamiento.
+          </p>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+
+          @for (servicio of servicios; track servicio) {
+
+            <button
+              type="button"
+              (click)="toggleService(servicio)"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              [class.border-emerald-500]="tieneServicio(servicio)"
+              [class.bg-emerald-50]="tieneServicio(servicio)"
+              [class.text-emerald-800]="tieneServicio(servicio)"
+              class="rounded-xl border border-slate-200
+                     bg-white px-3 py-4 text-sm font-semibold
+                     text-slate-600 transition
+                     hover:border-emerald-400
+                     disabled:cursor-not-allowed
+                     disabled:opacity-50"
+            >
+
+              <span class="block">
+                {{ tieneServicio(servicio) ? '✓ ' : '' }}{{ servicio }}
+              </span>
+
+            </button>
+
+          }
+
+        </div>
+
+      </section>
+
+      <!-- ====================================== -->
+      <!-- 4. REGLAS Y HORARIOS -->
+      <!-- ====================================== -->
+
+      <section
+        class="rounded-3xl border border-slate-200
+               bg-white p-6 shadow-sm sm:p-8"
+      >
+
+        <div class="border-b border-slate-100 pb-5">
+          <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">
+            Paso 04
+          </p>
+
+          <h2 class="mt-2 text-xl font-bold text-slate-900">
+            Horarios y reglas
+          </h2>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+          <label class="block">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Hora de entrada
+            </span>
+
+            <input
+              type="time"
+              name="horaEntrada"
+              [(ngModel)]="draft.horaEntrada"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            />
+
+          </label>
+
+          <label class="block">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Hora de salida
+            </span>
+
+            <input
+              type="time"
+              name="horaSalida"
+              [(ngModel)]="draft.horaSalida"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            />
+
+          </label>
+
+          <label class="block sm:col-span-2">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Política de cancelación
+            </span>
+
+            <select
+              name="idPolitica"
+              [(ngModel)]="draft.idPolitica"
+              [disabled]="guardando() || cargandoPoliticas() || estado() === 'BLOQUEADA'"
+              class="w-full rounded-xl border border-slate-200
+                     bg-white px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            >
+              <option [ngValue]="null">
+                Selecciona una política
+              </option>
+
+              @for (politica of politicas(); track politica.idPolitica) {
+                <option [ngValue]="politica.idPolitica">
+                  {{ politica.nombre }}
+                </option>
+              }
+            </select>
+
+          </label>
+
+          <label class="block sm:col-span-2">
+
+            <span class="mb-2 block text-sm font-semibold text-slate-700">
+              Reglas de la propiedad
+            </span>
+
+            <textarea
+              name="reglas"
+              rows="4"
+              [(ngModel)]="draft.reglas"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              placeholder="Ejemplo: No se permiten fiestas ni fumar dentro del alojamiento."
+              class="w-full rounded-xl border border-slate-200
+                     px-4 py-3 text-sm outline-none
+                     focus:border-emerald-500 disabled:bg-slate-100"
+            ></textarea>
+
+          </label>
+
+        </div>
+
+      </section>
+
+      <!-- ====================================== -->
+      <!-- 5. FOTOGRAFÍAS CLOUDINARY -->
+      <!-- ====================================== -->
+
+      <section
+        class="rounded-3xl border border-slate-200
+               bg-white p-6 shadow-sm sm:p-8"
+      >
+
+        <div class="border-b border-slate-100 pb-5">
+
+          <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">
+            Paso 05
+          </p>
+
+          <h2 class="mt-2 text-xl font-bold text-slate-900">
+            Fotografías del alojamiento
+          </h2>
+
+          <p class="mt-1 text-sm text-slate-500">
+            Administra las imágenes de tu propiedad.
+            Máximo 15 fotografías, 5 MB por archivo.
+          </p>
+
+        </div>
+
+        <!-- IMÁGENES EXISTENTES -->
+
+        <h3 class="mt-6 text-sm font-bold text-slate-800">
+          Fotografías actuales
+        </h3>
+
+        <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+
+          @for (imagen of imagenesGuardadas(); track imagen.idImagen) {
+
+            <div
+              class="overflow-hidden rounded-2xl
+                     border border-slate-200 bg-slate-50"
+            >
+
+              <div class="relative aspect-[4/3]">
+
+                <img
+                  [src]="imagen.url"
+                  alt="Fotografía del alojamiento"
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                />
+
+                @if (imagen.principal) {
+
+                  <span
+                    class="absolute left-2 top-2
+                           rounded-full bg-emerald-700
+                           px-3 py-1 text-[10px]
+                           font-bold text-white"
+                  >
+                    Principal
+                  </span>
+
+                }
+
+              </div>
+
+              <div class="space-y-2 p-3">
+
+                <button
+                  type="button"
+                  (click)="marcarPrincipal(imagen)"
+                  [disabled]="imagen.principal || trabajandoImagen() || guardando() || estado() === 'BLOQUEADA'"
+                  class="w-full rounded-lg border border-emerald-200
+                         bg-emerald-50 px-2 py-2 text-xs
+                         font-bold text-emerald-700
+                         disabled:opacity-50"
+                >
+                  {{ imagen.principal ? 'Foto principal' : 'Hacer principal' }}
+                </button>
+
+                <button
+                  type="button"
+                  (click)="imagenAEliminar.set(imagen)"
+                  [disabled]="trabajandoImagen() || guardando() || estado() === 'BLOQUEADA'"
+                  class="w-full rounded-lg border border-red-200
+                         bg-red-50 px-2 py-2 text-xs
+                         font-bold text-red-700
+                         disabled:opacity-50"
+                >
+                  Eliminar
+                </button>
+
+              </div>
+
+            </div>
+
+          } @empty {
+
+            <p class="col-span-full text-sm text-slate-500">
+              No hay fotografías guardadas.
+            </p>
+
+          }
+
+        </div>
+
+        <!-- SUBIR IMÁGENES -->
+
+        <div
+          class="mt-6 rounded-2xl border-2 border-dashed
+                 border-emerald-200 bg-emerald-50/50 p-5"
+        >
+
+          <label class="block">
+
+            <span class="mb-2 block text-sm font-bold text-emerald-800">
+              Agregar nuevas fotografías
+            </span>
+
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              (change)="seleccionarImagenes($event)"
+              [disabled]="guardando() || estado() === 'BLOQUEADA'"
+              class="block w-full text-xs text-slate-600
+                     file:mr-4 file:rounded-lg
+                     file:border-0 file:bg-emerald-700
+                     file:px-4 file:py-2
+                     file:font-bold file:text-white
+                     hover:file:bg-emerald-800"
+            />
+
+          </label>
+
+          <p class="mt-2 text-xs text-slate-500">
+            JPG, PNG o WEBP. Las nuevas fotografías se subirán al guardar.
+          </p>
+
+        </div>
+
+        <!-- PREVISUALIZACIÓN -->
+
+        @if (imagenesSeleccionadas.length > 0) {
+
+          <h3 class="mt-6 text-sm font-bold text-slate-800">
+            Nuevas fotografías por guardar
+          </h3>
+
+          <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+
+            @for (imagen of imagenesSeleccionadas; track imagen.url; let i = $index) {
+
+              <div
+                class="overflow-hidden rounded-xl
+                       border border-slate-200 bg-white"
+              >
+
+                <img
+                  [src]="imagen.url"
+                  [alt]="imagen.archivo.name"
+                  class="aspect-[4/3] w-full object-cover"
+                />
+
+                <div class="p-3">
+
+                  <p class="truncate text-xs text-slate-500">
+                    {{ imagen.archivo.name }}
+                  </p>
+
+                  <button
+                    type="button"
+                    (click)="quitarImagen(i)"
+                    class="mt-2 text-xs font-bold text-red-600
+                           hover:underline"
+                  >
+                    Quitar
+                  </button>
+
+                </div>
+
+              </div>
+
+            }
+
+          </div>
+
+        }
+
+      </section>
+
+      <!-- ====================================== -->
+      <!-- 6. DISPONIBILIDAD -->
+      <!-- ====================================== -->
+
+      <section
+        class="rounded-3xl border border-slate-200
+               bg-white p-6 shadow-sm sm:p-8"
+      >
+
+        <div class="flex flex-wrap items-start justify-between gap-4">
+
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">
+              Paso 06
+            </p>
+
+            <h2 class="mt-2 text-xl font-bold text-slate-900">
+              Disponibilidad
+            </h2>
+
+            <p class="mt-1 text-sm text-slate-500">
+              Consulta las fechas existentes y agrega nuevos períodos.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            (click)="verDisponibilidad()"
+            class="rounded-xl border border-emerald-200
+                   bg-emerald-50 px-4 py-2
+                   text-xs font-bold text-emerald-700
+                   hover:bg-emerald-100"
+          >
+            Ver calendario
+          </button>
+
+        </div>
+
+        @if (cargandoDisponibilidad()) {
+          <p class="mt-5 text-sm text-slate-500">
+            Cargando períodos...
+          </p>
+        }
+
+        <div class="mt-6 space-y-4">
+
+          @for (periodo of periodos; track periodo.clave) {
+
+            <div
+              class="grid grid-cols-1 items-end gap-3
+                     rounded-2xl border border-slate-200
+                     bg-slate-50 p-4 sm:grid-cols-[1fr_1fr_auto]"
+            >
+
+              <label class="block">
+
+                <span class="mb-2 block text-xs font-bold text-slate-700">
+                  Fecha de inicio
+                </span>
+
+                <input
+                  type="date"
+                  [name]="'fechaInicio_' + periodo.clave"
+                  [(ngModel)]="periodo.fechaInicio"
+                  [min]="fechaMinima"
+                  [disabled]="periodo.idPeriodo !== undefined || guardando() || estado() === 'BLOQUEADA'"
+                  class="w-full rounded-xl border border-slate-200
+                         bg-white px-3 py-3 text-sm
+                         focus:border-emerald-500
+                         disabled:bg-slate-100"
+                />
+
+              </label>
+
+              <label class="block">
+
+                <span class="mb-2 block text-xs font-bold text-slate-700">
+                  Fecha final
+                </span>
+
+                <input
+                  type="date"
+                  [name]="'fechaFin_' + periodo.clave"
+                  [(ngModel)]="periodo.fechaFin"
+                  [min]="periodo.fechaInicio || fechaMinima"
+                  [disabled]="periodo.idPeriodo !== undefined || guardando() || estado() === 'BLOQUEADA'"
+                  class="w-full rounded-xl border border-slate-200
+                         bg-white px-3 py-3 text-sm
+                         focus:border-emerald-500
+                         disabled:bg-slate-100"
+                />
+
+              </label>
+
+              @if (periodo.idPeriodo === undefined) {
+
+                <button
+                  type="button"
+                  (click)="quitarPeriodo(periodo.clave)"
+                  [disabled]="guardando()"
+                  class="rounded-xl border border-red-200
+                         bg-white px-4 py-3 text-xs
+                         font-bold text-red-600"
+                >
+                  Quitar
+                </button>
+
+              } @else {
+
+                <span
+                  class="rounded-xl bg-emerald-50
+                         px-3 py-3 text-center
+                         text-xs font-bold text-emerald-700"
+                >
+                  Guardado
+                </span>
+
+              }
+
+            </div>
+
+          } @empty {
+
+            <p class="text-sm text-slate-500">
+              No hay períodos configurados.
+            </p>
+
+          }
+
+        </div>
+
+        <button
+          type="button"
+          (click)="agregarPeriodo()"
+          [disabled]="guardando() || estado() === 'BLOQUEADA'"
+          class="mt-5 rounded-xl border-2 border-emerald-700
+                 bg-white px-5 py-3 text-sm font-bold
+                 text-emerald-700 transition
+                 hover:bg-emerald-50
+                 disabled:opacity-50"
+        >
+          + Agregar período
+        </button>
+
+      </section>
+
+      <!-- ====================================== -->
+      <!-- BOTONES FINALES -->
+      <!-- ====================================== -->
+
+      <div
+        class="flex flex-col-reverse gap-3
+               sm:flex-row sm:justify-end"
+      >
+
+        <button
+          type="button"
+          (click)="cancelar()"
+          [disabled]="guardando()"
+          class="rounded-xl border border-slate-200
+                 bg-white px-6 py-3 text-sm
+                 font-bold text-slate-700
+                 hover:bg-slate-50"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          (click)="verDetalles()"
+          [disabled]="guardando()"
+          class="rounded-xl border border-emerald-200
+                 bg-emerald-50 px-6 py-3
+                 text-sm font-bold text-emerald-700
+                 hover:bg-emerald-100"
+        >
+          Ver detalles
+        </button>
+
+        <button
+          type="submit"
+          [disabled]="guardando() || trabajandoImagen() || estado() === 'BLOQUEADA' || edicionForm.invalid"
+          class="rounded-xl bg-emerald-700
+                 px-8 py-3 text-sm font-bold
+                 text-white shadow-sm transition
+                 hover:bg-emerald-800
+                 disabled:cursor-not-allowed
+                 disabled:opacity-50"
+        >
+          {{ guardando() ? 'Guardando cambios...' : 'Guardar cambios' }}
+        </button>
+
+      </div>
+
+      @if (estado() === 'BLOQUEADA') {
+        <p class="text-center text-sm font-medium text-red-700">
+          Este alojamiento está bloqueado por administración
+          y no se puede modificar.
+        </p>
+      }
+
+    </form>
+
+  }
+
+  <!-- ====================================== -->
+  <!-- CONFIRMACIÓN ELIMINAR FOTOGRAFÍA -->
+  <!-- ====================================== -->
+
+  @if (imagenAEliminar(); as imagen) {
+
+    <div
+      class="fixed inset-0 z-50 flex items-center
+             justify-center bg-black/50 p-5"
+    >
+
+      <div class="w-full max-w-md rounded-3xl bg-white p-7 shadow-xl">
+
+        <h2 class="text-xl font-bold text-slate-900">
+          ¿Eliminar fotografía?
+        </h2>
+
+        <p class="mt-3 text-sm text-slate-600">
+          Esta fotografía se eliminará del alojamiento.
+          La acción no se podrá deshacer.
+        </p>
+
+        <div class="mt-6 flex justify-end gap-3">
+
+          <button
+            type="button"
+            (click)="imagenAEliminar.set(null)"
+            class="rounded-xl border border-slate-200
+                   px-5 py-3 text-sm font-semibold"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            (click)="eliminarImagen()"
+            class="rounded-xl bg-red-600
+                   px-5 py-3 text-sm font-bold text-white"
+          >
+            Eliminar
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+  <!-- ====================================== -->
+  <!-- CONFIRMACIÓN SALIR SIN GUARDAR -->
+  <!-- ====================================== -->
+
+  @if (confirmarSalida()) {
+
+    <div
+      class="fixed inset-0 z-50 flex items-center
+             justify-center bg-black/50 p-5"
+    >
+
+      <div class="w-full max-w-md rounded-3xl bg-white p-7 shadow-xl">
+
+        <h2 class="text-xl font-bold text-slate-900">
+          ¿Salir sin guardar?
+        </h2>
+
+        <p class="mt-3 text-sm text-slate-600">
+          Tienes modificaciones pendientes.
+          Si sales ahora, los cambios no guardados se perderán.
+        </p>
+
+        <div class="mt-6 flex flex-wrap justify-end gap-3">
+
+          <button
+            type="button"
+            (click)="confirmarSalida.set(false)"
+            class="rounded-xl border border-slate-200
+                   px-5 py-3 text-sm font-semibold"
+          >
+            Seguir editando
+          </button>
+
+          <button
+            type="button"
+            (click)="salirSinGuardar()"
+            class="rounded-xl bg-red-600
+                   px-5 py-3 text-sm font-bold text-white"
+          >
+            Salir sin guardar
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+</main>

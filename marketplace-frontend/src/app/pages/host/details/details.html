@@ -1,0 +1,390 @@
+
+<main class="mx-auto w-full max-w-[1600px] px-5 py-8 sm:px-8 lg:px-12 xl:px-16">
+
+  <!-- ENCABEZADO -->
+  <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
+        Inversiones LR
+      </p>
+
+      <h1 class="mt-2 text-3xl font-bold text-slate-900">
+        Detalles del alojamiento
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-500">
+        Consulta la información de tu publicación.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      (click)="volver()"
+      class="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+    >
+      ← Volver a mis alojamientos
+    </button>
+  </div>
+
+  <!-- CARGA Y ERRORES -->
+  @if (cargando()) {
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
+      Cargando información del alojamiento...
+    </div>
+
+  } @else if (error()) {
+
+    <div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700" role="alert">
+      <p class="font-semibold">
+        No se pudieron consultar los detalles
+      </p>
+
+      <p class="mt-2 text-sm">{{ error() }}</p>
+
+      <button
+        type="button"
+        (click)="cargarAlojamiento()"
+        class="mt-4 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
+      >
+        Reintentar
+      </button>
+    </div>
+
+  } @else if (alojamiento(); as a) {
+
+    <!-- TÍTULO Y ESTADO -->
+    <section class="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900">
+          {{ a.titulo }}
+        </h2>
+
+        <p class="mt-1 text-sm text-slate-500">
+          {{ a.ciudad || 'Ciudad sin definir' }}
+          ·
+          {{ a.ubicacion || 'Ubicación sin definir' }}
+        </p>
+      </div>
+
+      <span [class]="claseEstado(a.estado)">
+        {{ nombreEstado(a.estado) }}
+      </span>
+    </section>
+
+    @if (a.estado === 'BLOQUEADA') {
+      <p class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        Esta publicación está bloqueada por la administración.
+      </p>
+    }
+
+    <!-- GALERÍA -->
+    <section class="mb-7 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+
+      @if (imagenPrincipal(); as principal) {
+
+        <div class="grid gap-2 p-2 md:grid-cols-2">
+
+          <img
+            [src]="principal"
+            [alt]="'Imagen principal de ' + a.titulo"
+            class="h-72 w-full rounded-xl object-cover md:h-96"
+          />
+
+          @if (otrasImagenes().length) {
+            <div class="grid grid-cols-2 gap-2">
+
+              @for (foto of otrasImagenes(); track $index) {
+                <img
+                  [src]="foto"
+                  [alt]="'Fotografía ' + ($index + 2) + ' de ' + a.titulo"
+                  class="h-36 w-full rounded-lg object-cover md:h-[188px]"
+                />
+              }
+
+            </div>
+          }
+
+        </div>
+
+      } @else {
+
+        <div class="flex h-48 items-center justify-center bg-slate-100 text-sm text-slate-500">
+          Este alojamiento todavía no tiene fotografías.
+        </div>
+
+      }
+
+    </section>
+
+    <!-- CONTENIDO -->
+    <div class="grid gap-6 lg:grid-cols-3">
+
+      <div class="space-y-6 lg:col-span-2">
+
+        <!-- INFORMACIÓN GENERAL -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+
+          <h3 class="text-lg font-bold text-slate-900">
+            Información general
+          </h3>
+
+          <p class="mt-3 whitespace-pre-line leading-7 text-slate-600">
+            {{ a.descripcion || 'Este alojamiento no tiene una descripción registrada.' }}
+          </p>
+
+          <div class="mt-6 grid grid-cols-2 gap-5 text-sm sm:grid-cols-3">
+
+            <div>
+              <p class="text-slate-500">Tipo</p>
+              <p class="mt-1 font-semibold">
+                {{ a.tipo || 'Sin definir' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Capacidad</p>
+              <p class="mt-1 font-semibold">
+                {{ a.capacidad == null ? 'Sin definir' : a.capacidad + ' huéspedes' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Habitaciones</p>
+              <p class="mt-1 font-semibold">
+                {{ a.habitaciones ?? 'Sin definir' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Camas</p>
+              <p class="mt-1 font-semibold">
+                {{ a.camas ?? 'Sin definir' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Baños</p>
+              <p class="mt-1 font-semibold">
+                {{ a.banos ?? 'Sin definir' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Ciudad</p>
+              <p class="mt-1 font-semibold">
+                {{ a.ciudad || 'Sin definir' }}
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- SERVICIOS -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+
+          <h3 class="text-lg font-bold text-slate-900">
+            Servicios incluidos
+          </h3>
+
+          @if (a.amenidades?.length) {
+
+            <div class="mt-4 flex flex-wrap gap-2">
+
+              @for (servicio of a.amenidades ?? []; track servicio) {
+                <span class="rounded-lg bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+                  ✓ {{ servicio }}
+                </span>
+              }
+
+            </div>
+
+          } @else {
+
+            <p class="mt-3 text-sm text-slate-500">
+              No hay servicios registrados.
+            </p>
+
+          }
+
+        </section>
+
+        <!-- REGLAS Y HORARIOS -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+
+          <h3 class="text-lg font-bold text-slate-900">
+            Reglas y horarios
+          </h3>
+
+          <p class="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">
+            {{ a.reglas || 'No hay reglas registradas.' }}
+          </p>
+
+          <div class="mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+
+            <div>
+              <p class="text-xs text-slate-500">
+                Hora de entrada
+              </p>
+              <p class="mt-1 font-semibold">
+                {{ a.horaEntrada || 'Sin definir' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-xs text-slate-500">
+                Hora de salida
+              </p>
+              <p class="mt-1 font-semibold">
+                {{ a.horaSalida || 'Sin definir' }}
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+      <!-- COLUMNA LATERAL -->
+      <aside class="space-y-6">
+
+        <!-- PRECIO -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+
+          <h3 class="text-lg font-bold text-slate-900">
+            Precio y condiciones
+          </h3>
+
+          <p class="mt-4 text-3xl font-bold text-emerald-700">
+            {{ precio(a.precioNoche) }}
+          </p>
+
+          <p class="text-sm text-slate-500">
+            por noche
+          </p>
+
+          <div class="mt-5 space-y-3 border-t border-slate-100 pt-4 text-sm">
+
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-500">Tarifa de limpieza</span>
+              <strong>
+                {{ a.porcentajeLimpieza == null ? 'Sin definir' : a.porcentajeLimpieza + '%' }}
+              </strong>
+            </div>
+
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-500">Tarifa de servicio</span>
+              <strong>
+                {{ a.porcentajeServicio == null ? 'Sin definir' : a.porcentajeServicio + '%' }}
+              </strong>
+            </div>
+
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-500">Cancelación</span>
+              <strong class="text-right">
+                {{ a.nombrePolitica || 'Sin definir' }}
+              </strong>
+            </div>
+
+          </div>
+
+          @if (a.serviciosAdicionales?.length) {
+
+            <h4 class="mt-5 border-t border-slate-100 pt-4 text-sm font-semibold">
+              Servicios adicionales
+            </h4>
+
+            @for (extra of a.serviciosAdicionales ?? []; track $index) {
+              <div class="mt-2 flex justify-between gap-3 text-sm">
+                <span class="text-slate-600">{{ extra.nombre }}</span>
+                <strong>{{ precio(extra.costo) }}</strong>
+              </div>
+            }
+
+          }
+
+        </section>
+
+        <!-- ACTIVIDAD -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+
+          <h3 class="text-lg font-bold text-slate-900">
+            Actividad
+          </h3>
+
+          <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+
+            <div>
+              <p class="text-slate-500">Calificación</p>
+              <p class="mt-1 font-semibold">
+                {{ a.promedioCalificacion == null ? 'Sin calificaciones' : a.promedioCalificacion.toFixed(1) + ' / 5' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Reseñas</p>
+              <p class="mt-1 font-semibold">
+                {{ a.cantidadResenas ?? 0 }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Reservas</p>
+              <p class="mt-1 font-semibold">
+                {{ a.cantidadReservas ?? 0 }}
+              </p>
+            </div>
+
+            <div>
+              <p class="text-slate-500">Creación</p>
+              <p class="mt-1 font-semibold">
+                {{ fecha(a.fechaCreacion) }}
+              </p>
+            </div>
+
+          </div>
+
+          <div class="mt-4 border-t border-slate-100 pt-4 text-sm">
+            <p class="text-slate-500">
+              Última actualización
+            </p>
+            <p class="mt-1 font-semibold">
+              {{ fecha(a.fechaActualizacion) }}
+            </p>
+          </div>
+        </section>
+
+        <!-- BOTONES -->
+        <section class="rounded-2xl border border-slate-200 bg-white p-6">
+
+          <h3 class="text-lg font-bold text-slate-900">
+            Gestionar alojamiento
+          </h3>
+
+          <div class="mt-4 space-y-3">
+
+            <button
+              type="button"
+              (click)="editar()"
+              [disabled]="a.estado === 'BLOQUEADA'"
+              class="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Editar alojamiento
+            </button>
+
+            <button
+              type="button"
+              (click)="disponibilidad()"
+              class="w-full rounded-xl border border-emerald-700 bg-white px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
+            >
+              Ver disponibilidad
+            </button>
+
+          </div>
+        </section>
+
+      </aside>
+    </div>
+  }
+</main>
+

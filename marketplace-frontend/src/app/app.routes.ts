@@ -46,30 +46,37 @@ import {
 // ANFITRIÓN
 // ======================================
 
+// CREAR ALOJAMIENTO
 import {
   CreateListing
 } from './pages/host/create-listing/create-listing';
 
+// ACTUALIZAR ALOJAMIENTO
 import {
-  EditListing
-} from './pages/host/edit-listing/edit-listing';
+  Update
+} from './pages/host/update/update';
 
+// VER DETALLES DEL ALOJAMIENTO
 import {
-  ListingDetails
-} from './pages/host/listing-details/listing-details';
+  Details
+} from './pages/host/details/details';
 
+// ADMINISTRAR DISPONIBILIDAD
 import {
   Availability
 } from './pages/host/availability/availability';
 
+// DASHBOARD DEL ANFITRIÓN
 import {
   Dashboard as HostDashboard
 } from './pages/host/dashboard/dashboard';
 
+// LISTADO DE ALOJAMIENTOS
 import {
   Listings as HostListings
 } from './pages/host/listings/listings';
 
+// RESERVAS DEL ANFITRIÓN
 import {
   Reservations as HostReservations
 } from './pages/host/reservations/reservations';
@@ -78,6 +85,7 @@ import {
   ReservationDetail as HostReservationDetail
 } from './pages/host/reservation-detail/reservation-detail';
 
+// RESEÑAS DEL ANFITRIÓN
 import {
   Reviews as HostReviews
 } from './pages/host/reviews/reviews';
@@ -127,7 +135,7 @@ import {
 } from './pages/admin/reviews/reviews';
 
 // ======================================
-// CONFIGURACIÓN DE RUTAS
+// CONFIGURACIÓN GENERAL DE RUTAS
 // ======================================
 
 export const routes: Routes = [
@@ -144,21 +152,23 @@ export const routes: Routes = [
 
   // ====================================
   // RUTAS PÚBLICAS
-  // No necesitan iniciar sesión
   // ====================================
 
   {
     path: 'home',
     component: Home
   },
+
   {
     path: 'explorar',
     component: Explore
   },
+
   {
     path: 'mapa/:id',
     component: MapView
   },
+
   {
     path: 'alojamiento/:id',
     component: Detail
@@ -172,15 +182,14 @@ export const routes: Routes = [
     path: 'login',
     component: Login
   },
+
   {
     path: 'registro',
     component: Register
   },
 
   // ====================================
-  // PERFIL
-  // Disponible para cualquier usuario
-  // autenticado
+  // PERFIL DE USUARIO
   // ====================================
 
   {
@@ -191,7 +200,6 @@ export const routes: Routes = [
 
   // ====================================
   // NOTIFICACIONES
-  // Disponible para usuarios autenticados
   // ====================================
 
   {
@@ -212,6 +220,7 @@ export const routes: Routes = [
       roles: ['Huésped']
     }
   },
+
   {
     path: 'mensajes',
     component: Messages,
@@ -220,6 +229,7 @@ export const routes: Routes = [
       roles: ['Huésped']
     }
   },
+
   {
     path: 'reservas',
     component: GuestReservations,
@@ -228,6 +238,7 @@ export const routes: Routes = [
       roles: ['Huésped']
     }
   },
+
   {
     path: 'reservas/:id',
     component: GuestReservationDetail,
@@ -236,6 +247,7 @@ export const routes: Routes = [
       roles: ['Huésped']
     }
   },
+
   {
     path: 'resenas',
     component: GuestReviews,
@@ -249,6 +261,7 @@ export const routes: Routes = [
   // RUTAS EXCLUSIVAS DE ANFITRIÓN
   // ====================================
 
+  // DASHBOARD
   {
     path: 'host/dashboard',
     component: HostDashboard,
@@ -257,6 +270,8 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
+
+  // LISTADO DE ALOJAMIENTOS
   {
     path: 'host/alojamientos',
     component: HostListings,
@@ -265,6 +280,11 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
+
+  // ====================================
+  // CREAR ALOJAMIENTO
+  // ====================================
+
   {
     path: 'host/alojamientos/crear',
     component: CreateListing,
@@ -273,22 +293,26 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
-  {
-    path: 'host/alojamientos/:id',
-    component: ListingDetails,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['Anfitrión']
-    }
-  },
+
+  // ====================================
+  // EDITAR ALOJAMIENTO
+  // CARPETA: host/update
+  // ====================================
+
   {
     path: 'host/alojamientos/:id/editar',
-    component: EditListing,
+    component: Update,
     canActivate: [roleGuard],
     data: {
       roles: ['Anfitrión']
     }
   },
+
+  // ====================================
+  // DISPONIBILIDAD DEL ALOJAMIENTO
+  // CARPETA: host/availability
+  // ====================================
+
   {
     path: 'host/alojamientos/:id/disponibilidad',
     component: Availability,
@@ -297,6 +321,25 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
+
+  // ====================================
+  // VER DETALLES DEL ALOJAMIENTO
+  // CARPETA: host/details
+  // ====================================
+
+  {
+    path: 'host/alojamientos/:id',
+    component: Details,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['Anfitrión']
+    }
+  },
+
+  // ====================================
+  // RESERVAS DEL ANFITRIÓN
+  // ====================================
+
   {
     path: 'host/reservas',
     component: HostReservations,
@@ -305,6 +348,7 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
+
   {
     path: 'host/reservas/:id',
     component: HostReservationDetail,
@@ -313,6 +357,11 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
+
+  // ====================================
+  // RESEÑAS DEL ANFITRIÓN
+  // ====================================
+
   {
     path: 'host/resenas',
     component: HostReviews,
@@ -326,6 +375,7 @@ export const routes: Routes = [
   // RUTAS EXCLUSIVAS DE ADMINISTRADOR
   // ====================================
 
+  // ÁREA DE ADMINISTRACIÓN
   {
     path: 'admin',
     component: AdminArea,
@@ -334,6 +384,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // DASHBOARD ADMINISTRADOR
   {
     path: 'admin/dashboard',
     component: AdminDashboard,
@@ -342,6 +394,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // USUARIOS
   {
     path: 'admin/usuarios',
     component: Users,
@@ -350,6 +404,7 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
   {
     path: 'admin/usuarios/:id',
     component: UserDetail,
@@ -358,6 +413,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // ALOJAMIENTOS
   {
     path: 'admin/alojamientos',
     component: AdminListings,
@@ -366,6 +423,7 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
   {
     path: 'admin/alojamientos/:id',
     component: ListingDetail,
@@ -374,6 +432,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // RESERVAS
   {
     path: 'admin/reservas',
     component: AdminReservations,
@@ -382,6 +442,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // RESEÑAS
   {
     path: 'admin/resenas',
     component: AdminReviews,
@@ -390,6 +452,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // REPORTES
   {
     path: 'admin/reportes',
     component: Reports,
@@ -398,6 +462,8 @@ export const routes: Routes = [
       roles: ['Administrador']
     }
   },
+
+  // AUDITORÍA
   {
     path: 'admin/auditoria',
     component: Audit,
@@ -407,6 +473,9 @@ export const routes: Routes = [
     }
   },
 
+  // ====================================
+  // RUTA NO ENCONTRADA
+  // ====================================
 
   {
     path: '**',
