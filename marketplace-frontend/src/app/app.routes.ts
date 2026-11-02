@@ -226,7 +226,7 @@ export const routes: Routes = [
     component: Messages,
     canActivate: [roleGuard],
     data: {
-      roles: ['Huésped']
+      roles: ['Huésped', 'Anfitrión']
     }
   },
 
