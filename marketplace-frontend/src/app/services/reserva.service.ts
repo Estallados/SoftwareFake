@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Cotizacion, CotizacionSolicitud } from '../models/cotizacionDto';
 import { Reserva, SolicitudReserva } from '../models/reservaDto';
 import { API_URL } from './api-url';
@@ -28,6 +28,28 @@ export class ReservaService {
       headers: { 'Idempotency-Key': claveIdempotencia },
     });
   }
+  /**
+   * GET /reservas/mias (HUESPED). Mis reservas, las más recientes primero (el backend pagina: se piden hasta `tamanio`).
+   * OJO: endpoint supuesto; si tu ReservaController usa otra ruta, se cambia solo aquí.
+   */
+  misReservas(tamanio = 100): Observable<Reserva[]> {
+    return this.http
+      .get<{ contenido?: Reserva[]; content?: Reserva[] }>(`${this.apiUrl}/reservas/mias`, {
+        params: { pagina: 0, tamanio },
+      })
+      .pipe(map((r) => r?.contenido ?? r?.content ?? []));
+  }
+
+  /** GET /reservas/{id}. 404 si no existe; 403 si no es tuya. (Endpoint supuesto.) */
+  obtener(id: number): Observable<Reserva> {
+    return this.http.get<Reserva>(`${this.apiUrl}/reservas/${id}`);
+  }
+
+  /** POST /reservas/{id}/cancelar con { motivo } (motivo obligatorio). (Endpoint supuesto.) */
+  cancelar(id: number, motivo: string): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/reservas/${id}/cancelar`, { motivo });
+  }
+
   /** Clave única por intento de pago (1 a 100 caracteres). */
   nuevaClaveIdempotencia(): string {
     const c = globalThis.crypto;
