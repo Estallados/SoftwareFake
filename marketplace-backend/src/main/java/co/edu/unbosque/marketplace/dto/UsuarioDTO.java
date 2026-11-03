@@ -2,6 +2,8 @@ package co.edu.unbosque.marketplace.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.Role;
 
@@ -17,6 +19,11 @@ public class UsuarioDTO {
 	private Boolean totpHabilitado;
 	private LocalDateTime fechaRegistro;
 	private Boolean correoVerificado;
+	/** Datos sensibles: nunca se envían ni se reciben en JSON. */
+	@JsonIgnore
+	private String correoHash;
+	@JsonIgnore
+	private String secretoTotp;
 
 	public UsuarioDTO() {
 	}
@@ -107,5 +114,21 @@ public class UsuarioDTO {
 
 	public void setCorreoVerificado(Boolean correoVerificado) {
 		this.correoVerificado = correoVerificado;
+	}
+
+	public String getCorreoHash() {
+		return correoHash;
+	}
+
+	public void setCorreoHash(String correoHash) {
+		this.correoHash = correoHash;
+	}
+
+	public String getSecretoTotp() {
+		return secretoTotp;
+	}
+
+	public void setSecretoTotp(String secretoTotp) {
+		this.secretoTotp = secretoTotp;
 	}
 }

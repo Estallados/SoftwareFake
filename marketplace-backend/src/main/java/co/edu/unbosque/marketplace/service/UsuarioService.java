@@ -253,6 +253,8 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		dto.setNombre(usuario.getNombre());
 		dto.setCorreo(AESUtil.decrypt(usuario.getCorreo()));
 		dto.setContrasenia(null);
+		dto.setCorreoHash(null);
+		dto.setSecretoTotp(null);
 
 		return dto;
 	}

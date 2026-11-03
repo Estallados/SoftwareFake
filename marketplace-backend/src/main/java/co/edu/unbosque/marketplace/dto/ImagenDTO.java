@@ -10,6 +10,8 @@ public class ImagenDTO {
 	private String url;
 	private Long idAlojamiento;
 	private Boolean principal;
+	/** Id del archivo en Cloudinary. */
+	private String rutaArchivo;
 
 	public ImagenDTO() {
 	}
@@ -44,5 +46,13 @@ public class ImagenDTO {
 
 	public void setPrincipal(Boolean principal) {
 		this.principal = principal;
+	}
+
+	public String getRutaArchivo() {
+		return rutaArchivo;
+	}
+
+	public void setRutaArchivo(String rutaArchivo) {
+		this.rutaArchivo = rutaArchivo;
 	}
 }

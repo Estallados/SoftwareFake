@@ -32,6 +32,9 @@ public class CotizacionDTO {
 	private List<ServicioAdicionalDTO> serviciosDisponibles;
 	private LocalDateTime fechaExpiracion;
 	private Long idReserva;
+	private Long idUsuario;
+	private LocalDateTime fechaCreacion;
+	private String desglose;
 
 	public CotizacionDTO() {
 	}
@@ -194,5 +197,29 @@ public class CotizacionDTO {
 
 	public void setIdReserva(Long idReserva) {
 		this.idReserva = idReserva;
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public LocalDateTime getFechaCreacion() {
+		return fechaCreacion;
+	}
+
+	public void setFechaCreacion(LocalDateTime fechaCreacion) {
+		this.fechaCreacion = fechaCreacion;
+	}
+
+	public String getDesglose() {
+		return desglose;
+	}
+
+	public void setDesglose(String desglose) {
+		this.desglose = desglose;
 	}
 }

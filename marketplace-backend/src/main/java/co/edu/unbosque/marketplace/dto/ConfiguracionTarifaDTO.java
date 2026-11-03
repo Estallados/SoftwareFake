@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  * @see "RF-023, CA-085"
  */
 public class ConfiguracionTarifaDTO {
+	private Long idConfiguracion;
 	private BigDecimal porcentajeLimpieza;
 	private BigDecimal porcentajeServicio;
 	private Long idUsuario;
@@ -17,6 +18,14 @@ public class ConfiguracionTarifaDTO {
 	private Boolean porDefecto;
 
 	public ConfiguracionTarifaDTO() {
+	}
+
+	public Long getIdConfiguracion() {
+		return idConfiguracion;
+	}
+
+	public void setIdConfiguracion(Long idConfiguracion) {
+		this.idConfiguracion = idConfiguracion;
 	}
 
 	public BigDecimal getPorcentajeLimpieza() {

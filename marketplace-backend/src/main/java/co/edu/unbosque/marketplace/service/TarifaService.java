@@ -51,6 +51,7 @@ public class TarifaService {
 		Optional<ConfiguracionTarifa> guardada = configuracionRepo.findTopByOrderByFechaDescIdConfiguracionDesc();
 		ConfiguracionTarifaDTO dto = new ConfiguracionTarifaDTO();
 		if (guardada.isPresent()) {
+			dto.setIdConfiguracion(guardada.get().getIdConfiguracion());
 			dto.setPorcentajeLimpieza(guardada.get().getPorcentajeLimpieza());
 			dto.setPorcentajeServicio(guardada.get().getPorcentajeServicio());
 			dto.setIdUsuario(guardada.get().getIdUsuario());
