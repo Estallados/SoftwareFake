@@ -1,5 +1,5 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { photos } from '../../../services/mockData';
 import { Alojamiento } from '../../../models/alojamientoDto';
@@ -36,12 +36,15 @@ export class Home implements OnInit {
   ];
   // Tipos obtenidos dinámicamente del backend.
   types: TipoAlojamiento[] = [];
-  readonly searchFields = [
-    { icon: 'pin', label: '¿A dónde?', value: 'Ciudad o destino' },
-    { icon: 'calendar', label: 'Entrada', value: '15 jul 2025' },
-    { icon: 'calendar', label: 'Salida', value: '19 jul 2025' },
-    { icon: 'users', label: 'Huéspedes', value: '2 huéspedes' },
-  ];
+  // ---- Barra de búsqueda: al buscar se abre Explorar con estos filtros ----
+  readonly hoy = this.alojamientoService.fechaHoy();
+  ciudad = signal('');
+  entrada = signal('');
+  salida = signal('');
+  huespedes = signal('');
+  errorBusqueda = signal<string | null>(null);
+  /** Pregunta antes de cerrar la sesión de un huésped que quiere hacerse anfitrión. */
+  confirmarAnfitrion = signal(false);
   ngOnInit(): void {
     this.favoritoService.cargarSiCorresponde();
     // Cargar alojamientos destacados.
@@ -94,8 +97,39 @@ export class Home implements OnInit {
   goSearch(): void {
     this.router.navigateByUrl('/explorar');
   }
-  goHost(): void {
-    this.router.navigateByUrl('/host/dashboard');
+  buscar(): void {
+    const campos = { ciudad: this.ciudad(), entrada: this.entrada(), salida: this.salida(), huespedes: this.huespedes() };
+    const error = this.alojamientoService.validarBusqueda(campos);
+    this.errorBusqueda.set(error);
+    if (error) {
+      return;
+    }
+    this.router.navigate(['/explorar'], { queryParams: this.alojamientoService.paramsBusqueda(campos) });
+  }
+  /** Botón "Publicar alojamiento": depende de la sesión. */
+  publicar(): void {
+    if (this.session.tieneRol('Anfitrión')) {
+      this.router.navigateByUrl('/host/alojamientos');
+    } else if (this.session.tieneRol('Huésped')) {
+      this.confirmarAnfitrion.set(true);
+    } else if (this.session.tieneRol('Administrador')) {
+      this.router.navigateByUrl('/admin/dashboard');
+    } else {
+      this.irARegistroAnfitrion();
+    }
+  }
+  @HostListener('document:keydown.escape')
+  cancelarCambio(): void {
+    this.confirmarAnfitrion.set(false);
+  }
+  /** Acepta cerrar la sesión de huésped y lleva al registro de anfitrión. */
+  aceptarCambio(): void {
+    this.confirmarAnfitrion.set(false);
+    this.session.cerrarSesion();
+    this.irARegistroAnfitrion();
+  }
+  private irARegistroAnfitrion(): void {
+    this.router.navigate(['/registro'], { queryParams: { rol: 'anfitrion' } });
   }
   openStay(id: number | undefined): void {
     if (id == null) {

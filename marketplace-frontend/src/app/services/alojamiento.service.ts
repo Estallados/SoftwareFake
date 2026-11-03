@@ -94,9 +94,9 @@ export class AlojamientoService {
       return cached;
     }
     const request$ = this.http
-      .get<{ content: Alojamiento[] }>(this.base, { params })
+      .get<{ contenido?: Alojamiento[]; content?: Alojamiento[] }>(this.base, { params })
       .pipe(
-        map((r) => r.content),
+        map((r) => r?.contenido ?? r?.content ?? []),
         shareReplay({ bufferSize: 1, refCount: false }),
       );
     this.busquedaCache.set(cacheKey, request$);
@@ -121,9 +121,9 @@ export class AlojamientoService {
   mios(): Observable<Alojamiento[]> {
     if (!this.miosCache$) {
       this.miosCache$ = this.http
-        .get<{ content: Alojamiento[] }>(`${this.base}/mios`)
+        .get<{ contenido?: Alojamiento[]; content?: Alojamiento[] }>(`${this.base}/mios`)
         .pipe(
-          map((r) => r.content),
+          map((r) => r?.contenido ?? r?.content ?? []),
           shareReplay({ bufferSize: 1, refCount: false }),
         );
     }
@@ -310,6 +310,44 @@ export class AlojamientoService {
       (stay.amenidades ?? []).slice(0, max).join(' · ') ||
       'Sin servicios indicados'
     );
+  }
+  // ================= Barra de búsqueda (Inicio y Explorar) =================
+  /** Fecha de hoy (local) como YYYY-MM-DD. */
+  fechaHoy(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  /** Valida la barra de búsqueda; devuelve el mensaje de error o null si está bien. */
+  validarBusqueda(f: { entrada: string; salida: string; huespedes: string }): string | null {
+    if (!!f.entrada !== !!f.salida) {
+      return 'Indica la fecha de entrada y la de salida.';
+    }
+    if (f.entrada && f.entrada < this.fechaHoy()) {
+      return 'La fecha de entrada no puede estar en el pasado.';
+    }
+    if (f.entrada && f.salida <= f.entrada) {
+      return 'La salida debe ser posterior a la entrada.';
+    }
+    const n = Number(f.huespedes);
+    if (f.huespedes.trim() && (!Number.isInteger(n) || n < 1)) {
+      return 'Los huéspedes deben ser un número mayor que cero.';
+    }
+    return null;
+  }
+  /** Parámetros de la URL de Explorar (ciudad, llegada, salida, huespedes); omite los vacíos. */
+  paramsBusqueda(f: { ciudad: string; entrada: string; salida: string; huespedes: string }): Record<string, string | number> {
+    const p: Record<string, string | number> = {};
+    if (f.ciudad.trim()) {
+      p['ciudad'] = f.ciudad.trim();
+    }
+    if (f.entrada && f.salida) {
+      p['llegada'] = f.entrada;
+      p['salida'] = f.salida;
+    }
+    if (f.huespedes.trim()) {
+      p['huespedes'] = Number(f.huespedes);
+    }
+    return p;
   }
   // ================= Utilidades =================
   private params(valores: Record<string, unknown>): HttpParams {

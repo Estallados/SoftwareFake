@@ -6,8 +6,10 @@ import {
   signal,
 } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { Alojamiento } from '../../../models/alojamientoDto';
+import { FiltrosBusqueda } from '../../../models/filtrosBusquedaDto';
 import { AlojamientoService } from '../../../services/alojamiento.service';
 import { FavoritoService } from '../../../services/favorito.service';
 import { photos } from '../../../services/mockData';
@@ -24,6 +26,7 @@ type SortOption =
 })
 export class Explore implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   protected readonly alojamientoService = inject(AlojamientoService);
   protected readonly favoritoService = inject(FavoritoService);
   // ==================== DATOS ====================
@@ -43,23 +46,15 @@ export class Explore implements OnInit {
     'Precio mayor',
     'Mejor calificados',
   ];
-  readonly searchFields = [
-    {
-      icon: 'pin',
-      label: '¿A dónde?',
-      value: 'Ciudad o destino',
-    },
-    {
-      icon: 'calendar',
-      label: 'Entrada',
-      value: 'Seleccionar fecha',
-    },
-    {
-      icon: 'calendar',
-      label: 'Salida',
-      value: 'Seleccionar fecha',
-    },
-  ];
+  // ==================== BARRA DE BÚSQUEDA ====================
+  readonly hoy = this.alojamientoService.fechaHoy();
+  ciudad = signal('');
+  entrada = signal('');
+  salida = signal('');
+  huespedes = signal('');
+  errorBusqueda = signal<string | null>(null);
+  /** true cuando los resultados vienen de una búsqueda (y no del catálogo completo). */
+  busquedaAplicada = signal(false);
   // ==================== PRECIOS DISPONIBLES ====================
   readonly preciosDisponibles = computed(() => {
     return this.stays()
@@ -109,7 +104,59 @@ export class Explore implements OnInit {
   // ==================== INICIALIZACIÓN ====================
   ngOnInit(): void {
     this.favoritoService.cargarSiCorresponde();
+    // Viene de la barra de búsqueda del Inicio: ?ciudad=&llegada=&salida=&huespedes=
+    const q = this.route.snapshot.queryParamMap;
+    this.ciudad.set(q.get('ciudad') ?? '');
+    this.entrada.set(q.get('llegada') ?? '');
+    this.salida.set(q.get('salida') ?? '');
+    this.huespedes.set(q.get('huespedes') ?? '');
+    const error = this.alojamientoService.validarBusqueda(this.camposBusqueda());
+    if (error) {
+      this.errorBusqueda.set(error);
+      this.entrada.set('');
+      this.salida.set('');
+    }
+    this.busquedaAplicada.set(this.hayFiltrosDeBusqueda());
     this.cargarAlojamientos();
+  }
+  private camposBusqueda() {
+    return { ciudad: this.ciudad(), entrada: this.entrada(), salida: this.salida(), huespedes: this.huespedes() };
+  }
+  private hayFiltrosDeBusqueda(): boolean {
+    return Object.keys(this.alojamientoService.paramsBusqueda(this.camposBusqueda())).length > 0;
+  }
+  /** Aplica la barra de búsqueda: actualiza la URL y vuelve a pedir los alojamientos. */
+  buscar(): void {
+    const error = this.alojamientoService.validarBusqueda(this.camposBusqueda());
+    this.errorBusqueda.set(error);
+    if (error) {
+      return;
+    }
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.alojamientoService.paramsBusqueda(this.camposBusqueda()),
+      replaceUrl: true,
+    });
+    this.busquedaAplicada.set(this.hayFiltrosDeBusqueda());
+    this.cargarAlojamientos();
+  }
+  limpiarBusqueda(): void {
+    this.ciudad.set('');
+    this.entrada.set('');
+    this.salida.set('');
+    this.huespedes.set('');
+    this.errorBusqueda.set(null);
+    this.busquedaAplicada.set(false);
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    this.cargarAlojamientos();
+  }
+  /** Sin filtros de búsqueda: catálogo completo. Con filtros: búsqueda del backend (incluye disponibilidad por fechas). */
+  private pedirAlojamientos(): Observable<Alojamiento[]> {
+    if (!this.hayFiltrosDeBusqueda()) {
+      return this.alojamientoService.disponibles(100);
+    }
+    const params = this.alojamientoService.paramsBusqueda(this.camposBusqueda());
+    return this.alojamientoService.buscar({ ...params, tamanio: 100 } as unknown as FiltrosBusqueda);
   }
   reintentar(): void {
     this.cargarAlojamientos();
@@ -117,7 +164,7 @@ export class Explore implements OnInit {
   private cargarAlojamientos(): void {
     this.loading.set(true);
     this.errorCarga.set(false);
-    this.alojamientoService.disponibles(100).subscribe({
+    this.pedirAlojamientos().subscribe({
       next: (respuesta: Alojamiento[]) => {
         this.stays.set(respuesta ?? []);
         this.precioMin.set(
@@ -307,9 +354,6 @@ export class Explore implements OnInit {
       '/alojamiento',
       id,
     ]);
-  }
-  goSearch(): void {
-    this.router.navigateByUrl('/explorar');
   }
   // ==================== LIMPIAR FILTROS ====================
   limpiarFiltros(): void {

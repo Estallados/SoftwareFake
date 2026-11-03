@@ -1,5 +1,5 @@
 <footer class="border-t border-slate-200 bg-white">
-  <div class="mx-auto grid max-w-[1320px] grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 px-8 py-14">
+  <div class="mx-auto grid max-w-[1320px] grid-cols-[1.4fr_1fr_1fr] gap-12 px-8 py-14">
     <div>
       <!-- Logo -->
       <div class="flex items-center gap-3">
@@ -19,19 +19,17 @@
         una manera diferente.
       </p>
     </div>
-
     @for (g of groups; track g.title) {
       <div>
         <h3 class="text-sm font-bold">{{ g.title }}</h3>
-        @for (link of g.links; track link) {
-          <button type="button" class="mt-4 block text-sm text-slate-500 hover:text-emerald-700">
-            {{ link }}
-          </button>
+        @for (link of g.links; track link.texto) {
+          <a [routerLink]="link.ruta" class="mt-4 block text-sm text-slate-500 hover:text-emerald-700">
+            {{ link.texto }}
+          </a>
         }
       </div>
     }
   </div>
-
   <div class="border-t border-slate-100 py-6 text-center text-xs text-slate-400">
     © 2025 Inversiones LR · Prototipo académico de Ingeniería de Software
   </div>

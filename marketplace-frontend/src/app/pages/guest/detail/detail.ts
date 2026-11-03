@@ -1,4 +1,6 @@
-import {ChangeDetectorRef, Component, computed, inject, OnInit, signal} from '@angular/core';
+import {ChangeDetectorRef, Component, computed, DestroyRef, inject, OnInit, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {debounceTime} from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { photos } from '../../../services/mockData';
 import {AlojamientoService} from '../../../services/alojamiento.service';
@@ -13,6 +15,8 @@ import {Cotizacion} from '../../../models/cotizacionDto';
 import {Reserva} from '../../../models/reservaDto';
 import {HttpErrorResponse} from '@angular/common/http';
 import {PagoReserva} from '../pago-reserva/pago-reserva';
+import {DisponibilidadService} from '../../../services/disponibilidad.service';
+import {MensajeriaService} from '../../../services/mensajeria.service';
 @Component({
   selector: 'app-detail',
   standalone: true,
@@ -34,6 +38,9 @@ export class Detail implements OnInit {
   protected readonly session = inject(SessionService);
   private readonly reservaService = inject(ReservaService);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly disponibilidadService = inject(DisponibilidadService);
+  private readonly mensajeriaService = inject(MensajeriaService);
   // ==================== Alojamiento ====================
   readonly photos = photos;
   amenities: string[] = [];
@@ -130,6 +137,10 @@ export class Detail implements OnInit {
   ngOnInit(): void {
     this.favoritoService.cargarSiCorresponde();
     this.cargarAlojamiento();
+    // Al elegir fechas se consulta si están disponibles
+    this.reservaForm.valueChanges
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.consultarFechas());
   }
   private cargarAlojamiento(): void {
     this.loading = true;
@@ -159,6 +170,7 @@ export class Detail implements OnInit {
         const idAlojamiento = respuesta.idAlojamiento;
         if (idAlojamiento != null) {
           this.cargarResenas(idAlojamiento);
+          this.cargarDisponibilidad(idAlojamiento);
         }
         this.cdr.detectChanges();
       },
@@ -199,8 +211,31 @@ export class Detail implements OnInit {
   openMap(id: number): void {
     this.router.navigate(['/mapa', id]);
   }
+  contactando = false;
+  errorContacto: string | null = null;
+  /** Inicia (o retoma) la conversación con el anfitrión y abre la mensajería en ella. */
   contactHost(): void {
-    this.router.navigateByUrl('/mensajes');
+    const id = this.stay?.idAlojamiento;
+    if (id == null || this.contactando) {
+      return;
+    }
+    if (!this.session.autenticado()) {
+      this.errorContacto = 'Inicia sesión para contactar al anfitrión.';
+      return;
+    }
+    this.contactando = true;
+    this.errorContacto = null;
+    this.mensajeriaService.iniciar(id).subscribe({
+      next: (conversacion) => {
+        this.contactando = false;
+        this.router.navigate(['/mensajes'], { queryParams: { conversacion: conversacion.id } });
+      },
+      error: (error) => {
+        this.errorContacto = this.mensajeriaService.mensajeDeError(error, 'No se pudo iniciar la conversación.');
+        this.contactando = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
   initials(name: string): string {
     return name
@@ -290,6 +325,111 @@ export class Detail implements OnInit {
       (_, index) => index + 1
     );
   }
+  // ==================== Disponibilidad ====================
+  readonly LIMITE_RANGOS = 6;
+  loadingDisponibilidad = false;
+  errorDisponibilidad = false;
+  /** Rangos de fechas libres: cada uno va de la entrada más temprana a la salida más tardía posibles. */
+  rangosLibres: { desde: string; hasta: string }[] = [];
+  mostrarTodosLosRangos = false;
+  /** Resultado de consultar las fechas elegidas en el formulario. */
+  consulta: { estado: 'cargando' | 'ok' | 'no' | 'error'; motivo?: string } | null = null;
+  private consultaClave = '';
+  get rangosVisibles(): { desde: string; hasta: string }[] {
+    return this.mostrarTodosLosRangos ? this.rangosLibres : this.rangosLibres.slice(0, this.LIMITE_RANGOS);
+  }
+  private cargarDisponibilidad(idAlojamiento: number): void {
+    this.loadingDisponibilidad = true;
+    this.errorDisponibilidad = false;
+    this.disponibilidadService.calendario(idAlojamiento).subscribe({
+      next: ({ periodos, reservas }) => {
+        this.rangosLibres = this.calcularRangosLibres(periodos, reservas);
+        this.loadingDisponibilidad = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar la disponibilidad:', error);
+        this.errorDisponibilidad = true;
+        this.loadingDisponibilidad = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+  /** Períodos ofrecidos menos las fechas ya reservadas, desde hoy. La salida de una reserva queda libre para entrar. */
+  private calcularRangosLibres(
+    periodos: { fechaLlegada: string; fechaSalida: string }[],
+    reservas: { fechaLlegada: string; fechaSalida: string }[],
+  ): { desde: string; hasta: string }[] {
+    const aDia = (s: string) => {
+      const [a, m, d] = s.slice(0, 10).split('-').map(Number);
+      return Date.UTC(a, m - 1, d) / 86400000;
+    };
+    const aTexto = (n: number) => new Date(n * 86400000).toISOString().slice(0, 10);
+    const hoy = aDia(this.fechaMinima);
+    const ocupadas = reservas.map((r) => [aDia(r.fechaLlegada), aDia(r.fechaSalida)]).sort((x, y) => x[0] - y[0]);
+    const libres: [number, number][] = [];
+    for (const p of periodos) {
+      let inicio = Math.max(aDia(p.fechaLlegada), hoy);
+      const fin = aDia(p.fechaSalida);
+      for (const [desde, hasta] of ocupadas) {
+        if (inicio >= fin) {
+          break;
+        }
+        if (hasta <= inicio || desde >= fin) {
+          continue;
+        }
+        if (desde > inicio) {
+          libres.push([inicio, desde]);
+        }
+        inicio = Math.max(inicio, hasta);
+      }
+      if (inicio < fin) {
+        libres.push([inicio, fin]);
+      }
+    }
+    libres.sort((x, y) => x[0] - y[0]);
+    const unidos: [number, number][] = [];
+    for (const rango of libres) {
+      const ultimo = unidos.at(-1);
+      if (ultimo && rango[0] <= ultimo[1]) {
+        ultimo[1] = Math.max(ultimo[1], rango[1]);
+      } else {
+        unidos.push([...rango]);
+      }
+    }
+    return unidos.map(([a, b]) => ({ desde: aTexto(a), hasta: aTexto(b) }));
+  }
+  /** Consulta al backend si las fechas elegidas están disponibles (se ignoran fechas incompletas o inválidas). */
+  private consultarFechas(): void {
+    const id = this.stay?.idAlojamiento;
+    const { fechaEntrada, fechaSalida } = this.reservaForm.getRawValue();
+    if (id == null || !fechaEntrada || !fechaSalida || this.noches <= 0 || fechaEntrada < this.fechaMinima) {
+      this.consulta = null;
+      this.consultaClave = '';
+      this.cdr.detectChanges();
+      return;
+    }
+    const clave = `${fechaEntrada}|${fechaSalida}`;
+    this.consultaClave = clave;
+    this.consulta = { estado: 'cargando' };
+    this.cdr.detectChanges();
+    this.disponibilidadService.consultar(id, fechaEntrada, fechaSalida).subscribe({
+      next: (r) => {
+        if (this.consultaClave !== clave) {
+          return; // el usuario ya cambió las fechas
+        }
+        this.consulta = r.disponible ? { estado: 'ok' } : { estado: 'no', motivo: r.motivo ?? undefined };
+        this.cdr.detectChanges();
+      },
+      error: (error: HttpErrorResponse) => {
+        if (this.consultaClave !== clave) {
+          return;
+        }
+        this.consulta = { estado: 'error', motivo: this.reservaService.mensajeDeError(error, 'No se pudo verificar la disponibilidad.') };
+        this.cdr.detectChanges();
+      },
+    });
+  }
   // ==================== Envío de reserva ====================
   reserve(): void {
     this.reservaConfirmada = null;
@@ -316,6 +456,10 @@ export class Detail implements OnInit {
     }
     if (huespedes > (this.stay.capacidad ?? 0)) {
       this.errorReserva = `Este alojamiento admite hasta ${this.stay.capacidad ?? 0} huéspedes.`;
+      return;
+    }
+    if (this.consulta?.estado === 'no') {
+      this.errorReserva = `El alojamiento no está disponible en esas fechas${this.consulta.motivo ? `: ${this.consulta.motivo}` : '.'}`;
       return;
     }
     const idAlojamiento = this.stay.idAlojamiento;

@@ -39,17 +39,22 @@ export class ReservaService {
       })
       .pipe(map((r) => r?.contenido ?? r?.content ?? []));
   }
-
   /** GET /reservas/{id}. 404 si no existe; 403 si no es tuya. (Endpoint supuesto.) */
   obtener(id: number): Observable<Reserva> {
     return this.http.get<Reserva>(`${this.apiUrl}/reservas/${id}`);
   }
-
-  /** POST /reservas/{id}/cancelar con { motivo } (motivo obligatorio). (Endpoint supuesto.) */
-  cancelar(id: number, motivo: string): Observable<unknown> {
-    return this.http.post<unknown>(`${this.apiUrl}/reservas/${id}/cancelar`, { motivo });
+  /**
+   * POST /reservas/{id}/cancelar con { motivo } (motivo obligatorio). Exige la cabecera Idempotency-Key:
+   * si no se indica una, se genera una nueva; pásala explícita solo para reintentar la MISMA cancelación.
+   * 404 no existe · 409 no se puede cancelar en ese estado o clave repetida con otra petición.
+   */
+  cancelar(id: number, motivo: string, claveIdempotencia: string = this.nuevaClaveIdempotencia()): Observable<unknown> {
+    return this.http.post<unknown>(
+      `${this.apiUrl}/reservas/${id}/cancelar`,
+      { motivo },
+      { headers: { 'Idempotency-Key': claveIdempotencia } },
+    );
   }
-
   /** Clave única por intento de pago (1 a 100 caracteres). */
   nuevaClaveIdempotencia(): string {
     const c = globalThis.crypto;

@@ -1,4 +1,3 @@
-
 import {
   Component,
   computed,
@@ -8,7 +7,7 @@ import {
   signal
 } from '@angular/core';
 
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import {
   NavigationEnd,
@@ -17,8 +16,9 @@ import {
   RouterLinkActive
 } from '@angular/router';
 
-import { filter, map, startWith } from 'rxjs';
+import { filter, fromEvent, interval, map, merge, startWith } from 'rxjs';
 import {SessionService} from '../../services/session.service';
+import {NotificacionService} from '../../services/notificaciones.service';
 
 export type Role = 'Huésped' | 'Anfitrión' | 'Administrador';
 export type AuthMode = 'login' | 'register' | 'recovery';
@@ -81,8 +81,12 @@ export class NavbarComponent {
 
   private readonly router = inject(Router);
   protected readonly session = inject(SessionService);
+  private readonly notificacionService = inject(NotificacionService);
 
   unread = input(0);
+  /** Notificaciones sin leer del usuario (se consulta al navegar, cada minuto y al marcar como leídas). */
+  readonly sinLeer = signal(0);
+  readonly contador = computed(() => Math.max(this.unread(), this.sinLeer()));
   openAuth = output<AuthMode>();
 
   roleMenu = false;
@@ -275,6 +279,27 @@ export class NavbarComponent {
 
     return this.url().split(/[?#]/)[0] === '/login';
   });
+
+  constructor() {
+    merge(
+      toObservable(this.url),
+      interval(60_000),
+      fromEvent(window, 'notificaciones-actualizadas'),
+    )
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.actualizarSinLeer());
+  }
+
+  private actualizarSinLeer(): void {
+    if (!this.estaAutenticado()) {
+      this.sinLeer.set(0);
+      return;
+    }
+    this.notificacionService.listar().subscribe({
+      next: (lista) => this.sinLeer.set((lista ?? []).filter((x) => !x.leida).length),
+      error: () => undefined, // un fallo puntual no debe romper la barra
+    });
+  }
 
   // ======================================
   // ESTILOS DE NAVEGACIÓN
