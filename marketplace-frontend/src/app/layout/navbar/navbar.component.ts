@@ -42,6 +42,7 @@ const HOST_ITEMS: NavItem[] = [
   ['Resumen', '/host/dashboard'],
   ['Mis alojamientos', '/host/alojamientos'],
   ['Reservas', '/host/reservas'],
+  ['Chat', '/host/chat'],
   ['Reseñas', '/host/resenas']
 ];
 

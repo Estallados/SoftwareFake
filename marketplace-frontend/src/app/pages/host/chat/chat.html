@@ -1,0 +1,425 @@
+
+<section class="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 lg:px-12">
+
+  <!-- ======================================
+       ENCABEZADO DEL CHAT
+       ====================================== -->
+
+  <div class="flex flex-wrap items-end justify-between gap-4">
+
+    <div>
+
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
+        Inversiones LR
+      </p>
+
+      <h1 class="mt-2 text-3xl font-bold text-slate-900">
+        Chat
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-500">
+        Conversa con los huéspedes de tus alojamientos.
+      </p>
+
+    </div>
+
+    <!-- ACTUALIZAR CONVERSACIONES -->
+
+    <button
+      type="button"
+      (click)="cargarConversaciones()"
+      [disabled]="cargando()"
+      class="rounded-xl border border-emerald-700 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+    >
+
+      {{ cargando() ? 'Actualizando...' : 'Actualizar chats' }}
+
+    </button>
+
+  </div>
+
+  <!-- ======================================
+       CONTENEDOR PRINCIPAL
+       ====================================== -->
+
+  <div
+    class="mt-6 grid min-h-[590px] overflow-hidden rounded-2xl border border-slate-200 bg-white lg:grid-cols-[330px_minmax(0,1fr)]"
+  >
+
+    <!-- ======================================
+         PANEL IZQUIERDO
+         LISTADO DE CONVERSACIONES
+         ====================================== -->
+
+    <aside class="border-b border-slate-200 lg:border-b-0 lg:border-r">
+
+      <!-- BUSCADOR DE HUÉSPEDES -->
+
+      <div class="border-b border-slate-100 p-4">
+
+        <label
+          for="host-chat-search"
+          class="sr-only"
+        >
+          Buscar huésped
+        </label>
+
+        <input
+          id="host-chat-search"
+          type="search"
+          [value]="busqueda()"
+          (input)="busqueda.set($any($event.target).value)"
+          placeholder="Buscar huésped o alojamiento"
+          class="w-full rounded-xl bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-300"
+        />
+
+      </div>
+
+      <!-- LISTA DE CONVERSACIONES -->
+
+      <div class="max-h-[240px] overflow-y-auto lg:max-h-[650px]">
+
+        <!-- CARGANDO -->
+
+        @if (cargando()) {
+
+          <p class="p-5 text-sm text-slate-500">
+            Cargando conversaciones...
+          </p>
+
+        }
+
+        <!-- ERROR -->
+
+        @if (!cargando() && error()) {
+
+          <div
+            class="p-5"
+            role="alert"
+          >
+
+            <p class="text-sm text-red-700">
+              {{ error() }}
+            </p>
+
+            <button
+              type="button"
+              (click)="cargarConversaciones()"
+              class="mt-3 text-sm font-bold text-emerald-700 hover:underline"
+            >
+              Reintentar
+            </button>
+
+          </div>
+
+        }
+
+        <!-- CONVERSACIONES REALES -->
+
+        @if (!cargando() && !error()) {
+
+          @for (c of filtradas(); track c.id) {
+
+            <button
+              type="button"
+              (click)="seleccionar(c.id)"
+              [class]="claseConversacion(c.id)"
+            >
+
+              <!-- AVATAR -->
+
+              <span
+                class="grid size-11 shrink-0 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white"
+              >
+                {{ iniciales(c.contacto) }}
+              </span>
+
+              <!-- INFORMACIÓN DEL HUÉSPED -->
+
+              <span class="min-w-0 flex-1">
+
+                <!-- NOMBRE -->
+
+                <span class="block truncate text-sm font-bold text-slate-900">
+                  {{ c.contacto }}
+                </span>
+
+                <!-- ALOJAMIENTO -->
+
+                <span class="mt-1 block truncate text-xs font-semibold text-emerald-700">
+                  {{ c.alojamiento }}
+                </span>
+
+                <!-- ÚLTIMO MENSAJE -->
+
+                @if (c.ultimo) {
+
+                  <span class="mt-1 block truncate text-xs text-slate-500">
+                    {{ c.ultimo }}
+                  </span>
+
+                }
+
+              </span>
+
+            </button>
+
+          } @empty {
+
+            <!-- SIN CONVERSACIONES -->
+
+            <p class="p-5 text-sm text-slate-500">
+
+              {{
+                busqueda()
+                  ? 'No se encontraron conversaciones.'
+                  : 'Aún no tienes conversaciones. Cuando un huésped te escriba por un alojamiento, aparecerá aquí.'
+              }}
+
+            </p>
+
+          }
+
+        }
+
+      </div>
+
+    </aside>
+
+    <!-- ======================================
+         PANEL DERECHO
+         CONVERSACIÓN ACTIVA
+         ====================================== -->
+
+    <div class="flex min-h-[540px] min-w-0 flex-col">
+
+      @if (activa(); as c) {
+
+        <!-- ======================================
+             ENCABEZADO DE CONVERSACIÓN
+             ====================================== -->
+
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-5"
+        >
+
+          <div class="min-w-0">
+
+            <!-- NOMBRE DEL HUÉSPED -->
+
+            <h2 class="truncate text-lg font-bold text-slate-900">
+              {{ c.contacto }}
+            </h2>
+
+            <!-- ALOJAMIENTO RELACIONADO -->
+
+            <p class="mt-1 text-xs text-slate-500">
+              {{ c.alojamiento }}
+            </p>
+
+          </div>
+
+          <!-- BOTÓN VER ALOJAMIENTO -->
+
+          <button
+            type="button"
+            (click)="irAlAlojamiento()"
+            [disabled]="c.idAlojamiento == null"
+            class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+          >
+            Ver alojamiento
+          </button>
+
+        </div>
+
+        <!-- ======================================
+             HISTORIAL DE MENSAJES
+             ====================================== -->
+
+        <div
+          #scroller
+          class="max-h-[530px] min-h-[330px] flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-4 sm:p-6"
+          role="log"
+          aria-label="Mensajes del chat"
+          aria-live="polite"
+        >
+
+          <!-- CARGANDO MENSAJES -->
+
+          @if (cargandoMensajes()) {
+
+            <p class="text-center text-sm text-slate-500">
+              Cargando mensajes...
+            </p>
+
+          }
+
+          <!-- ERROR AL CARGAR MENSAJES -->
+
+          @if (!cargandoMensajes() && errorMensajes()) {
+
+            <div
+              class="text-center"
+              role="alert"
+            >
+
+              <p class="text-sm text-red-700">
+                {{ errorMensajes() }}
+              </p>
+
+              <button
+                type="button"
+                (click)="seleccionar(c.id)"
+                class="mt-2 text-sm font-bold text-emerald-700"
+              >
+                Reintentar
+              </button>
+
+            </div>
+
+          }
+
+          <!-- ======================================
+               MENSAJES REALES
+               ====================================== -->
+
+          @if (!cargandoMensajes() && !errorMensajes()) {
+
+            @for (m of mensajes(); track m.id) {
+
+              <!-- CONTENEDOR DEL MENSAJE -->
+
+              <div
+                class="flex"
+                [class.justify-end]="m.mio"
+              >
+
+                <!-- BURBUJA DEL MENSAJE -->
+
+                <div [class]="claseMensaje(m)">
+
+                  <!-- TEXTO DEL MENSAJE -->
+
+                  <p class="whitespace-pre-wrap break-words">
+                    {{ m.texto }}
+                  </p>
+
+                  <!-- FECHA Y HORA -->
+
+                  <p
+                    class="mt-1 text-right text-[10px]"
+                    [class.text-emerald-100]="m.mio"
+                    [class.text-slate-500]="!m.mio"
+                  >
+
+                    {{ m.fecha | date:'dd/MM HH:mm' }}
+
+                  </p>
+
+                </div>
+
+              </div>
+
+            } @empty {
+
+              <!-- SIN MENSAJES -->
+
+              <p class="py-10 text-center text-sm text-slate-500">
+                No hay mensajes todavía.
+              </p>
+
+            }
+
+          }
+
+        </div>
+
+        <!-- ======================================
+             FORMULARIO PARA ENVIAR MENSAJES
+             ====================================== -->
+
+        <div class="border-t border-slate-200 p-4 sm:p-5">
+
+          <!-- ERROR AL ENVIAR -->
+
+          @if (errorEnvio()) {
+
+            <p
+              role="alert"
+              class="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+            >
+              {{ errorEnvio() }}
+            </p>
+
+          }
+
+          <!-- CAMPO DE MENSAJE -->
+
+          <div class="flex items-end gap-3">
+
+            <label
+              class="sr-only"
+              for="host-chat-message"
+            >
+              Escribe tu mensaje
+            </label>
+
+            <textarea
+              id="host-chat-message"
+              rows="2"
+              [value]="borrador()"
+              (input)="borrador.set($any($event.target).value)"
+              (keydown.control.enter)="enviar()"
+              [attr.maxlength]="limite"
+              placeholder="Escribe un mensaje al huésped..."
+              class="min-w-0 flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-600"
+            ></textarea>
+
+            <!-- BOTÓN ENVIAR -->
+
+            <button
+              type="button"
+              (click)="enviar()"
+              [disabled]="!borrador().trim() || enviando()"
+              class="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+
+              {{ enviando() ? 'Enviando...' : 'Enviar' }}
+
+            </button>
+
+          </div>
+
+          <!-- CONTADOR DE CARACTERES -->
+
+          <p class="mt-2 text-right text-xs text-slate-400">
+
+            {{ borrador().length }} / {{ limite }}
+
+            · Ctrl + Enter para enviar
+
+          </p>
+
+        </div>
+
+      } @else {
+
+        <!-- ======================================
+             SIN CONVERSACIÓN SELECCIONADA
+             ====================================== -->
+
+        <div
+          class="grid flex-1 place-items-center p-8 text-center text-sm text-slate-500"
+        >
+
+          Selecciona una conversación con un huésped para comenzar.
+
+        </div>
+
+      }
+
+    </div>
+
+  </div>
+
+</section>

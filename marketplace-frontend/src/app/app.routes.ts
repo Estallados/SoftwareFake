@@ -17,7 +17,7 @@ import { Login } from './login/login';
 // ======================================
 // HUÉSPED
 // ======================================
-
+import { Chat } from './pages/host/chat/chat';
 import { Home } from './pages/guest/home/home';
 import { Explore } from './pages/guest/explore/explore';
 import { MapView } from './pages/guest/map-view/map-view';
@@ -89,6 +89,8 @@ import {
 import {
   Reviews as HostReviews
 } from './pages/host/reviews/reviews';
+
+
 
 // ======================================
 // ADMINISTRADOR
@@ -265,6 +267,16 @@ export const routes: Routes = [
   {
     path: 'host/dashboard',
     component: HostDashboard,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['Anfitrión']
+    }
+  },
+
+
+  {
+    path: 'host/chat',
+    component: Chat,
     canActivate: [roleGuard],
     data: {
       roles: ['Anfitrión']
