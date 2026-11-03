@@ -25,7 +25,9 @@ public final class TotpUtil {
 	private static final int BYTES_SECRETO = 20;
 	/** Se aceptan el paso anterior y el siguiente por diferencias de reloj. */
 	private static final int TOLERANCIA_PASOS = 1;
+	private static final String ALGORITMO = "HmacSHA1";
 	private static final SecureRandom RANDOM = new SecureRandom();
+	private static final Base32 BASE32 = new Base32();
 
 	private TotpUtil() {
 		throw new IllegalStateException("Clase utilitaria");
@@ -35,7 +37,7 @@ public final class TotpUtil {
 	public static String generarSecreto() {
 		byte[] bytes = new byte[BYTES_SECRETO];
 		RANDOM.nextBytes(bytes);
-		return new Base32().encodeToString(bytes).replace("=", "");
+		return BASE32.encodeToString(bytes).replace("=", "");
 	}
 
 	/**
@@ -57,8 +59,11 @@ public final class TotpUtil {
 			return false;
 		}
 		long pasoActual = Instant.now().getEpochSecond() / PASO_SEGUNDOS;
+		byte[] recibido = codigo.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
 		for (int i = -TOLERANCIA_PASOS; i <= TOLERANCIA_PASOS; i++) {
-			if (MessageDigest.isEqual(codigoPara(secreto, pasoActual + i).getBytes(), codigo.getBytes())) {
+			byte[] esperado = codigoPara(secreto, pasoActual + i)
+					.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+			if (MessageDigest.isEqual(esperado, recibido)) {
 				return true;
 			}
 		}
@@ -67,10 +72,11 @@ public final class TotpUtil {
 
 	private static String codigoPara(String secreto, long paso) {
 		try {
-			byte[] clave = new Base32().decode(secreto);
-			Mac mac = Mac.getInstance("HmacSHA1");
-			// HMAC-SHA1 se utiliza para mantener la compatibilidad con RFC 6238.
-			mac.init(new SecretKeySpec(clave, "HmacSHA1"));
+			byte[] clave = BASE32.decode(secreto);
+			Mac mac = Mac.getInstance(ALGORITMO);
+			mac.init(new SecretKeySpec(clave, ALGORITMO));
+			// HMAC-SHA1 se mantiene por compatibilidad con RFC 6238 (Google Authenticator).
+			// No se usa para proteger datos, solo para derivar el código temporal.
 			byte[] hash = mac.doFinal(ByteBuffer.allocate(Long.BYTES).putLong(paso).array());
 			int desplazamiento = hash[hash.length - 1] & 0x0f;
 			int binario = ((hash[desplazamiento] & 0x7f) << 24) | ((hash[desplazamiento + 1] & 0xff) << 16)

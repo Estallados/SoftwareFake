@@ -142,13 +142,13 @@ public class GeocodingService {
 
 	/** Respeta el máximo de una petición por segundo de Nominatim. */
 	private synchronized void esperarTurno() throws InterruptedException {
-		long espera = ultimaPeticion + intervaloMs - System.currentTimeMillis();
-		if (espera > 0) {
-			Thread.sleep(espera);
-		}
-		ultimaPeticion = System.currentTimeMillis();
+	    long espera = ultimaPeticion + intervaloMs - System.currentTimeMillis();
+	    while (espera > 0) {
+	        wait(espera);
+	        espera = ultimaPeticion + intervaloMs - System.currentTimeMillis();
+	    }
+	    ultimaPeticion = System.currentTimeMillis();
 	}
-
 	private static String conCiudad(String direccion, String ciudad) {
 		return vacio(ciudad) ? direccion.trim() : direccion.trim() + ", " + ciudad.trim();
 	}
