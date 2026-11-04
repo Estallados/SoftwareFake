@@ -1,85 +1,796 @@
-<div class="flex items-end justify-between">
-  <div>
-    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
-    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Buenos días, {{ hostName() }}</h1>
-    <p class="mt-2 text-sm text-slate-500">Aquí tienes el resumen de tus alojamientos.</p>
-  </div>
-  <button
-    type="button"
-    (click)="createListing()"
-    class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-800"
-  >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-    Crear alojamiento
-  </button>
-</div>
 
-<!-- Métricas -->
-<div class="mt-8 grid grid-cols-4 gap-4">
-  @for (m of metrics(); track m.label) {
-    <div class="rounded-2xl border border-slate-200 bg-white p-5">
-      <div class="flex items-start justify-between">
-        <span class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            @switch (m.icon) {
-              @case ('building') {
-                <rect x="4" y="3" width="16" height="18" rx="2" />
-                <path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M9 21v-3h6v3" />
-              }
-              @case ('calendar') {
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M16 3v4M8 3v4M3 10h18" />
-              }
-              @case ('chart') {
-                <path d="M3 3v18h18" />
-                <path d="m7 16 4-5 4 3 5-7" />
-              }
-              @case ('star') {
-                <path d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z" />
-              }
-            }
-          </svg>
-        </span>
-        <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ m.delta }}</span>
-      </div>
-      <p class="mt-5 text-sm text-slate-500">{{ m.label }}</p>
-      <p class="font-display mt-1 text-3xl font-bold text-slate-900">{{ m.value }}</p>
+<section class="mx-auto w-full max-w-[1600px] px-5 py-8 sm:px-8 lg:px-12">
+
+  <!-- ======================================
+       ENCABEZADO DEL DASHBOARD
+       ====================================== -->
+
+  <div class="flex flex-wrap items-end justify-between gap-4">
+
+    <div>
+
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
+        Inversiones LR
+      </p>
+
+      <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">
+        {{ saludo }}, {{ hostName() }}
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-500">
+        Aquí tienes el resumen de tus alojamientos.
+      </p>
+
     </div>
+
+    <!-- BOTONES -->
+
+    <div class="flex flex-wrap gap-3">
+
+      <!-- ACTUALIZAR DATOS -->
+
+      <button
+        type="button"
+        (click)="cargarDashboard()"
+        [disabled]="cargando()"
+        class="rounded-xl border border-emerald-700 px-4 py-3 text-sm font-bold text-emerald-700 transition-all duration-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {{ cargando() ? 'Actualizando...' : 'Actualizar datos' }}
+      </button>
+
+      <!-- CREAR ALOJAMIENTO -->
+
+      <button
+        type="button"
+        (click)="createListing()"
+        class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-300 hover:bg-emerald-800 hover:shadow-lg"
+      >
+
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+
+        Crear alojamiento
+
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- ======================================
+       CARGANDO INFORMACIÓN
+       ====================================== -->
+
+  @if (cargando()) {
+
+    <div
+      class="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500"
+      role="status"
+    >
+      Consultando alojamientos, reservas e ingresos...
+    </div>
+
   }
-</div>
 
-<div class="mt-6 grid grid-cols-[1.5fr_1fr] gap-6">
-  <!-- Rendimiento -->
-  <div class="rounded-2xl border border-slate-200 bg-white p-6">
-    <h2 class="font-display text-xl font-bold">Rendimiento de reservas</h2>
-    <p class="text-sm text-slate-500">Últimos 6 meses</p>
-    <div class="mt-8 flex h-48 items-end gap-5">
-      @for (p of performance(); track p.month) {
-        <div class="flex flex-1 flex-col items-center gap-2">
-          <div class="w-full rounded-t-lg bg-emerald-600" [style.height.%]="p.percent"></div>
-          <span class="text-[10px] text-slate-400">{{ p.month }}</span>
-        </div>
-      } @empty {
-        <p class="text-sm text-slate-500">Sin datos por mostrar.</p>
-      }
+  <!-- ======================================
+       ERRORES
+       ====================================== -->
+
+  @if (error()) {
+
+    <div
+      class="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
+      role="alert"
+    >
+
+      <p>{{ error() }}</p>
+
+      <button
+        type="button"
+        (click)="cargarDashboard()"
+        class="mt-3 font-bold underline"
+      >
+        Volver a intentar
+      </button>
+
     </div>
-  </div>
 
-  <!-- Próximas estancias -->
-  <div class="rounded-2xl border border-slate-200 bg-white p-6">
-    <h2 class="font-display text-xl font-bold">Próximas estancias</h2>
-    @for (s of upcomingStays(); track $index) {
-      <div class="mt-5 flex gap-4">
-        <span class="rounded-xl bg-emerald-50 p-3 text-center text-xs font-bold text-emerald-700">{{ s.date }}</span>
-        <div>
-          <strong class="text-sm">{{ s.accommodation }}</strong>
-          <p class="text-xs text-slate-500">{{ s.guest }}</p>
-        </div>
+  }
+
+  <!-- ======================================
+       CONTENIDO PRINCIPAL
+       ====================================== -->
+
+  @if (!cargando() && !error()) {
+
+    <!-- ======================================
+         TARJETAS SUPERIORES
+
+         SE ELIMINA LA TARJETA NEGRA
+         DE INGRESOS ESTIMADOS
+         ====================================== -->
+
+    <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+
+      @for (m of metrics(); track m.label) {
+
+        <!-- SOLO MOSTRAR:
+             ALOJAMIENTOS
+             RESERVAS
+             CALIFICACIÓN -->
+
+        @if (m.icon !== 'chart') {
+
+          <article
+            class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/15"
+          >
+
+            <!-- BRILLO BLANCO SUPERIOR -->
+
+            <div
+              class="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-white blur-[50px] transition-all duration-700 group-hover:translate-x-10 group-hover:translate-y-5"
+              aria-hidden="true"
+            >
+            </div>
+
+            <!-- BRILLO VERDE INFERIOR -->
+
+            <div
+              class="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-emerald-300/50 blur-[55px] transition-all duration-700 group-hover:bg-emerald-300/80"
+              aria-hidden="true"
+            >
+            </div>
+
+            <!-- INTERIOR DE LA TARJETA -->
+
+            <div
+              class="relative z-10 flex h-full min-h-[180px] flex-col rounded-[14px] bg-white p-5"
+            >
+
+              <!-- ICONO Y DETALLE -->
+
+              <div class="flex items-start justify-between gap-3">
+
+                <!-- ICONO -->
+
+                <span
+                  class="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700 transition-all duration-300 group-hover:scale-105 group-hover:bg-emerald-100"
+                >
+
+                  <svg
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+
+                    @switch (m.icon) {
+
+                      <!-- ALOJAMIENTOS -->
+
+                      @case ('building') {
+
+                        <rect
+                          x="4"
+                          y="3"
+                          width="16"
+                          height="18"
+                          rx="2"
+                        />
+
+                        <path
+                          d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M9 21v-3h6v3"
+                        />
+
+                      }
+
+                      <!-- RESERVAS -->
+
+                      @case ('calendar') {
+
+                        <rect
+                          x="3"
+                          y="5"
+                          width="18"
+                          height="16"
+                          rx="2"
+                        />
+
+                        <path d="M16 3v4M8 3v4M3 10h18" />
+
+                      }
+
+                      <!-- CALIFICACIÓN -->
+
+                      @case ('star') {
+
+                        <path
+                          d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z"
+                        />
+
+                      }
+
+                    }
+
+                  </svg>
+
+                </span>
+
+                <!-- INDICADOR -->
+
+                <span
+                  class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"
+                >
+                  {{ m.delta }}
+                </span>
+
+              </div>
+
+              <!-- NOMBRE -->
+
+              <p class="mt-5 text-sm font-medium text-slate-500">
+                {{ m.label }}
+              </p>
+
+              <!-- VALOR REAL -->
+
+              <p
+                class="font-display mt-1 break-words text-3xl font-bold text-slate-900"
+              >
+                {{ m.value }}
+              </p>
+
+            </div>
+
+          </article>
+
+        }
+
+      }
+
+    </div>
+
+    <!-- ======================================
+         SECCIONES INFERIORES
+         ====================================== -->
+
+    <div class="mt-6 grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
+
+      <!-- ======================================
+           COLUMNA IZQUIERDA
+           ====================================== -->
+
+      <div class="space-y-6">
+
+        <!-- ======================================
+             RENDIMIENTO DE RESERVAS
+             ====================================== -->
+
+        <section
+          class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+
+          <!-- BRILLO SUPERIOR -->
+
+          <div
+            class="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-white blur-[50px] transition-all duration-700 group-hover:translate-x-12"
+            aria-hidden="true"
+          >
+          </div>
+
+          <!-- BRILLO INFERIOR -->
+
+          <div
+            class="pointer-events-none absolute -bottom-24 -right-20 h-56 w-56 rounded-full bg-emerald-300/50 blur-[60px]"
+            aria-hidden="true"
+          >
+          </div>
+
+          <!-- CONTENIDO -->
+
+          <div class="relative z-10 rounded-[14px] bg-white p-6">
+
+            <!-- ENCABEZADO -->
+
+            <div class="flex items-start justify-between gap-3">
+
+              <div>
+
+                <h2 class="font-display text-xl font-bold text-slate-900">
+                  Rendimiento de reservas
+                </h2>
+
+                <p class="mt-1 text-sm text-slate-500">
+                  Reservas confirmadas por mes de entrada
+                </p>
+
+              </div>
+
+              <span
+                class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+              >
+                6 meses
+              </span>
+
+            </div>
+
+            <!-- GRÁFICA DE BARRAS -->
+
+            @if (hayRendimiento()) {
+
+              <div
+                class="mt-8 flex items-end gap-3 sm:gap-5"
+                aria-label="Rendimiento de reservas de los últimos seis meses"
+              >
+
+                @for (p of performance(); track p.month) {
+
+                  <div
+                    class="flex min-w-0 flex-1 flex-col items-center gap-2"
+                  >
+
+                    <!-- NÚMERO DE RESERVAS -->
+
+                    <span class="text-xs font-bold text-slate-600">
+                      {{ p.total }}
+                    </span>
+
+                    <!-- BARRA -->
+
+                    <div
+                      class="flex h-40 w-full items-end overflow-hidden rounded-t-lg bg-slate-50"
+                    >
+
+                      <div
+                        class="w-full rounded-t-lg bg-gradient-to-t from-emerald-700 to-emerald-400 transition-all duration-500 group-hover:from-emerald-600"
+                        [style.height.%]="p.percent"
+                        [attr.aria-label]="p.month + ': ' + p.total + ' reservas'"
+                        role="img"
+                      >
+                      </div>
+
+                    </div>
+
+                    <!-- MES -->
+
+                    <span class="text-xs font-medium text-slate-500">
+                      {{ p.month }}
+                    </span>
+
+                  </div>
+
+                }
+
+              </div>
+
+            } @else {
+
+              <div
+                class="mt-8 flex min-h-48 items-center justify-center rounded-xl bg-slate-50 p-5"
+              >
+
+                <p class="text-center text-sm text-slate-500">
+                  Todavía no hay reservas confirmadas en los últimos seis meses.
+                </p>
+
+              </div>
+
+            }
+
+          </div>
+
+        </section>
+
+        <!-- ======================================
+             GRÁFICA DE INGRESOS
+             DEBAJO DE RENDIMIENTO
+             ====================================== -->
+
+        <section
+          class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+
+          <!-- BRILLO BLANCO -->
+
+          <div
+            class="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-white blur-[50px] transition-all duration-700 group-hover:translate-x-12"
+            aria-hidden="true"
+          >
+          </div>
+
+          <!-- BRILLO VERDE -->
+
+          <div
+            class="pointer-events-none absolute -bottom-24 -right-20 h-56 w-56 rounded-full bg-emerald-300/50 blur-[60px]"
+            aria-hidden="true"
+          >
+          </div>
+
+          <!-- CONTENIDO -->
+
+          <div class="relative z-10 rounded-[14px] bg-white p-6">
+
+            <!-- ======================================
+                 ENCABEZADO DE INGRESOS
+                 ====================================== -->
+
+            <div class="flex flex-wrap items-start justify-between gap-3">
+
+              <div class="flex items-center gap-3">
+
+                <!-- ICONO -->
+
+                <span
+                  class="grid size-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700"
+                >
+
+                  <svg
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+
+                    <path d="M3 3v18h18" />
+
+                    <path d="m7 16 4-5 4 3 5-7" />
+
+                  </svg>
+
+                </span>
+
+                <div>
+
+                  <h2 class="font-display text-xl font-bold text-slate-900">
+                    Tendencia de ingresos
+                  </h2>
+
+                  <p class="mt-1 text-sm text-slate-500">
+                    Ingresos estimados de los últimos 6 meses
+                  </p>
+
+                </div>
+
+              </div>
+
+              <span
+                class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"
+              >
+                COP
+              </span>
+
+            </div>
+
+            <!-- ======================================
+                 INGRESOS DEL MES
+                 ====================================== -->
+
+            <div class="mt-6">
+
+              <p class="text-sm text-slate-500">
+                Ingresos estimados este mes
+              </p>
+
+              <p class="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+                {{ ingresoMesActualTexto() }}
+              </p>
+
+              <!-- VARIACIÓN -->
+
+              <p
+                class="mt-2 text-xs font-semibold"
+                [class.text-emerald-700]="variacionIngresos().positivo === true"
+                [class.text-red-600]="variacionIngresos().positivo === false"
+                [class.text-slate-500]="variacionIngresos().positivo === null"
+              >
+                {{ variacionIngresos().texto }}
+              </p>
+
+            </div>
+
+            <!-- ======================================
+                 GRÁFICA CURVA
+                 VERDE ESMERALDA
+                 ====================================== -->
+
+            @if (graficoIngresos(); as grafico) {
+
+              <div
+                class="relative mt-6 h-48 w-full overflow-hidden rounded-xl bg-emerald-50/40 p-3"
+              >
+
+                <svg
+                  class="h-full w-full"
+                  viewBox="0 0 300 100"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="Tendencia de ingresos de los últimos seis meses"
+                >
+
+                  <!-- DEGRADADO -->
+
+                  <defs>
+
+                    <linearGradient
+                      id="host-ingresos-aurora"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+
+                      <stop
+                        offset="0%"
+                        stop-color="#10b981"
+                        stop-opacity="0.35"
+                      />
+
+                      <stop
+                        offset="100%"
+                        stop-color="#047857"
+                        stop-opacity="0"
+                      />
+
+                    </linearGradient>
+
+                  </defs>
+
+                  <!-- ÁREA BAJO LA CURVA -->
+
+                  <path
+                    [attr.d]="grafico.area"
+                    fill="url(#host-ingresos-aurora)"
+                  />
+
+                  <!-- LÍNEA -->
+
+                  <path
+                    [attr.d]="grafico.linea"
+                    fill="none"
+                    stroke="#059669"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                  <!-- PUNTO FINAL -->
+
+                  <circle
+                    [attr.cx]="grafico.puntoX"
+                    [attr.cy]="grafico.puntoY"
+                    r="5"
+                    fill="#10b981"
+                    stroke="#047857"
+                    stroke-width="2"
+                  />
+
+                </svg>
+
+              </div>
+
+            } @else {
+
+              <!-- SIN DATOS -->
+
+              <div
+                class="mt-6 flex h-48 items-center justify-center rounded-xl bg-slate-50 p-5"
+              >
+
+                <p class="text-center text-sm text-slate-500">
+                  Aún no hay ingresos confirmados para mostrar en la gráfica.
+                </p>
+
+              </div>
+
+            }
+
+            <!-- ======================================
+                 MESES DEL GRÁFICO
+                 ====================================== -->
+
+            <div
+              class="mt-4 flex items-center justify-between gap-2 text-xs font-medium text-slate-500"
+            >
+
+              @for (mes of ingresosMensuales(); track $index) {
+
+                <span>
+                  {{ mes.mes }}
+                </span>
+
+              }
+
+            </div>
+
+            <!-- ======================================
+                 BOTÓN VER RESERVAS
+                 ====================================== -->
+
+            <div class="mt-6 border-t border-slate-100 pt-5">
+
+              <button
+                type="button"
+                (click)="verReservas()"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-emerald-800 hover:shadow-md"
+              >
+
+                Ver todas las reservas
+
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+
+                  <path d="M5 12h14" />
+
+                  <path d="m13 6 6 6-6 6" />
+
+                </svg>
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
       </div>
-    } @empty {
-      <p class="mt-5 text-sm text-slate-500">No tienes estancias próximas.</p>
-    }
-  </div>
-</div>
+
+      <!-- ======================================
+           COLUMNA DERECHA
+           PRÓXIMAS ESTANCIAS
+           ====================================== -->
+
+      <section
+        class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      >
+
+        <!-- BRILLO BLANCO -->
+
+        <div
+          class="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-white blur-[50px] transition-all duration-700 group-hover:translate-x-12"
+          aria-hidden="true"
+        >
+        </div>
+
+        <!-- BRILLO VERDE -->
+
+        <div
+          class="pointer-events-none absolute -bottom-24 -right-20 h-56 w-56 rounded-full bg-emerald-300/50 blur-[60px]"
+          aria-hidden="true"
+        >
+        </div>
+
+        <!-- CONTENIDO -->
+
+        <div class="relative z-10 rounded-[14px] bg-white p-6">
+
+          <!-- ENCABEZADO -->
+
+          <div class="flex items-center justify-between gap-3">
+
+            <h2 class="font-display text-xl font-bold text-slate-900">
+              Próximas estancias
+            </h2>
+
+            <button
+              type="button"
+              (click)="verReservas()"
+              class="text-xs font-bold text-emerald-700 hover:underline"
+            >
+              Ver todas
+            </button>
+
+          </div>
+
+          <p class="mt-1 text-sm text-slate-500">
+            Entradas confirmadas más cercanas
+          </p>
+
+          <!-- ======================================
+               LISTADO DE ESTANCIAS
+               ====================================== -->
+
+          @for (s of upcomingStays(); track s.idReserva) {
+
+            <button
+              type="button"
+              (click)="verReserva(s.idReserva)"
+              class="mt-4 flex w-full items-center gap-4 rounded-xl p-2 text-left transition-all duration-300 hover:bg-emerald-50"
+            >
+
+              <!-- FECHA -->
+
+              <span
+                class="min-w-16 rounded-xl bg-emerald-50 px-3 py-3 text-center text-xs font-bold text-emerald-700"
+              >
+                {{ s.date }}
+              </span>
+
+              <!-- INFORMACIÓN -->
+
+              <span class="min-w-0 flex-1">
+
+                <strong class="block truncate text-sm text-slate-900">
+                  {{ s.accommodation }}
+                </strong>
+
+                <span class="block truncate text-xs text-slate-500">
+                  {{ s.guest }}
+                </span>
+
+              </span>
+
+              <!-- FLECHA -->
+
+              <span
+                class="text-emerald-700"
+                aria-hidden="true"
+              >
+                ›
+              </span>
+
+            </button>
+
+          } @empty {
+
+            <!-- SIN ESTANCIAS -->
+
+            <div class="mt-6 rounded-xl bg-slate-50 p-5">
+
+              <p class="text-sm text-slate-500">
+                No tienes estancias confirmadas próximas.
+              </p>
+
+            </div>
+
+          }
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ======================================
+         NOTA DE INGRESOS
+         ====================================== -->
+
+    <p class="mt-5 text-xs leading-5 text-slate-500">
+      Los ingresos mostrados son estimaciones basadas en
+      las reservas confirmadas. No representan necesariamente
+      pagos recibidos ni ganancias netas.
+    </p>
+
+  }
+
+</section>
