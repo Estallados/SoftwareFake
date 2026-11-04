@@ -1,47 +1,34 @@
 package co.edu.unbosque.marketplace.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-
 /**
- * Entidad que representa imagen en el marketplace. Puede ser un archivo subido
- * por el anfitrión, guardado en Cloudinary ({@code rutaArchivo} es su id allá),
- * o una URL externa ({@code rutaArchivo} en null). Una imagen por alojamiento
- * es la principal (portada).
+ * Imagen de un alojamiento. No se guarda en la base de datos: el archivo y estos
+ * datos viven en Cloudinary ({@code rutaArchivo} es su id allá) y la aplicación
+ * los carga en memoria al arrancar. Una imagen por alojamiento es la principal
+ * (portada).
  *
  * @see "RF-017"
  */
-@Entity
-@Table(name = "imagen")
 public class Imagen {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long idImagen;
 	private String url;
-	@Column(name = "id_alojamiento")
 	private Long idAlojamiento;
-	/**
-	 * Clave foránea hacia {@link Alojamiento}; el valor se asigna con
-	 * {@code idAlojamiento}.
-	 */
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "id_alojamiento", insertable = false, updatable = false)
-	private Alojamiento alojamiento;
-	/** Portada del alojamiento; null en imágenes anteriores a este campo. */
 	private Boolean principal;
-	/**
-	 * Id (public_id) de la imagen en Cloudinary; null si es una URL externa.
-	 */
+	/** Id (public_id) de la imagen en Cloudinary. */
 	private String rutaArchivo;
+	/** Posición de la imagen dentro de su alojamiento, en orden de carga. */
+	private long orden;
 
 	public Imagen() {
+	}
+
+	/** Copia de otra imagen, para no compartir objetos con el almacén en memoria. */
+	public Imagen(Imagen otra) {
+		this.idImagen = otra.idImagen;
+		this.url = otra.url;
+		this.idAlojamiento = otra.idAlojamiento;
+		this.principal = otra.principal;
+		this.rutaArchivo = otra.rutaArchivo;
+		this.orden = otra.orden;
 	}
 
 	public Long getIdImagen() {
@@ -82,5 +69,13 @@ public class Imagen {
 
 	public void setRutaArchivo(String rutaArchivo) {
 		this.rutaArchivo = rutaArchivo;
+	}
+
+	public long getOrden() {
+		return orden;
+	}
+
+	public void setOrden(long orden) {
+		this.orden = orden;
 	}
 }

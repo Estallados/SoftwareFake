@@ -85,8 +85,8 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 		String url = imagenes.get(0).get("url").asText();
 		assertTrue(url.startsWith(URL_CLOUDINARY + "marketplace/alojamientos/" + id + "/"));
 		assertEquals(url, creado.get("imagenes").get(0).asText());
-		verify(cloudinaryService).subir(eq(PNG), eq("marketplace/alojamientos/" + id), anyString());
-		verify(cloudinaryService).subir(eq(JPEG), eq("marketplace/alojamientos/" + id), anyString());
+		verify(cloudinaryService).subir(eq(PNG), eq("marketplace/alojamientos/" + id), anyString(), any());
+		verify(cloudinaryService).subir(eq(JPEG), eq("marketplace/alojamientos/" + id), anyString(), any());
 
 		// Las siguientes se agregan sin cambiar la portada
 		JsonNode todas = subir(anfitrion, id, 201, imagen("bano.png", PNG));
@@ -264,7 +264,7 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 	void siCloudinaryFallaNoSeCreaElAlojamientoYSeBorraLoQueAlcanzoASubir() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
 		ImagenSubida primera = new ImagenSubida("marketplace/alojamientos/x/primera", URL_CLOUDINARY + "primera");
-		when(cloudinaryService.subir(any(), anyString(), anyString())).thenReturn(primera)
+		when(cloudinaryService.subir(any(), anyString(), anyString(), any())).thenReturn(primera)
 				.thenThrow(new AlmacenamientoNoDisponibleException("No se pudo guardar la imagen. Intenta de nuevo."));
 
 		JsonNode error = crearBorrador(anfitrion, datos(), 503, imagen("sala.png", PNG), imagen("cuarto.jpg", JPEG));
@@ -283,6 +283,6 @@ class ImagenesAlojamientoTest extends PruebaIntegracionBase {
 
 		subir(anfitrion, id, 400, imagen("buena.png", PNG), imagen("mala.png", new byte[] { 1, 2, 3 }));
 
-		verify(cloudinaryService, never()).subir(any(), anyString(), anyString());
+		verify(cloudinaryService, never()).subir(any(), anyString(), anyString(), any());
 	}
 }

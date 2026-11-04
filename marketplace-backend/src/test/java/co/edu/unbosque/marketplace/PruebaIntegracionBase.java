@@ -86,7 +86,7 @@ abstract class PruebaIntegracionBase {
 
 	@BeforeEach
 	void simularCloudinary() {
-		when(cloudinaryService.subir(any(), anyString(), anyString())).thenAnswer(invocacion -> {
+		when(cloudinaryService.subir(any(), anyString(), anyString(), any())).thenAnswer(invocacion -> {
 			String publicId = invocacion.getArgument(1) + "/" + invocacion.getArgument(2);
 			return new ImagenSubida(publicId, URL_CLOUDINARY + publicId);
 		});

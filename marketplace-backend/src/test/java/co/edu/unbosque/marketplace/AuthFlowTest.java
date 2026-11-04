@@ -59,7 +59,7 @@ class AuthFlowTest {
 
 	@BeforeEach
 	void limpiar() {
-		// Primero las tablas que referencian al usuario (claves foráneas)
+		// Los códigos y tokens viven en memoria y se comparten entre pruebas
 		codigoRepo.deleteAll();
 		tokenRepo.deleteAll();
 		usuarioRepo.deleteAll();

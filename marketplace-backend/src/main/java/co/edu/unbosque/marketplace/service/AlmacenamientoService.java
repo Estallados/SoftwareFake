@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
+import co.edu.unbosque.marketplace.entity.Imagen;
+import co.edu.unbosque.marketplace.exception.AlmacenamientoNoDisponibleException;
+import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenGuardada;
 import co.edu.unbosque.marketplace.service.CloudinaryService.ImagenSubida;
+import co.edu.unbosque.marketplace.service.CloudinaryService.MetadatosImagen;
 
 /**
  * Valida las imágenes que suben los usuarios y las guarda en Cloudinary (ver
@@ -72,14 +77,15 @@ public class AlmacenamientoService {
 	/**
 	 * Guarda una imagen ya validada con {@link #errorImagen(MultipartFile)}.
 	 *
-	 * @param archivo Imagen recibida.
-	 * @param carpeta Carpeta dentro de la raíz, por ejemplo
-	 *                {@code alojamientos/12}.
+	 * @param archivo       Imagen recibida.
+	 * @param idAlojamiento Alojamiento dueño de la imagen.
+	 * @param principal     Si es la portada del alojamiento.
+	 * @param orden         Posición de la imagen dentro del alojamiento.
 	 * @return el id en Cloudinary (va en {@code rutaArchivo}) y la URL pública.
 	 * @throws co.edu.unbosque.marketplace.exception.AlmacenamientoNoDisponibleException
 	 *         si Cloudinary no la recibe.
 	 */
-	public ImagenSubida guardarImagen(MultipartFile archivo, String carpeta) {
+	public ImagenSubida guardarImagen(MultipartFile archivo, Long idAlojamiento, boolean principal, long orden) {
 		byte[] datos;
 		try {
 			datos = archivo.getBytes();
@@ -89,10 +95,50 @@ public class AlmacenamientoService {
 		if (!esImagen(datos)) {
 			throw new IllegalArgumentException("El archivo no es una imagen aceptada");
 		}
-		ImagenSubida subida = cloudinaryService.subir(datos, carpetaRaiz + "/" + carpeta,
-				UUID.randomUUID().toString());
+		ImagenSubida subida = cloudinaryService.subir(datos, carpetaDe(idAlojamiento), UUID.randomUUID().toString(),
+				new MetadatosImagen(etiqueta(), idAlojamiento, principal, orden));
 		alTerminarTransaccion(TransactionSynchronization.STATUS_ROLLED_BACK, subida.publicId());
 		return subida;
+	}
+
+	/** @return Las imágenes de alojamientos guardadas en Cloudinary para este ambiente. */
+	public List<ImagenGuardada> listarImagenes() {
+		return cloudinaryService.listar(etiqueta());
+	}
+
+	/** Actualiza en Cloudinary los datos de una imagen; si falla, solo queda en el log. */
+	public void actualizarImagen(Imagen imagen) {
+		cloudinaryService.actualizarMetadatos(imagen.getRutaArchivo(), new MetadatosImagen(etiqueta(),
+				imagen.getIdAlojamiento(), Boolean.TRUE.equals(imagen.getPrincipal()), imagen.getOrden()));
+	}
+
+	/**
+	 * Pasa a Cloudinary una imagen de la antigua tabla {@code imagen}. Una URL
+	 * externa (ruta vacía) se sube como archivo, porque Cloudinary es ahora la
+	 * única fuente.
+	 *
+	 * @return {@code true} si quedó migrada.
+	 */
+	public boolean migrarImagen(Long idImagen, Long idAlojamiento, String url, String ruta, boolean principal) {
+		MetadatosImagen metadatos = new MetadatosImagen(etiqueta(), idAlojamiento, principal, idImagen);
+		if (ruta != null && !ruta.isBlank()) {
+			return cloudinaryService.actualizarMetadatos(ruta, metadatos);
+		}
+		try {
+			cloudinaryService.subirDesdeUrl(url, carpetaDe(idAlojamiento), "externa-" + idImagen, metadatos);
+			return true;
+		} catch (AlmacenamientoNoDisponibleException e) {
+			return false;
+		}
+	}
+
+	private String carpetaDe(Long idAlojamiento) {
+		return carpetaRaiz + "/alojamientos/" + idAlojamiento;
+	}
+
+	/** Etiqueta común de las imágenes; depende de la carpeta para separar ambientes. */
+	private String etiqueta() {
+		return carpetaRaiz.replace('/', '-') + "-alojamientos";
 	}
 
 	/**

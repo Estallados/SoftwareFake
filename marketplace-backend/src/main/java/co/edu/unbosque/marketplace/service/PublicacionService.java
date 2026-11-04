@@ -413,7 +413,7 @@ public class PublicacionService {
         if (!carga.esExito()) {
             return Resultado.error(carga.getCodigo(), carga.getMensaje());
         }
-        List<Imagen> actuales = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
+        List<Imagen> actuales = imagenRepo.findByIdAlojamiento(idAlojamiento);
         String error = errorArchivos(archivos, actuales.size());
         if (error != null) {
             return Resultado.error(Resultado.DATOS_INVALIDOS, error);
@@ -448,7 +448,7 @@ public class PublicacionService {
         if (imagen.isEmpty()) {
             return Resultado.error(Resultado.NO_ENCONTRADO, "La imagen no existe.");
         }
-        List<Imagen> actuales = imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento);
+        List<Imagen> actuales = imagenRepo.findByIdAlojamiento(idAlojamiento);
         if (actuales.size() == 1) {
             return Resultado.error(Resultado.ESTADO_INVALIDO,
                     "El alojamiento debe conservar al menos una imagen. Sube otra antes de borrar esta.");
@@ -485,7 +485,7 @@ public class PublicacionService {
         if (imagenRepo.findByIdImagenAndIdAlojamiento(idImagen, idAlojamiento).isEmpty()) {
             return Resultado.error(Resultado.NO_ENCONTRADO, "La imagen no existe.");
         }
-        for (Imagen imagen : imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento)) {
+        for (Imagen imagen : imagenRepo.findByIdAlojamiento(idAlojamiento)) {
             imagen.setPrincipal(imagen.getIdImagen().equals(idImagen));
             imagenRepo.save(imagen);
         }
@@ -776,7 +776,7 @@ public class PublicacionService {
         if (alojamiento.getIdPolitica() == null) {
             faltantes.add("política de cancelación");
         }
-        if (imagenRepo.findByIdAlojamientoOrderByIdImagen(alojamiento.getIdAlojamiento()).isEmpty()) {
+        if (imagenRepo.findByIdAlojamiento(alojamiento.getIdAlojamiento()).isEmpty()) {
             faltantes.add("al menos una imagen");
         }
         if (!tieneFechas(alojamiento)) {
@@ -831,7 +831,7 @@ public class PublicacionService {
 
     /** Imágenes del alojamiento con la principal primero y luego en orden de carga. */
     public List<ImagenDTO> imagenesDTO(Long idAlojamiento) {
-        return imagenRepo.findByIdAlojamientoOrderByIdImagen(idAlojamiento).stream()
+        return imagenRepo.findByIdAlojamiento(idAlojamiento).stream()
                 .sorted(Comparator.comparing((Imagen i) -> !Boolean.TRUE.equals(i.getPrincipal())))
                 .map(i -> modelMapper.map(i, ImagenDTO.class)).toList();
     }
@@ -1064,12 +1064,14 @@ public class PublicacionService {
     /** Guarda los archivos ya validados; si el alojamiento no tenía portada, el primero queda como principal. */
     private void guardarArchivos(Long idAlojamiento, List<MultipartFile> archivos, boolean tienePrincipal) {
         for (MultipartFile archivo : archivos) {
-            ImagenSubida subida = almacenamientoService.guardarImagen(archivo, "alojamientos/" + idAlojamiento);
+            long orden = imagenRepo.siguienteOrden();
+            ImagenSubida subida = almacenamientoService.guardarImagen(archivo, idAlojamiento, !tienePrincipal, orden);
             Imagen imagen = new Imagen();
             imagen.setIdAlojamiento(idAlojamiento);
             imagen.setRutaArchivo(subida.publicId());
             imagen.setUrl(subida.url());
             imagen.setPrincipal(!tienePrincipal);
+            imagen.setOrden(orden);
             imagenRepo.save(imagen);
             tienePrincipal = true;
         }

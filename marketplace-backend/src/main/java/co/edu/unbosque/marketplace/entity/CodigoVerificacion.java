@@ -2,38 +2,16 @@ package co.edu.unbosque.marketplace.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
 /**
- * Entidad que representa un código de verificación de correo. Se envía al
- * registrarse y se guarda solo su hash; el código en claro únicamente viaja en
- * el correo al usuario. Vence, sirve una sola vez y admite pocos intentos.
+ * Código de verificación de correo. Se envía al registrarse y se conserva solo
+ * su hash, en memoria y sin pasar por la base de datos; el código en claro
+ * únicamente viaja en el correo al usuario. Vence, sirve una sola vez y admite
+ * pocos intentos.
  *
  * @see "RF-001"
  */
-@Entity
-@Table(name = "codigoVerificacion")
 public class CodigoVerificacion {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long idCodigo;
-	@Column(name = "id_usuario")
 	private Long idUsuario;
-	/**
-	 * Clave foránea hacia {@link Usuario}; el valor se asigna con
-	 * {@code idUsuario}.
-	 */
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "id_usuario", insertable = false, updatable = false)
-	private Usuario usuario;
 	private String codigoHash;
 	private LocalDateTime fechaCreacion;
 	private LocalDateTime fechaExpiracion;
@@ -42,14 +20,6 @@ public class CodigoVerificacion {
 	private Boolean usado;
 
 	public CodigoVerificacion() {
-	}
-
-	public Long getIdCodigo() {
-		return idCodigo;
-	}
-
-	public void setIdCodigo(Long idCodigo) {
-		this.idCodigo = idCodigo;
 	}
 
 	public Long getIdUsuario() {

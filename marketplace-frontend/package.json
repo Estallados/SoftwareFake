@@ -17,7 +17,7 @@
     "@angular/forms": "^22.2.0",
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
-    "@stripe/stripe-js": "^10.2.0",
+    "@stripe/stripe-js": "^10.2.1",
     "@tailwindcss/postcss": "^4.3.3",
     "leaflet": "^1.9.4",
     "postcss": "^8.5.31",
