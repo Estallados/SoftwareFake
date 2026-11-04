@@ -465,7 +465,11 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	}
 
 	/**
-	 * Libera una cuenta restringida (administrador). Queda ACTIVA.
+	 * Activa una cuenta restringida o inactiva (administrador). Queda ACTIVA.
+	 * <p>
+	 * DECISIÓN: el administrador también puede activar una cuenta que su dueño
+	 * desactivó (INACTIVO), además de levantar una restricción.
+	 * </p>
 	 * <p>
 	 * DECISIÓN: el motivo es opcional. Las acciones que castigan (restringir,
 	 * bloquear, rechazar, ocultar) exigen motivo porque se le comunica al afectado
@@ -474,7 +478,7 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	 * </p>
 	 *
 	 * @param motivo Motivo opcional; si se envía queda en la auditoría.
-	 * @return 0 con el usuario; 1 no existe; 4 no estaba restringida.
+	 * @return 0 con el usuario; 1 no existe; 4 la cuenta ya estaba activa.
 	 * @see "RF-014"
 	 */
 	@Transactional
@@ -483,8 +487,8 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		if (usuario.isEmpty()) {
 			return Resultado.error(Resultado.NO_ENCONTRADO, "Usuario no encontrado.");
 		}
-		if (usuario.get().getEstado() != EstadoUsuario.RESTRINGIDO) {
-			return Resultado.error(Resultado.ESTADO_INVALIDO, "La cuenta no está restringida.");
+		if (usuario.get().getEstado() == EstadoUsuario.ACTIVO) {
+			return Resultado.error(Resultado.ESTADO_INVALIDO, "La cuenta ya está activa.");
 		}
 		usuario.get().setEstado(EstadoUsuario.ACTIVO);
 		usuario.get().setMotivoRestriccion(null);

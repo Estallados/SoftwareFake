@@ -120,10 +120,10 @@ public class AdminController {
 				.desde(usuarioService.restringir(id, datos.getMotivo(), RespuestaUtil.idUsuario(authentication)));
 	}
 
-	@Operation(summary = "Liberar un usuario restringido (motivo opcional)")
-	@ApiResponse(responseCode = "200", description = "Usuario liberado")
+	@Operation(summary = "Activar un usuario restringido o inactivo (motivo opcional)")
+	@ApiResponse(responseCode = "200", description = "Usuario activado")
 	@ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
-	@ApiResponse(responseCode = "409", description = "La cuenta no está restringida.")
+	@ApiResponse(responseCode = "409", description = "La cuenta ya está activa.")
 	@PatchMapping("/usuarios/{id}/liberar")
 	public ResponseEntity<Object> liberar(@PathVariable Long id, @RequestBody(required = false) MotivoDTO datos,
 			Authentication authentication) {

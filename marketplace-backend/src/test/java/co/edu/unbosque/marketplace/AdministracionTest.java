@@ -91,6 +91,20 @@ class AdministracionTest extends PruebaIntegracionBase {
 	}
 
 	@Test
+	void elAdminActivaUnaCuentaQueSuDuenioDesactivo() throws Exception {
+		Sesion huesped = registrar("HUESPED");
+		String admin = tokenAdmin();
+
+		// Una cuenta activa no se puede volver a activar
+		llamar(patch("/admin/usuarios/" + huesped.id() + "/liberar"), admin, null, 409);
+
+		llamar(patch("/usuarios/perfil/desactivar"), huesped.token(), null, 200);
+		JsonNode activada = llamar(patch("/admin/usuarios/" + huesped.id() + "/liberar"), admin, null, 200);
+		assertEquals("ACTIVO", activada.get("estado").asText());
+		llamar(post("/auth/login"), null, Map.of("correo", huesped.correo(), "contrasenia", CLAVE), 200);
+	}
+
+	@Test
 	void elAdminConsultaTodasLasReservasYLasDeCadaUsuario() throws Exception {
 		Sesion anfitrion = registrar("ANFITRION");
 		Long id = crearAlojamientoActivo(anfitrion);
