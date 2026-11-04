@@ -10,7 +10,7 @@ CREATE DATABASE marketplace ENCODING 'UTF8';
 
 ```powershell
 cd marketplace-backend\database
-foreach ($f in '01_schema_ddl','02_indexes','03_triggers','04_procedures','05_seed_data','99_verificacion') {
+foreach ($f in '01_schema_ddl','02_indexes','03_triggers','03b_triggers_validacion','04_procedures','05_seed_data','99_verificacion') {
   psql -v ON_ERROR_STOP=1 -U postgres -d marketplace -f "$f.sql"
   if (-not $?) { break }
 }
@@ -140,7 +140,21 @@ Eliminarlas exige cambiar entidades y consultas, así que se controlan con restr
 | `trg_pago_transicion` | `pago`: UPDATE de `estado` | Solo transiciones válidas |
 | `trg_resena_estancia_completada` | `resena`: INSERT | Solo sobre estancias completadas |
 
-Ninguno modifica filas, así que no hay recursión ni diferencias con lo que Hibernate cree que escribió. No se crearon triggers de `fecha_actualizacion`, historial o auditoría automática porque los servicios ya lo hacen con datos que un trigger no conoce. Tampoco uno que exija la reserva cancelada al insertar en `cancelacion`: Hibernate ejecuta los `INSERT` antes que los `UPDATE`, y fallaría.
+Los de arriba no modifican filas, así que no hay recursión ni diferencias con lo que Hibernate cree que escribió. No se crearon triggers de `fecha_actualizacion`, historial o auditoría automática porque los servicios ya lo hacen con datos que un trigger no conoce. Tampoco uno que exija la reserva cancelada al insertar en `cancelacion`: Hibernate ejecuta los `INSERT` antes que los `UPDATE`, y fallaría.
+
+### Validaciones al insertar (`03b_triggers_validacion.sql`)
+
+Son una segunda barrera frente a SQL directo: el backend ya valida lo mismo y responde con sus propios mensajes. Lo que calculan coincide con lo que envía el backend, así que Hibernate no queda desincronizado.
+
+| Trigger | Tabla | Valida | Calcula |
+|---|---|---|---|
+| `trg_validar_cotizacion` | `cotizacion` | Alojamiento activo, capacidad y fechas | `noches`, `precio_noche`, `total` |
+| `trg_validar_reserva` | `reserva` | En `PENDIENTE_PAGO`: alojamiento activo, rol y estado del huésped, cotización propia y sin usar | `noches`, y fechas y total de la cotización |
+| `trg_validar_pago` | `pago` | Reserva existente y proveedor válido | `valor` |
+| `trg_validar_cancelacion` | `cancelacion` | Reserva no pendiente; cancela el huésped o un administrador | `valor_reembolso`, `estado_final_reserva` |
+| `trg_validar_mensaje` | `mensaje` | El autor participa en la conversación | `contenido` sin espacios sobrantes |
+
+No validan el vencimiento de la cotización: compararía la hora de la base con la del backend, que pueden estar en zonas horarias distintas.
 
 ## 7. Procedimientos
 

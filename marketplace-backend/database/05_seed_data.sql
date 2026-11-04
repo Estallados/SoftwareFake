@@ -51,7 +51,7 @@ INSERT INTO alojamiento (id_alojamiento, titulo, descripcion, ubicacion, ciudad,
 -- Borrador incompleto: el modelo permite estos NULL hasta que se publique.
 (5, 'Borrador en Santa Marta', NULL, NULL, 'Santa Marta', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'BORRADOR', 2, NULL, LOCALTIMESTAMP - INTERVAL '3' DAY, LOCALTIMESTAMP - INTERVAL '3' DAY),
 (6, 'Estudio en Usaquén', 'Estudio acogedor para estancias cortas.', 'Carrera 7 # 120-30', 'Bogotá', 4.6950, -74.0310, 'Estudio', 2, 0, 1, 1, TIME '15:00', TIME '10:00', 140000.00, 'No fumar.', 'PENDIENTE_REVISION', 3, 1, LOCALTIMESTAMP - INTERVAL '8' DAY, LOCALTIMESTAMP - INTERVAL '2' DAY),
-(7, 'Finca cafetera en Manizales', 'Finca tradicional con recorrido por el cafetal.', 'Vereda La Linda', 'Manizales', 5.0689, -75.5174, 'Finca', 8, 4, 6, 3, TIME '14:00', TIME '12:00', 200000.00, 'Respetar los horarios de la finca.', 'BLOQUEADA', 3, 2, LOCALTIMESTAMP - INTERVAL '100' DAY, LOCALTIMESTAMP - INTERVAL '4' DAY);
+(7, 'Finca cafetera en Manizales', 'Finca tradicional con recorrido por el cafetal.', 'Vereda La Linda', 'Manizales', 5.0689, -75.5174, 'Finca', 8, 4, 6, 3, TIME '14:00', TIME '12:00', 200000.00, 'Respetar los horarios de la finca.', 'ACTIVA', 3, 2, LOCALTIMESTAMP - INTERVAL '100' DAY, LOCALTIMESTAMP - INTERVAL '4' DAY);
 
 -- Minúsculas: la búsqueda por amenidad compara en minúsculas.
 INSERT INTO alojamiento_amenidad (id_alojamiento, amenidad) VALUES
@@ -190,6 +190,9 @@ INSERT INTO registro_exportacion (id_registro, tipo_reporte, formato, cantidad_r
 
 INSERT INTO registro_idempotencia (id_registro, clave, id_usuario, operacion, huella_peticion, estado, codigo_respuesta, cuerpo_respuesta, fecha_creacion) VALUES
 (1, 'semilla-reserva-3', 4, 'CREAR_RESERVA', '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'COMPLETADA', 201, '{"idReserva":3,"estado":"CONFIRMADA"}', LOCALTIMESTAMP - INTERVAL '6' DAY);
+
+-- El alojamiento 7 entró ACTIVA para poder cotizarlo (trg_validar_cotizacion); ahora se bloquea.
+UPDATE alojamiento SET estado = 'BLOQUEADA' WHERE id_alojamiento = 7;
 
 -- ---- Los INSERT usaron ids explícitos: las secuencias continúan desde el último ----
 SELECT setval(pg_get_serial_sequence('usuario', 'id_usuario'), (SELECT MAX(id_usuario) FROM usuario));

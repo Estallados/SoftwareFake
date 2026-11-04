@@ -26,7 +26,7 @@ BEGIN
     IF v_total <> 2 THEN RAISE EXCEPTION 'EXCLUDE: se esperaban 2 y hay %', v_total; END IF;
 
     SELECT COUNT(*) INTO v_total FROM pg_trigger WHERE NOT tgisinternal;
-    IF v_total <> 7 THEN RAISE EXCEPTION 'triggers: se esperaban 7 y hay %', v_total; END IF;
+    IF v_total <> 12 THEN RAISE EXCEPTION 'triggers: se esperaban 12 y hay %', v_total; END IF;
 
     -- Índices duplicados: dos índices de una tabla con exactamente las mismas columnas y condición.
     SELECT COUNT(*) INTO v_total FROM (
@@ -109,6 +109,43 @@ BEGIN
         RAISE EXCEPTION 'FALLO: se aceptó una reseña de una estancia futura';
     EXCEPTION WHEN check_violation THEN NULL;
     END;
+
+    -- ---- Triggers de validación (03b_triggers_validacion.sql) ------------------
+    -- raise_exception es el código de un RAISE EXCEPTION sin ERRCODE (P0001).
+    BEGIN
+        INSERT INTO cotizacion (fecha_entrada, fecha_salida, huespedes, noches, precio_noche, precio_base, porcentaje_limpieza,
+                                valor_limpieza, porcentaje_servicio, valor_servicio, total, id_usuario, id_alojamiento, fecha_expiracion)
+        VALUES (CURRENT_DATE + 90, CURRENT_DATE + 91, 1, 1, 1, 1, 0, 0, 0, 0, 1, 4, 7, LOCALTIMESTAMP + INTERVAL '1' DAY);
+        RAISE EXCEPTION 'FALLO: se cotizó un alojamiento bloqueado' USING ERRCODE = 'data_exception';
+    EXCEPTION WHEN raise_exception THEN NULL;
+    END;
+    BEGIN
+        INSERT INTO reserva (fecha_entrada, fecha_salida, noches, huespedes, estado, total, id_huesped, id_alojamiento, id_cotizacion)
+        VALUES (CURRENT_DATE + 60, CURRENT_DATE + 63, 3, 1, 'PENDIENTE_PAGO', 1, 3, 3, 8);
+        RAISE EXCEPTION 'FALLO: un anfitrión reservó su propio alojamiento' USING ERRCODE = 'data_exception';
+    EXCEPTION WHEN raise_exception THEN NULL;
+    END;
+    BEGIN
+        INSERT INTO reserva (fecha_entrada, fecha_salida, noches, huespedes, estado, total, id_huesped, id_alojamiento, id_cotizacion)
+        VALUES (CURRENT_DATE + 60, CURRENT_DATE + 63, 3, 1, 'PENDIENTE_PAGO', 1, 4, 3, 8);
+        RAISE EXCEPTION 'FALLO: se usó la cotización de otro huésped' USING ERRCODE = 'data_exception';
+    EXCEPTION WHEN raise_exception THEN NULL;
+    END;
+    BEGIN
+        INSERT INTO mensaje (contenido, id_conversacion, id_usuario) VALUES ('Hola', 1, 5);
+        RAISE EXCEPTION 'FALLO: escribió un usuario ajeno a la conversación' USING ERRCODE = 'data_exception';
+    EXCEPTION WHEN raise_exception THEN NULL;
+    END;
+    BEGIN
+        INSERT INTO pago (proveedor, valor, estado, id_reserva) VALUES ('OTRO', 1, 'RECHAZADO', 1);
+        RAISE EXCEPTION 'FALLO: se aceptó un proveedor inválido' USING ERRCODE = 'data_exception';
+    EXCEPTION WHEN raise_exception THEN NULL;
+    END;
+
+    -- Los cálculos: el pago toma el total de la reserva, aunque se envíe otro valor.
+    INSERT INTO pago (proveedor, valor, estado, id_reserva) VALUES ('SIMULADO', 1, 'RECHAZADO', 1);
+    PERFORM 1 FROM pago WHERE id_reserva = 1 AND estado = 'RECHAZADO' AND valor = 621000.00;
+    IF NOT FOUND THEN RAISE EXCEPTION 'trg_validar_pago no calculó el valor'; END IF;
 
     -- Hibernate reenvía el mismo estado al guardar: no debe fallar.
     UPDATE reserva SET estado = 'CONFIRMADA' WHERE id_reserva = 3;
