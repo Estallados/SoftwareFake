@@ -1,58 +1,30 @@
 
-<!-- ========================================== -->
-<!-- CONTENEDOR PRINCIPAL -->
-<!-- ========================================== -->
+<main class="mx-auto w-full max-w-[1600px] px-5 py-8 sm:px-8 lg:px-12 xl:px-16">
 
-<main
-  class="mx-auto w-full max-w-[1600px]
-         px-5 py-8 sm:px-8 lg:px-12 xl:px-16"
->
-
-  <!-- ========================================== -->
   <!-- ENCABEZADO -->
-  <!-- ========================================== -->
 
-  <div
-    class="flex flex-col gap-5
-           sm:flex-row sm:items-end sm:justify-between"
-  >
-
+  <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
     <div>
-
-      <p
-        class="text-xs font-bold uppercase
-               tracking-[0.22em] text-emerald-700"
-      >
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
         Inversiones LR
       </p>
 
-      <h1
-        class="font-display mt-2 text-3xl
-               font-bold text-slate-900"
-      >
+      <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">
         Mis alojamientos
       </h1>
 
       <p class="mt-2 text-sm text-slate-500">
-        Consulta y administra tus propiedades:
-        borradores, pendientes, activas, pausadas y bloqueadas.
+        Consulta y administra tus propiedades: borradores, pendientes, activas, pausadas y bloqueadas.
       </p>
-
     </div>
 
     <button
       type="button"
       (click)="create()"
-      class="inline-flex shrink-0 items-center
-             justify-center gap-2 rounded-xl
-             bg-emerald-700 px-5 py-3
-             text-sm font-bold text-white
-             shadow-sm transition hover:bg-emerald-800"
+      class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
     >
-
       <svg
-        width="18"
-        height="18"
+        class="size-[18px]"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -61,490 +33,162 @@
         stroke-linejoin="round"
         aria-hidden="true"
       >
-        <path d="M12 5v14M5 12h14"/>
+        <path d="M12 5v14M5 12h14" />
       </svg>
 
       Crear alojamiento
-
     </button>
-
   </div>
 
-  <!-- ========================================== -->
-  <!-- NUEVAS TARJETAS DE ESTADÍSTICAS -->
-  <!-- DISEÑO UIVERSE -->
-  <!-- ========================================== -->
+  <!-- ======================================
+       SEIS TARJETAS DE ESTADÍSTICAS
+       EFECTO LUMINOSO
+       ====================================== -->
 
   <section
     aria-label="Estadísticas de alojamientos"
-    class="mt-8 grid grid-cols-1 gap-5
-           sm:grid-cols-2 xl:grid-cols-3"
+    class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
   >
 
-    <!-- ====================================== -->
-    <!-- 1. TODOS LOS ALOJAMIENTOS -->
-    <!-- ====================================== -->
+    @for (m of [
+      { title: 'Todos los alojamientos', badge: 'Todos', detail: 'Total de propiedades registradas.', value: total(), unit: 'propiedades', badgeClass: 'bg-slate-100 text-slate-700', buttonClass: 'bg-slate-800 border-slate-800 hover:text-slate-800' },
+      { title: 'Alojamientos disponibles', badge: 'Disponibles', detail: 'Propiedades activas y publicadas.', value: active(), unit: 'activos', badgeClass: 'bg-emerald-50 text-emerald-700', buttonClass: 'bg-emerald-700 border-emerald-700 hover:text-emerald-700' },
+      { title: 'Pendientes de revisión', badge: 'En revisión', detail: 'Propiedades esperando aprobación.', value: pending(), unit: 'pendientes', badgeClass: 'bg-amber-50 text-amber-700', buttonClass: 'bg-amber-600 border-amber-600 hover:text-amber-700' },
+      { title: 'Alojamientos en borrador', badge: 'Sin publicar', detail: 'Propiedades que aún no se han publicado.', value: drafts(), unit: 'borradores', badgeClass: 'bg-slate-100 text-slate-700', buttonClass: 'bg-slate-600 border-slate-600 hover:text-slate-700' },
+      { title: 'Alojamientos pausados', badge: 'Pausados', detail: 'Propiedades desactivadas temporalmente.', value: paused(), unit: 'pausados', badgeClass: 'bg-blue-50 text-blue-700', buttonClass: 'bg-blue-600 border-blue-600 hover:text-blue-700' },
+      { title: 'Alojamientos bloqueados', badge: 'Administración', detail: 'Propiedades bloqueadas por administración.', value: blocked(), unit: 'bloqueados', badgeClass: 'bg-red-50 text-red-700', buttonClass: 'bg-red-600 border-red-600 hover:text-red-700' }
+    ]; track m.title) {
 
-    <article
-      class="flex h-full flex-col justify-between
-             rounded-3xl border border-slate-200
-             bg-white shadow-sm
-             transition-all duration-300
-             hover:-translate-y-1 hover:shadow-lg"
-    >
+      <article
+        class="group relative isolate h-full overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/20"
+      >
 
-      <div class="px-6 py-8 sm:p-8 sm:pb-6">
-
-        <div
-          class="inline-flex rounded-full bg-slate-100
-                 px-3 py-1 text-xs font-bold text-slate-700"
-        >
-          Todos
-        </div>
-
-        <h2
-          class="mt-5 text-xl font-semibold
-                 tracking-tight text-slate-800"
-        >
-          Todos los alojamientos
-        </h2>
-
-        <p class="mt-2 text-sm text-slate-500">
-          Total de propiedades registradas.
-        </p>
-
-        <div class="mt-7 flex items-end gap-2">
-
-          <span
-            class="text-5xl font-light
-                   tracking-tight text-slate-900"
-          >
-            {{ total() }}
-          </span>
-
-          <span class="mb-1 text-sm text-slate-400">
-            propiedades
-          </span>
-
-        </div>
-
-      </div>
-
-      <div class="px-6 pb-8 sm:px-8">
-
-        <a
-          href="#tus-propiedades"
-          class="inline-flex w-full items-center
-                 justify-center rounded-full
-                 border-2 border-slate-800
-                 bg-slate-800 px-5 py-3
-                 text-center text-sm font-semibold
-                 text-white transition duration-200
-                 hover:bg-white hover:text-slate-800
-                 focus-visible:outline-2
-                 focus-visible:outline-offset-2
-                 focus-visible:outline-slate-800"
-        >
-          Ver propiedades
-        </a>
-
-      </div>
-
-    </article>
-
-    <!-- ====================================== -->
-    <!-- 2. DISPONIBLES -->
-    <!-- ====================================== -->
-
-    <article
-      class="flex h-full flex-col justify-between
-             rounded-3xl border border-emerald-200
-             bg-white shadow-sm
-             transition-all duration-300
-             hover:-translate-y-1 hover:shadow-lg"
-    >
-
-      <div class="px-6 py-8 sm:p-8 sm:pb-6">
+        <!-- BRILLO BLANCO -->
 
         <div
-          class="inline-flex rounded-full bg-emerald-50
-                 px-3 py-1 text-xs font-bold text-emerald-700"
-        >
-          Disponibles
-        </div>
+          aria-hidden="true"
+          class="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-white blur-[50px] transition-transform duration-700 group-hover:translate-x-10 group-hover:translate-y-5"
+        ></div>
 
-        <h2
-          class="mt-5 text-xl font-semibold
-                 tracking-tight text-emerald-700"
-        >
-          Alojamientos disponibles
-        </h2>
-
-        <p class="mt-2 text-sm text-slate-500">
-          Propiedades activas y publicadas.
-        </p>
-
-        <div class="mt-7 flex items-end gap-2">
-
-          <span
-            class="text-5xl font-light
-                   tracking-tight text-emerald-700"
-          >
-            {{ active() }}
-          </span>
-
-          <span class="mb-1 text-sm text-slate-400">
-            activos
-          </span>
-
-        </div>
-
-      </div>
-
-      <div class="px-6 pb-8 sm:px-8">
-
-        <a
-          href="#tus-propiedades"
-          class="inline-flex w-full items-center
-                 justify-center rounded-full
-                 border-2 border-emerald-700
-                 bg-emerald-700 px-5 py-3
-                 text-center text-sm font-semibold
-                 text-white transition duration-200
-                 hover:bg-white hover:text-emerald-700
-                 focus-visible:outline-2
-                 focus-visible:outline-offset-2
-                 focus-visible:outline-emerald-700"
-        >
-          Ver propiedades
-        </a>
-
-      </div>
-
-    </article>
-
-    <!-- ====================================== -->
-    <!-- 3. EN REVISIÓN -->
-    <!-- ====================================== -->
-
-    <article
-      class="flex h-full flex-col justify-between
-             rounded-3xl border border-amber-200
-             bg-white shadow-sm
-             transition-all duration-300
-             hover:-translate-y-1 hover:shadow-lg"
-    >
-
-      <div class="px-6 py-8 sm:p-8 sm:pb-6">
+        <!-- BRILLO VERDE ESMERALDA -->
 
         <div
-          class="inline-flex rounded-full bg-amber-50
-                 px-3 py-1 text-xs font-bold text-amber-700"
-        >
-          En revisión
-        </div>
+          aria-hidden="true"
+          class="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-emerald-300/60 blur-[55px] transition-colors duration-700 group-hover:bg-emerald-300/90"
+        ></div>
 
-        <h2
-          class="mt-5 text-xl font-semibold
-                 tracking-tight text-amber-700"
-        >
-          Pendientes de revisión
-        </h2>
-
-        <p class="mt-2 text-sm text-slate-500">
-          Propiedades esperando aprobación.
-        </p>
-
-        <div class="mt-7 flex items-end gap-2">
-
-          <span
-            class="text-5xl font-light
-                   tracking-tight text-amber-600"
-          >
-            {{ pending() }}
-          </span>
-
-          <span class="mb-1 text-sm text-slate-400">
-            pendientes
-          </span>
-
-        </div>
-
-      </div>
-
-      <div class="px-6 pb-8 sm:px-8">
-
-        <a
-          href="#tus-propiedades"
-          class="inline-flex w-full items-center
-                 justify-center rounded-full
-                 border-2 border-amber-600
-                 bg-amber-600 px-5 py-3
-                 text-center text-sm font-semibold
-                 text-white transition duration-200
-                 hover:bg-white hover:text-amber-700
-                 focus-visible:outline-2
-                 focus-visible:outline-offset-2
-                 focus-visible:outline-amber-600"
-        >
-          Ver propiedades
-        </a>
-
-      </div>
-
-    </article>
-
-    <!-- ====================================== -->
-    <!-- 4. SIN PUBLICAR -->
-    <!-- ====================================== -->
-
-    <article
-      class="flex h-full flex-col justify-between
-             rounded-3xl border border-slate-200
-             bg-white shadow-sm
-             transition-all duration-300
-             hover:-translate-y-1 hover:shadow-lg"
-    >
-
-      <div class="px-6 py-8 sm:p-8 sm:pb-6">
+        <!-- INTERIOR DE LA TARJETA -->
 
         <div
-          class="inline-flex rounded-full bg-slate-100
-                 px-3 py-1 text-xs font-bold text-slate-700"
+          class="relative z-10 flex h-full flex-col justify-between rounded-[14px] bg-white p-6 sm:p-7"
         >
-          Sin publicar
-        </div>
 
-        <h2
-          class="mt-5 text-xl font-semibold
-                 tracking-tight text-slate-700"
-        >
-          Alojamientos en borrador
-        </h2>
+          <div>
 
-        <p class="mt-2 text-sm text-slate-500">
-          Propiedades que aún no se han publicado.
-        </p>
+            <div class="flex items-center justify-between gap-2">
 
-        <div class="mt-7 flex items-end gap-2">
+              <!-- ETIQUETA -->
 
-          <span
-            class="text-5xl font-light
-                   tracking-tight text-slate-700"
+              <span
+                [class]="'inline-flex rounded-full px-3 py-1 text-xs font-bold ' + m.badgeClass"
+              >
+                {{ m.badge }}
+              </span>
+
+              <!-- ICONO -->
+
+              <span
+                class="grid size-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700 transition group-hover:scale-110 group-hover:bg-emerald-100"
+              >
+                <svg
+                  class="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
+                </svg>
+              </span>
+
+            </div>
+
+            <!-- TÍTULO -->
+
+            <h2 class="mt-5 text-lg font-bold tracking-tight text-slate-900">
+              {{ m.title }}
+            </h2>
+
+            <p class="mt-2 text-sm text-slate-500">
+              {{ m.detail }}
+            </p>
+
+            <!-- CONTADOR REAL -->
+
+            <div class="mt-6 flex items-end gap-2">
+
+              <strong class="text-5xl font-semibold tracking-tight text-emerald-800">
+                {{ m.value }}
+              </strong>
+
+              <span class="mb-1 text-sm text-slate-400">
+                {{ m.unit }}
+              </span>
+
+            </div>
+
+          </div>
+
+          <!-- VER PROPIEDADES -->
+
+          <a
+            href="#tus-propiedades"
+            [class]="'mt-7 inline-flex w-full items-center justify-center rounded-xl border-2 px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 ' + m.buttonClass"
           >
-            {{ drafts() }}
-          </span>
-
-          <span class="mb-1 text-sm text-slate-400">
-            borradores
-          </span>
+            Ver propiedades
+          </a>
 
         </div>
 
-      </div>
+      </article>
 
-      <div class="px-6 pb-8 sm:px-8">
-
-        <a
-          href="#tus-propiedades"
-          class="inline-flex w-full items-center
-                 justify-center rounded-full
-                 border-2 border-slate-600
-                 bg-slate-600 px-5 py-3
-                 text-center text-sm font-semibold
-                 text-white transition duration-200
-                 hover:bg-white hover:text-slate-700
-                 focus-visible:outline-2
-                 focus-visible:outline-offset-2
-                 focus-visible:outline-slate-600"
-        >
-          Ver propiedades
-        </a>
-
-      </div>
-
-    </article>
-
-    <!-- ====================================== -->
-    <!-- 5. PAUSADOS -->
-    <!-- ====================================== -->
-
-    <article
-      class="flex h-full flex-col justify-between
-             rounded-3xl border border-blue-200
-             bg-white shadow-sm
-             transition-all duration-300
-             hover:-translate-y-1 hover:shadow-lg"
-    >
-
-      <div class="px-6 py-8 sm:p-8 sm:pb-6">
-
-        <div
-          class="inline-flex rounded-full bg-blue-50
-                 px-3 py-1 text-xs font-bold text-blue-700"
-        >
-          Pausados
-        </div>
-
-        <h2
-          class="mt-5 text-xl font-semibold
-                 tracking-tight text-blue-700"
-        >
-          Alojamientos pausados
-        </h2>
-
-        <p class="mt-2 text-sm text-slate-500">
-          Propiedades desactivadas temporalmente.
-        </p>
-
-        <div class="mt-7 flex items-end gap-2">
-
-          <span
-            class="text-5xl font-light
-                   tracking-tight text-blue-600"
-          >
-            {{ paused() }}
-          </span>
-
-          <span class="mb-1 text-sm text-slate-400">
-            pausados
-          </span>
-
-        </div>
-
-      </div>
-
-      <div class="px-6 pb-8 sm:px-8">
-
-        <a
-          href="#tus-propiedades"
-          class="inline-flex w-full items-center
-                 justify-center rounded-full
-                 border-2 border-blue-600
-                 bg-blue-600 px-5 py-3
-                 text-center text-sm font-semibold
-                 text-white transition duration-200
-                 hover:bg-white hover:text-blue-700
-                 focus-visible:outline-2
-                 focus-visible:outline-offset-2
-                 focus-visible:outline-blue-600"
-        >
-          Ver propiedades
-        </a>
-
-      </div>
-
-    </article>
-
-    <!-- ====================================== -->
-    <!-- 6. ADMINISTRACIÓN / BLOQUEADOS -->
-    <!-- ====================================== -->
-
-    <article
-      class="flex h-full flex-col justify-between
-             rounded-3xl border border-red-200
-             bg-white shadow-sm
-             transition-all duration-300
-             hover:-translate-y-1 hover:shadow-lg"
-    >
-
-      <div class="px-6 py-8 sm:p-8 sm:pb-6">
-
-        <div
-          class="inline-flex rounded-full bg-red-50
-                 px-3 py-1 text-xs font-bold text-red-700"
-        >
-          Administración
-        </div>
-
-        <h2
-          class="mt-5 text-xl font-semibold
-                 tracking-tight text-red-700"
-        >
-          Alojamientos bloqueados
-        </h2>
-
-        <p class="mt-2 text-sm text-slate-500">
-          Propiedades bloqueadas por administración.
-        </p>
-
-        <div class="mt-7 flex items-end gap-2">
-
-          <span
-            class="text-5xl font-light
-                   tracking-tight text-red-600"
-          >
-            {{ blocked() }}
-          </span>
-
-          <span class="mb-1 text-sm text-slate-400">
-            bloqueados
-          </span>
-
-        </div>
-
-      </div>
-
-      <div class="px-6 pb-8 sm:px-8">
-
-        <a
-          href="#tus-propiedades"
-          class="inline-flex w-full items-center
-                 justify-center rounded-full
-                 border-2 border-red-600
-                 bg-red-600 px-5 py-3
-                 text-center text-sm font-semibold
-                 text-white transition duration-200
-                 hover:bg-white hover:text-red-700
-                 focus-visible:outline-2
-                 focus-visible:outline-offset-2
-                 focus-visible:outline-red-600"
-        >
-          Ver propiedades
-        </a>
-
-      </div>
-
-    </article>
+    }
 
   </section>
 
-  <!-- ========================================== -->
-  <!-- TUS PROPIEDADES / FILTROS -->
-  <!-- ========================================== -->
+  <!-- ======================================
+       FILTRO DE PROPIEDADES
+       ====================================== -->
 
   <div
     id="tus-propiedades"
-    class="mt-10 flex scroll-mt-28 flex-wrap
-           items-center justify-between gap-4"
+    class="mt-10 flex scroll-mt-28 flex-wrap items-center justify-between gap-4"
   >
 
     <div>
 
-      <h2
-        class="font-display text-xl
-               font-bold text-slate-900"
-      >
+      <h2 class="font-display text-xl font-bold text-slate-900">
         Tus propiedades
       </h2>
 
       <p class="mt-1 text-sm text-slate-500">
-        {{ alojamientosFiltrados().length }}
-        alojamiento(s) encontrados
+        {{ alojamientosFiltrados().length }} alojamiento(s) encontrados
       </p>
 
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
 
+      <!-- FILTRAR -->
+
       <select
         aria-label="Filtrar por estado"
         [value]="filtro()"
         (change)="cambiarFiltro($event)"
-        class="rounded-xl border border-slate-200
-               bg-white px-4 py-3 text-sm
-               font-semibold text-slate-700
-               outline-none focus:border-emerald-500"
+        class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500"
       >
 
         @for (opcion of filtros; track opcion.valor) {
@@ -557,16 +201,13 @@
 
       </select>
 
+      <!-- ACTUALIZAR -->
+
       <button
         type="button"
         (click)="cargarAlojamientos()"
         [disabled]="cargando()"
-        class="rounded-xl border border-slate-200
-               bg-white px-5 py-3
-               text-sm font-bold text-slate-700
-               transition hover:bg-slate-50
-               disabled:cursor-not-allowed
-               disabled:opacity-50"
+        class="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {{ cargando() ? 'Actualizando...' : 'Actualizar' }}
       </button>
@@ -575,39 +216,34 @@
 
   </div>
 
-  <!-- ========================================== -->
-  <!-- ERRORES -->
-  <!-- ========================================== -->
+  <!-- ======================================
+       ERRORES
+       ====================================== -->
 
   @if (error()) {
 
     <div
       role="alert"
-      class="mt-6 rounded-xl border border-red-200
-             bg-red-50 px-5 py-4
-             text-sm font-medium text-red-700"
+      class="mt-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700"
     >
       {{ error() }}
     </div>
 
   }
 
-  <!-- ========================================== -->
-  <!-- CARGANDO ALOJAMIENTOS -->
-  <!-- ========================================== -->
+  <!-- ======================================
+       CARGANDO ALOJAMIENTOS
+       ====================================== -->
 
   @if (cargando()) {
 
     <div
       role="status"
-      class="mt-7 rounded-2xl border border-slate-200
-             bg-white p-12 text-center"
+      class="mt-7 rounded-2xl border border-slate-200 bg-white p-12 text-center"
     >
 
       <div
-        class="mx-auto mb-4 h-9 w-9 animate-spin
-               rounded-full border-4 border-emerald-100
-               border-t-emerald-700"
+        class="mx-auto mb-4 size-9 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-700"
       ></div>
 
       <p class="font-semibold text-slate-700">
@@ -622,480 +258,368 @@
 
   } @else {
 
-    <!-- ========================================== -->
-      <!-- TARJETAS VERTICALES DE ALOJAMIENTOS -->
-      <!-- ========================================== -->
+    <!-- ======================================
+         TARJETAS VERTICALES DE ALOJAMIENTOS
+         CON EFECTO LUMINOSO
+         ====================================== -->
 
     <div
-      class="mt-8 grid grid-cols-1 gap-6
-             sm:grid-cols-2 lg:grid-cols-3
-             xl:grid-cols-4 2xl:grid-cols-5"
+      class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
     >
 
-      @for (
-        l of alojamientosFiltrados();
-        track l.idAlojamiento
-        ) {
+      @for (l of alojamientosFiltrados(); track l.idAlojamiento) {
 
         <article
-          class="group flex min-w-0 flex-col
-                 overflow-hidden rounded-2xl
-                 border border-slate-200 bg-white
-                 shadow-sm transition-all duration-300
-                 hover:-translate-y-1
-                 hover:border-emerald-300
-                 hover:shadow-xl"
+          class="group relative isolate min-w-0 overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/20"
         >
 
-          <!-- ====================================== -->
-          <!-- IMAGEN DEL ALOJAMIENTO -->
-          <!-- ====================================== -->
+          <!-- BRILLO BLANCO SUPERIOR -->
 
           <div
-            class="relative aspect-[3/4] overflow-hidden
-                   bg-gradient-to-b
-                   from-slate-100 to-slate-200"
+            aria-hidden="true"
+            class="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-white blur-[50px] transition-transform duration-700 group-hover:translate-x-10 group-hover:translate-y-5"
+          ></div>
+
+          <!-- BRILLO VERDE INFERIOR -->
+
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-emerald-300/60 blur-[55px] transition-colors duration-700 group-hover:bg-emerald-300/90"
+          ></div>
+
+          <!-- CONTENIDO INTERIOR -->
+
+          <div
+            class="relative z-10 flex h-full min-w-0 flex-col overflow-hidden rounded-[14px] bg-white"
           >
 
-            @if (obtenerImagen(l); as imagen) {
+            <!-- ======================================
+                 IMAGEN DEL ALOJAMIENTO
+                 ====================================== -->
 
-              <img
-                [src]="imagen"
-                [alt]="l.titulo"
-                loading="lazy"
-                class="absolute inset-0 h-full w-full
-                       object-cover transition-transform
-                       duration-500 group-hover:scale-105"
-              />
+            <div
+              class="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-slate-100 to-slate-200"
+            >
 
-            } @else {
+              @if (obtenerImagen(l); as imagen) {
+
+                <img
+                  [src]="imagen"
+                  [alt]="l.titulo"
+                  loading="lazy"
+                  class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+
+              } @else {
+
+                <div
+                  class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-600 px-5 text-white"
+                >
+
+                  <svg
+                    class="size-12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
+                  </svg>
+
+                  <p class="mt-4 text-center text-xs font-semibold text-emerald-50">
+                    Sin fotografía
+                  </p>
+
+                </div>
+
+              }
+
+              <!-- DEGRADADO -->
 
               <div
-                class="absolute inset-0 flex flex-col
-                       items-center justify-center
-                       bg-gradient-to-br
-                       from-emerald-950 via-emerald-800
-                       to-emerald-600 px-5 text-white"
-              >
+                class="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-emerald-950/70 to-transparent"
+              ></div>
 
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m3 10 9-7 9 7"/>
-                  <path d="M5 9v12h14V9"/>
-                  <path d="M9 21v-8h6v8"/>
-                </svg>
+              <!-- ESTADO -->
 
-                <p
-                  class="mt-4 text-center text-xs
-                         font-semibold text-emerald-50"
+              <div class="absolute left-3 right-3 top-3">
+
+                <span
+                  [class]="badgeClass(l)"
+                  class="inline-flex max-w-full items-center rounded-full shadow-sm"
                 >
-                  Sin fotografía
-                </p>
+                  {{ nombreEstado(l.estado) }}
+                </span>
 
               </div>
 
-            }
-
-            <!-- DEGRADADO INFERIOR -->
-
-            <div
-              class="pointer-events-none absolute
-                     inset-x-0 bottom-0 h-28
-                     bg-gradient-to-t
-                     from-emerald-950/70 to-transparent"
-            ></div>
-
-            <!-- ETIQUETA DEL ESTADO -->
-
-            <div class="absolute left-3 right-3 top-3">
+              <!-- ID -->
 
               <span
-                [class]="badgeClass(l)"
-                class="inline-flex max-w-full items-center
-                       rounded-full shadow-sm"
-              >
-                {{ nombreEstado(l.estado) }}
-              </span>
-
-            </div>
-
-            <!-- ID DEL ALOJAMIENTO -->
-
-            <div class="absolute bottom-14 right-3">
-
-              <span
-                class="rounded-lg bg-black/50
-                       px-2 py-1 text-[10px]
-                       font-semibold text-white
-                       backdrop-blur-sm"
+                class="absolute bottom-14 right-3 rounded-lg bg-black/50 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm"
               >
                 #{{ l.idAlojamiento }}
               </span>
 
-            </div>
-
-            <!-- FRANJA DEL TÍTULO -->
-
-            <div
-              class="absolute inset-x-0 bottom-0
-                     flex min-h-12 items-center
-                     justify-center bg-emerald-950/95
-                     px-3 py-3"
-            >
-
-              <h3
-                class="line-clamp-2 text-center
-                       text-sm font-bold leading-5
-                       text-white"
-              >
-                {{ l.titulo }}
-              </h3>
-
-            </div>
-
-          </div>
-
-          <!-- ====================================== -->
-          <!-- INFORMACIÓN DE LA PROPIEDAD -->
-          <!-- ====================================== -->
-
-          <div class="flex flex-1 flex-col p-4">
-
-            <!-- CIUDAD -->
-
-            <div class="min-w-0">
+              <!-- TÍTULO -->
 
               <div
-                class="flex items-center gap-1.5
-                       text-emerald-700"
+                class="absolute inset-x-0 bottom-0 flex min-h-12 items-center justify-center bg-emerald-950/95 px-3 py-3"
               >
 
-                <svg
-                  class="size-4 shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/>
-                  <circle cx="12" cy="10" r="2.5"/>
-                </svg>
-
-                <span
-                  class="truncate text-xs font-semibold"
-                  [title]="l.ciudad || 'Ciudad sin definir'"
-                >
-                  {{ l.ciudad || 'Ciudad sin definir' }}
-                </span>
-
-              </div>
-
-              <p class="mt-1 truncate text-xs text-slate-500">
-                {{ l.tipo || 'Tipo sin definir' }}
-              </p>
-
-            </div>
-
-            <!-- PRECIO POR NOCHE -->
-
-            <div class="mt-4">
-
-              <p
-                class="font-display text-lg font-bold
-                       leading-tight text-slate-900"
-              >
-                {{ formatearPrecio(l.precioNoche) }}
-              </p>
-
-              <p class="mt-1 text-[11px] text-slate-500">
-                Precio por noche
-              </p>
-
-            </div>
-
-            <!-- HUÉSPEDES / HABITACIONES / BAÑOS -->
-
-            <div
-              class="mt-4 grid grid-cols-3 gap-1
-                     rounded-xl bg-emerald-50/70 p-3"
-            >
-
-              <!-- HUÉSPEDES -->
-
-              <div class="text-center">
-
-                <svg
-                  class="mx-auto size-4 text-emerald-700"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                </svg>
-
-                <strong
-                  class="mt-1 block text-xs text-slate-900"
-                >
-                  {{ l.capacidad ?? '—' }}
-                </strong>
-
-                <span
-                  class="block text-[10px] text-slate-500"
-                >
-                  Huéspedes
-                </span>
-
-              </div>
-
-              <!-- HABITACIONES -->
-
-              <div class="text-center">
-
-                <svg
-                  class="mx-auto size-4 text-emerald-700"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="3"
-                    y="10"
-                    width="18"
-                    height="10"
-                    rx="2"
-                  />
-                  <path d="M3 15h18"/>
-                  <path d="M6 10V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/>
-                </svg>
-
-                <strong
-                  class="mt-1 block text-xs text-slate-900"
-                >
-                  {{ l.habitaciones ?? '—' }}
-                </strong>
-
-                <span
-                  class="block text-[10px] text-slate-500"
-                >
-                  Habit.
-                </span>
-
-              </div>
-
-              <!-- BAÑOS -->
-
-              <div class="text-center">
-
-                <svg
-                  class="mx-auto size-4 text-emerald-700"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M9 6 7.5 4.5a2.1 2.1 0 0 0-3 0A2.1 2.1 0 0 0 4 6v8"/>
-                  <path d="M3 14h18v2a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-2Z"/>
-                  <path d="M6 21v1M18 21v1"/>
-                </svg>
-
-                <strong
-                  class="mt-1 block text-xs text-slate-900"
-                >
-                  {{ l.banos ?? '—' }}
-                </strong>
-
-                <span
-                  class="block text-[10px] text-slate-500"
-                >
-                  Baños
-                </span>
+                <h3 class="line-clamp-2 text-center text-sm font-bold leading-5 text-white">
+                  {{ l.titulo }}
+                </h3>
 
               </div>
 
             </div>
 
-            <!-- ====================================== -->
-            <!-- CALIFICACIÓN Y RESERVAS -->
-            <!-- ====================================== -->
+            <!-- ======================================
+                 INFORMACIÓN DE LA PROPIEDAD
+                 ====================================== -->
 
-            <div
-              class="mt-4 flex items-center
-                     justify-between gap-2 text-xs"
-            >
+            <div class="flex flex-1 flex-col p-4">
 
-              <div class="flex items-center gap-1">
+              <!-- CIUDAD -->
 
-                <svg
-                  class="size-4 text-amber-500"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8l-6.2 3.3 1.2-6.9-5-4.9 6.9-1L12 2Z"/>
-                </svg>
+              <div class="min-w-0">
 
-                <span class="font-semibold text-slate-800">
-                  {{ mostrarCalificacion(l) }}
-                </span>
+                <div class="flex items-center gap-1.5 text-emerald-700">
 
-                <span class="text-slate-400">
-                  ({{ l.cantidadResenas ?? 0 }})
+                  <svg
+                    class="size-4 shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                    <circle cx="12" cy="10" r="2.5" />
+                  </svg>
+
+                  <span
+                    class="truncate text-xs font-semibold"
+                    [title]="l.ciudad || 'Ciudad sin definir'"
+                  >
+                    {{ l.ciudad || 'Ciudad sin definir' }}
+                  </span>
+
+                </div>
+
+                <p class="mt-1 truncate text-xs text-slate-500">
+                  {{ l.tipo || 'Tipo sin definir' }}
+                </p>
+
+              </div>
+
+              <!-- ======================================
+                   PRECIO POR NOCHE
+                   ====================================== -->
+
+              <div class="mt-4">
+
+                <p class="font-display text-lg font-bold leading-tight text-slate-900">
+                  {{ formatearPrecio(l.precioNoche) }}
+                </p>
+
+                <p class="mt-1 text-[11px] text-slate-500">
+                  Precio por noche
+                </p>
+
+              </div>
+
+              <!-- ======================================
+                   CAPACIDAD, HABITACIONES Y BAÑOS
+                   ====================================== -->
+
+              <div
+                class="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-emerald-50/70 p-3 text-center"
+              >
+
+                <!-- HUÉSPEDES -->
+
+                <div>
+
+                  <svg
+                    class="mx-auto size-4 text-emerald-700"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  </svg>
+
+                  <strong class="mt-1 block text-xs text-slate-900">
+                    {{ l.capacidad ?? '—' }}
+                  </strong>
+
+                  <span class="block text-[10px] text-slate-500">
+                    Huéspedes
+                  </span>
+
+                </div>
+
+                <!-- HABITACIONES -->
+
+                <div>
+
+                  <svg
+                    class="mx-auto size-4 text-emerald-700"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="10" width="18" height="10" rx="2" />
+                    <path d="M3 15h18M6 10V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4" />
+                  </svg>
+
+                  <strong class="mt-1 block text-xs text-slate-900">
+                    {{ l.habitaciones ?? '—' }}
+                  </strong>
+
+                  <span class="block text-[10px] text-slate-500">
+                    Habit.
+                  </span>
+
+                </div>
+
+                <!-- BAÑOS -->
+
+                <div>
+
+                  <svg
+                    class="mx-auto size-4 text-emerald-700"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 6 7.5 4.5a2.1 2.1 0 0 0-3 0A2.1 2.1 0 0 0 4 6v8M3 14h18v2a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-2ZM6 21v1M18 21v1" />
+                  </svg>
+
+                  <strong class="mt-1 block text-xs text-slate-900">
+                    {{ l.banos ?? '—' }}
+                  </strong>
+
+                  <span class="block text-[10px] text-slate-500">
+                    Baños
+                  </span>
+
+                </div>
+
+              </div>
+
+              <!-- ======================================
+                   RESEÑAS Y RESERVAS
+                   ====================================== -->
+
+              <div class="mt-4 flex items-center justify-between gap-2 text-xs">
+
+                <div class="flex items-center gap-1">
+
+                  <svg
+                    class="size-4 text-amber-500"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8l-6.2 3.3 1.2-6.9-5-4.9 6.9-1L12 2Z" />
+                  </svg>
+
+                  <span class="font-semibold text-slate-800">
+                    {{ mostrarCalificacion(l) }}
+                  </span>
+
+                  <span class="text-slate-400">
+                    ({{ l.cantidadResenas ?? 0 }})
+                  </span>
+
+                </div>
+
+                <span class="text-slate-500">
+                  {{ l.cantidadReservas ?? 0 }} reservas
                 </span>
 
               </div>
 
-              <span class="text-slate-500">
-                {{ l.cantidadReservas ?? 0 }} reservas
-              </span>
+              <!-- FECHA DE CREACIÓN -->
 
-            </div>
-
-            <!-- FECHA DE CREACIÓN -->
-
-            <p class="mt-3 text-[11px] text-slate-400">
-              Creado el {{ formatearFecha(l.fechaCreacion) }}
-            </p>
-
-            <!-- ====================================== -->
-            <!-- MENSAJES SEGÚN ESTADO -->
-            <!-- ====================================== -->
-
-            @if (l.estado === 'BORRADOR') {
-
-              <p
-                class="mt-4 rounded-lg bg-slate-50
-                       px-3 py-2 text-[11px]
-                       leading-4 text-slate-600"
-              >
-                Completa la información para enviarlo a revisión.
+              <p class="mt-3 text-[11px] text-slate-400">
+                Creado el {{ formatearFecha(l.fechaCreacion) }}
               </p>
 
-            } @else if (l.estado === 'PENDIENTE_REVISION') {
+              <!-- ======================================
+                   MENSAJES SEGÚN EL ESTADO
+                   ====================================== -->
 
-              <p
-                class="mt-4 rounded-lg bg-amber-50
-                       px-3 py-2 text-[11px]
-                       leading-4 text-amber-700"
-              >
-                Pendiente de aprobación por administración.
-              </p>
+              @if (l.estado === 'BORRADOR') {
 
-            } @else if (l.estado === 'ACTIVA') {
+                <p class="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-4 text-slate-600">
+                  Completa la información para enviarlo a revisión.
+                </p>
 
-              <p
-                class="mt-4 rounded-lg bg-emerald-50
-                       px-3 py-2 text-[11px]
-                       leading-4 text-emerald-700"
-              >
-                Publicado y disponible para reservas.
-              </p>
+              } @else if (l.estado === 'PENDIENTE_REVISION') {
 
-            } @else if (l.estado === 'PAUSADA') {
+                <p class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-[11px] leading-4 text-amber-700">
+                  Pendiente de aprobación por administración.
+                </p>
 
-              <p
-                class="mt-4 rounded-lg bg-blue-50
-                       px-3 py-2 text-[11px]
-                       leading-4 text-blue-700"
-              >
-                Alojamiento pausado temporalmente.
-              </p>
+              } @else if (l.estado === 'ACTIVA') {
 
-            } @else if (l.estado === 'BLOQUEADA') {
+                <p class="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-[11px] leading-4 text-emerald-700">
+                  Publicado y disponible para reservas.
+                </p>
 
-              <p
-                class="mt-4 rounded-lg bg-red-50
-                       px-3 py-2 text-[11px]
-                       leading-4 text-red-700"
-              >
-                Bloqueado por administración.
-              </p>
+              } @else if (l.estado === 'PAUSADA') {
 
-            }
+                <p class="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-[11px] leading-4 text-blue-700">
+                  Alojamiento pausado temporalmente.
+                </p>
 
-            <!-- ====================================== -->
-            <!-- ACCIONES -->
-            <!-- ====================================== -->
+              } @else if (l.estado === 'BLOQUEADA') {
 
-            <div class="mt-auto space-y-2 pt-5">
+                <p class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-[11px] leading-4 text-red-700">
+                  Bloqueado por administración.
+                </p>
 
-              <!-- VER DETALLES -->
+              }
 
-              <button
-                type="button"
-                (click)="details(l.idAlojamiento)"
-                class="flex w-full items-center
-                       justify-center gap-2
-                       rounded-xl bg-emerald-700
-                       px-3 py-2.5 text-xs
-                       font-bold text-white
-                       transition hover:bg-emerald-800"
-              >
+              <!-- ======================================
+                   BOTONES DEL ALOJAMIENTO
+                   ====================================== -->
 
-                <svg
-                  class="size-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
+              <div class="mt-auto space-y-2 pt-5">
 
-                Ver detalles
-
-              </button>
-
-              <!-- EDITAR Y DISPONIBILIDAD -->
-
-              <div class="grid grid-cols-2 gap-2">
+                <!-- VER DETALLES -->
 
                 <button
                   type="button"
-                  (click)="edit(l.idAlojamiento)"
-                  [disabled]="l.estado === 'BLOQUEADA'"
-                  class="flex min-w-0 items-center
-                         justify-center gap-1
-                         rounded-lg border
-                         border-slate-200 bg-white
-                         px-2 py-2.5 text-[11px]
-                         font-semibold text-slate-700
-                         transition hover:border-emerald-300
-                         hover:bg-emerald-50
-                         disabled:cursor-not-allowed
-                         disabled:opacity-40"
+                  (click)="details(l.idAlojamiento)"
+                  class="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-800"
                 >
 
                   <svg
-                    class="size-3.5 shrink-0"
+                    class="size-4"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1104,44 +628,64 @@
                     stroke-linejoin="round"
                     aria-hidden="true"
                   >
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4Z"/>
+                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="3" />
                   </svg>
 
-                  Editar
-
+                  Ver detalles
                 </button>
 
-                <button
-                  type="button"
-                  (click)="availability(l.idAlojamiento)"
-                  class="flex min-w-0 items-center
-                         justify-center gap-1
-                         rounded-lg border
-                         border-emerald-200
-                         bg-emerald-50 px-2 py-2.5
-                         text-[11px] font-semibold
-                         text-emerald-700
-                         transition hover:bg-emerald-100"
-                >
+                <!-- EDITAR Y DISPONIBILIDAD -->
 
-                  <svg
-                    class="size-3.5 shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
+                <div class="grid grid-cols-2 gap-2">
+
+                  <button
+                    type="button"
+                    (click)="edit(l.idAlojamiento)"
+                    [disabled]="l.estado === 'BLOQUEADA'"
+                    class="flex min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <rect x="3" y="5" width="18" height="16" rx="2"/>
-                    <path d="M16 3v4M8 3v4M3 10h18"/>
-                  </svg>
 
-                  Disponibilidad
+                    <svg
+                      class="size-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4Z" />
+                    </svg>
 
-                </button>
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="availability(l.idAlojamiento)"
+                    class="flex min-w-0 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                  >
+
+                    <svg
+                      class="size-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="5" width="18" height="16" rx="2" />
+                      <path d="M16 3v4M8 3v4M3 10h18" />
+                    </svg>
+
+                    Disponibilidad
+                  </button>
+
+                </div>
 
               </div>
 
@@ -1153,28 +697,20 @@
 
       } @empty {
 
-        <!-- ====================================== -->
-          <!-- SIN ALOJAMIENTOS -->
-          <!-- ====================================== -->
+        <!-- ======================================
+             SIN ALOJAMIENTOS
+             ====================================== -->
 
         <div
-          class="rounded-2xl border border-dashed
-                 border-slate-300 bg-white
-                 p-10 text-center
-                 sm:col-span-2 lg:col-span-3
-                 xl:col-span-4 2xl:col-span-5"
+          class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center sm:col-span-2 lg:col-span-3 xl:col-span-4 2xl:col-span-5"
         >
 
           <div
-            class="mx-auto mb-4 flex size-16
-                   items-center justify-center
-                   rounded-full bg-emerald-50
-                   text-emerald-700"
+            class="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"
           >
 
             <svg
-              width="34"
-              height="34"
+              class="size-9"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -1183,34 +719,25 @@
               stroke-linejoin="round"
               aria-hidden="true"
             >
-              <path d="m3 10 9-7 9 7"/>
-              <path d="M5 9v12h14V9"/>
-              <path d="M9 21v-8h6v8"/>
+              <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
             </svg>
 
           </div>
 
-          <h2
-            class="font-display text-xl
-                   font-bold text-slate-900"
-          >
+          <h2 class="font-display text-xl font-bold text-slate-900">
             No se encontraron alojamientos
           </h2>
 
           @if (filtro() === 'TODOS') {
 
             <p class="mt-2 text-sm text-slate-500">
-              Aún no tienes alojamientos registrados.
-              Crea tu primera propiedad para comenzar.
+              Aún no tienes alojamientos registrados. Crea tu primera propiedad para comenzar.
             </p>
 
             <button
               type="button"
               (click)="create()"
-              class="mt-6 rounded-xl bg-emerald-700
-                     px-5 py-3 text-sm font-bold
-                     text-white transition
-                     hover:bg-emerald-800"
+              class="mt-6 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
             >
               Crear mi primer alojamiento
             </button>
