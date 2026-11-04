@@ -44,7 +44,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * Controlador REST de autenticación del marketplace. Ruta base: {@code /auth}.
  * Expone el registro con verificación del correo por código, el inicio de
  * sesión (devuelve un token JWT listo para usar), la recuperación de contraseña
- * simulada, la reactivación de una cuenta desactivada y el inicio de sesión con
+ * por correo, la reactivación de una cuenta desactivada y el inicio de sesión con
  * Google. Todas sus rutas son públicas.
  *
  * @see "RF-001"
@@ -364,14 +364,14 @@ public class AuthController {
 
 	/**
 	 * Solicita la recuperación de contraseña. Ruta: {@code POST /auth/recuperar}.
-	 * SIMULACIÓN: el token no se envía por correo, se escribe en el log del backend
+	 * El token se envía por correo al usuario
 	 * y vence a los 30 minutos.
 	 *
 	 * @param solicitud DTO con {@code correo}
 	 * @return 200 siempre que se envíe un correo (exista o no, para no revelar qué
 	 *         cuentas están registradas); 400 si falta el correo
 	 */
-	@Operation(summary = "Solicitar recuperación de contraseña (simulada)", description = "El token se escribe en el log del backend en lugar de enviarse por correo.")
+	@Operation(summary = "Solicitar recuperación de contraseña", description = "Envía al correo un código de recuperación válido por 30 minutos.")
 	@ApiResponse(responseCode = "200", description = "Si el correo está registrado, se generó un enlace de "
 			+ "recuperación válido por 30 minutos.")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo.")

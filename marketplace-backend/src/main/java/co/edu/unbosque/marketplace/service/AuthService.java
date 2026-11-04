@@ -20,13 +20,15 @@ import co.edu.unbosque.marketplace.exception.ExceptionCheker;
 import co.edu.unbosque.marketplace.repository.TokenRecuperacionRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
+import co.edu.unbosque.marketplace.util.CorreoUtil;
 
 /**
- * Operaciones de cuenta que no requieren sesión: recuperación de contraseña
- * (simulada) y reactivación de una cuenta desactivada por su dueño.
+ * Operaciones de cuenta que no requieren sesión: recuperación de contraseña y
+ * reactivación de una cuenta desactivada por su dueño.
  * <p>
- * Recuperación simulada: en lugar de enviar un correo, el token se escribe en
- * el log de la aplicación. Vence a los 30 minutos y sirve una sola vez.
+ * Recuperación: el token se envía por correo al usuario. Vence a los 30 minutos
+ * y sirve una sola vez. Si el correo no se puede enviar (por ejemplo, en
+ * desarrollo sin MAIL_PASSWORD), el token se escribe en el log.
  * </p>
  *
  * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
@@ -36,7 +38,9 @@ public class AuthService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuthService.class);
 
-	private static final Duration VIGENCIA_TOKEN = Duration.ofMinutes(30);
+	/** Vigencia del token en minutos (se informa en el correo). */
+	private static final int MINUTOS_VIGENCIA = 30;
+	private static final Duration VIGENCIA_TOKEN = Duration.ofMinutes(MINUTOS_VIGENCIA);
 	private static final int BYTES_TOKEN = 32;
 	private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -44,13 +48,15 @@ public class AuthService {
 	private final TokenRecuperacionRepository tokenRepo;
 	private final PasswordEncoder passwordEncoder;
 	private final AuditoriaService auditoriaService;
+	private final CorreoUtil correoUtil;
 
 	public AuthService(UsuarioRepository usuarioRepo, TokenRecuperacionRepository tokenRepo,
-			PasswordEncoder passwordEncoder, AuditoriaService auditoriaService) {
+			PasswordEncoder passwordEncoder, AuditoriaService auditoriaService, CorreoUtil correoUtil) {
 		this.usuarioRepo = usuarioRepo;
 		this.tokenRepo = tokenRepo;
 		this.passwordEncoder = passwordEncoder;
 		this.auditoriaService = auditoriaService;
+		this.correoUtil = correoUtil;
 	}
 
 	/**
@@ -91,12 +97,18 @@ public class AuthService {
 		registro.setUsado(false);
 		tokenRepo.save(registro);
 
-		// SIMULACIÓN: en producción este token se enviaría por correo al usuario
-		LOG.warn("[SIMULACION DE CORREO] Token para restablecer la contraseña del usuario {}: {} (vence {})",
-				usuario.getIdUsuario(), token, registro.getFechaExpiracion());
+		boolean enviado = correoUtil.enviarCorreo(UsuarioService.normalizarCorreo(correo),
+				"Recupera tu contraseña - Marketplace Inversiones LR", cuerpoCorreo(usuario.getNombre(), token));
+		if (!enviado) {
+			// Sin servidor de correo (desarrollo) el token queda en el log
+			LOG.warn("[SIMULACION DE CORREO] Token para restablecer la contraseña del usuario {}: {} (vence {})",
+					usuario.getIdUsuario(), token, registro.getFechaExpiracion());
+		}
 
 		auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.RECUPERACION_SOLICITADA,
-				AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO, null);
+				AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(),
+				enviado ? ResultadoAuditoria.EXITOSO : ResultadoAuditoria.ERROR,
+				enviado ? null : "No se pudo enviar el correo");
 		return 0;
 	}
 
@@ -183,6 +195,14 @@ public class AuthService {
 		auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.CUENTA_REACTIVADA,
 				AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO, null);
 		return 0;
+	}
+
+	private static String cuerpoCorreo(String nombre, String token) {
+		return String.format("Hola %s,%n%n" + "Recibimos una solicitud para restablecer la contraseña de tu cuenta. "
+				+ "Usa este código de recuperación:%n%n    %s%n%n"
+				+ "El código vence en %d minutos y solo puede usarse una vez. "
+				+ "Si no solicitaste el cambio, ignora este mensaje: tu contraseña seguirá igual.%n%n" + "Saludos,%n"
+				+ "Equipo Marketplace Inversiones LR", nombre, token, MINUTOS_VIGENCIA);
 	}
 
 	private static String generarToken() {

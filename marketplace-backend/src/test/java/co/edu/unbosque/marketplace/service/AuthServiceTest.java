@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -28,6 +29,7 @@ import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.repository.TokenRecuperacionRepository;
 import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.AESUtil;
+import co.edu.unbosque.marketplace.util.CorreoUtil;
 
 /** Pruebas unitarias de {@link AuthService}: recuperación simulada y reactivación. */
 class AuthServiceTest {
@@ -35,6 +37,7 @@ class AuthServiceTest {
 	private UsuarioRepository usuarioRepo;
 	private TokenRecuperacionRepository tokenRepo;
 	private PasswordEncoder passwordEncoder;
+	private CorreoUtil correoUtil;
 	private AuthService authService;
 
 	@BeforeEach
@@ -42,7 +45,9 @@ class AuthServiceTest {
 		usuarioRepo = mock(UsuarioRepository.class);
 		tokenRepo = mock(TokenRecuperacionRepository.class);
 		passwordEncoder = new BCryptPasswordEncoder(4);
-		authService = new AuthService(usuarioRepo, tokenRepo, passwordEncoder, mock(AuditoriaService.class));
+		correoUtil = mock(CorreoUtil.class);
+		authService = new AuthService(usuarioRepo, tokenRepo, passwordEncoder, mock(AuditoriaService.class),
+				correoUtil);
 	}
 
 	private Usuario usuario(EstadoUsuario estado, String contrasenia) {
@@ -80,6 +85,16 @@ class AuthServiceTest {
 		assertTrue(nuevo.getFechaExpiracion().isBefore(LocalDateTime.now().plusMinutes(31)));
 		// El token anterior queda invalidado
 		assertTrue(anterior.getUsado());
+	}
+
+	@Test
+	void debeEnviarElTokenPorCorreo() {
+		when(usuarioRepo.findByCorreoHash(anyString())).thenReturn(Optional.of(usuario(EstadoUsuario.ACTIVO, "x")));
+		when(tokenRepo.findByIdUsuarioAndUsadoFalse(5L)).thenReturn(List.of());
+
+		authService.solicitarRecuperacion("  Ana@Correo.com ");
+
+		verify(correoUtil).enviarCorreo(eq("ana@correo.com"), anyString(), anyString());
 	}
 
 	@Test
