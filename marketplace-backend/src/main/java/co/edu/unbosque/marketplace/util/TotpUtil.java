@@ -70,13 +70,22 @@ public final class TotpUtil {
 		return false;
 	}
 
+	/**
+	 * Calcula el código de un paso (RFC 6238 / RFC 4226).
+	 * <p>
+	 * java:S4790 revisado: HMAC-SHA1 es el algoritmo del estándar TOTP y el que
+	 * usan las apps autenticadoras; cambiarlo rompe la compatibilidad y los
+	 * segundos factores ya registrados. La debilidad de SHA-1 son las colisiones,
+	 * que no afectan a HMAC: aquí no se guarda ni se compara ningún hash, solo se
+	 * deriva un código de 6 dígitos que vence a los 30 segundos.
+	 * </p>
+	 */
+	@SuppressWarnings("java:S4790")
 	private static String codigoPara(String secreto, long paso) {
 		try {
 			byte[] clave = BASE32.decode(secreto);
 			Mac mac = Mac.getInstance(ALGORITMO);
 			mac.init(new SecretKeySpec(clave, ALGORITMO));
-			// HMAC-SHA1 se mantiene por compatibilidad con RFC 6238 (Google Authenticator).
-			// No se usa para proteger datos, solo para derivar el código temporal.
 			byte[] hash = mac.doFinal(ByteBuffer.allocate(Long.BYTES).putLong(paso).array());
 			int desplazamiento = hash[hash.length - 1] & 0x0f;
 			int binario = ((hash[desplazamiento] & 0x7f) << 24) | ((hash[desplazamiento + 1] & 0xff) << 16)
