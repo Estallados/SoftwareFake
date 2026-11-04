@@ -1,79 +1,583 @@
-<div class="flex items-end justify-between">
-  <div>
-    <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Inversiones LR</p>
-    <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">Reseñas de mis alojamientos</h1>
-    <p class="mt-2 text-sm text-slate-500">Consulta la opinión de los huéspedes sobre sus estancias.</p>
-  </div>
-</div>
 
-<div class="mt-8 grid grid-cols-[1fr_1fr_2fr] gap-4">
-  <div class="rounded-2xl border border-slate-200 bg-white p-5">
-    <div class="flex items-start justify-between">
-      <span class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z" />
-        </svg>
-      </span>
-      <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Muy buena</span>
+<section class="mx-auto w-full max-w-[1600px] px-5 py-8 sm:px-8 lg:px-12">
+
+  <!-- ======================================
+       ENCABEZADO
+       ====================================== -->
+
+  <div class="flex flex-wrap items-end justify-between gap-4">
+
+    <div>
+
+      <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">
+        Inversiones LR
+      </p>
+
+      <h1 class="font-display mt-2 text-3xl font-bold text-slate-900">
+        Reseñas de mis alojamientos
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-500">
+        Consulta la opinión de los huéspedes sobre sus estancias.
+      </p>
+
     </div>
-    <p class="mt-5 text-sm text-slate-500">Calificación promedio general</p>
-    <p class="font-display mt-1 text-3xl font-bold text-slate-900">{{ average() }}</p>
-  </div>
 
-  <div class="rounded-2xl border border-slate-200 bg-white p-5">
-    <div class="flex items-start justify-between">
-      <span class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="5" y="4" width="14" height="17" rx="2" />
-          <path d="M9 4V2h6v2M9 9h6M9 13h6M9 17h4" />
-        </svg>
-      </span>
-      <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Verificadas</span>
-    </div>
-    <p class="mt-5 text-sm text-slate-500">Reseñas recibidas</p>
-    <p class="font-display mt-1 text-3xl font-bold text-slate-900">{{ available().length }}</p>
-  </div>
+    <!-- ACTUALIZAR RESEÑAS -->
 
-  <div class="rounded-2xl border border-slate-200 bg-white p-5">
-    <label for="review-filter" class="text-sm font-bold">Filtrar por alojamiento</label>
-    <select
-      id="review-filter"
-      (change)="filter.set($any($event.target).value)"
-      class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500"
+    <button
+      type="button"
+      (click)="actualizar()"
+      [disabled]="cargando()"
+      class="rounded-xl border border-emerald-700 px-5 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      <option>Todos</option>
-      @for (a of accommodations(); track a) {
-        <option>{{ a }}</option>
-      }
-    </select>
-  </div>
-</div>
+      {{ cargando() ? 'Actualizando...' : 'Actualizar reseñas' }}
+    </button>
 
-<div class="mt-6 space-y-4">
-  @for (r of filtered(); track r.id) {
-    <article class="rounded-2xl border border-slate-200 bg-white p-6">
-      <div class="flex items-start justify-between">
-        <div>
-          <h2 class="font-display text-lg font-bold">{{ r.accommodation }}</h2>
-          <p class="mt-1 text-sm text-slate-500">Huésped: {{ r.guest }} · {{ r.published }}</p>
+  </div>
+
+  <!-- ======================================
+       TARJETAS SUPERIORES
+       ====================================== -->
+
+  <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_2fr]">
+
+    <!-- ======================================
+         CALIFICACIÓN PROMEDIO
+         ====================================== -->
+
+    <article
+      class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+    >
+
+      <!-- BRILLO BLANCO -->
+
+      <div
+        class="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-white blur-[50px] transition duration-700 group-hover:translate-x-10"
+        aria-hidden="true"
+      ></div>
+
+      <!-- BRILLO VERDE -->
+
+      <div
+        class="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-emerald-300/50 blur-[55px]"
+        aria-hidden="true"
+      ></div>
+
+      <!-- INTERIOR -->
+
+      <div
+        class="relative z-10 flex h-full min-h-[175px] flex-col rounded-[14px] bg-white p-5"
+      >
+
+        <div class="flex items-start justify-between gap-3">
+
+          <!-- ICONO -->
+
+          <span
+            class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700"
+          >
+
+            <svg
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+
+              <path
+                d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z"
+              />
+
+            </svg>
+
+          </span>
+
+          <span
+            class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"
+          >
+            Sobre 5 estrellas
+          </span>
+
         </div>
-        <div class="flex items-center gap-1" [attr.aria-label]="r.rating + ' de 5 estrellas'">
-          @for (s of starList; track s) {
-            <span [class]="s <= r.rating ? 'text-amber-500' : 'text-slate-200'">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z" />
-              </svg>
-            </span>
-          }
-        </div>
+
+        <p class="mt-5 text-sm text-slate-500">
+          Calificación promedio
+        </p>
+
+        <p class="font-display mt-1 text-3xl font-bold text-slate-900">
+          {{ cargando() ? '...' : average() }}
+        </p>
+
       </div>
-      <p class="mt-5 border-t border-slate-100 pt-5 leading-7 text-slate-700">"{{ r.comment }}"</p>
-      <p class="mt-3 text-xs text-slate-400">Reseña verificada · Solo lectura</p>
+
     </article>
-  } @empty {
-    <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-14 text-center">
-      <h2 class="font-display text-xl font-bold">Aún no tienes reseñas</h2>
-      <p class="mt-2 text-sm text-slate-500">Las opiniones de tus huéspedes aparecerán aquí.</p>
+
+    <!-- ======================================
+         TOTAL DE RESEÑAS
+         ====================================== -->
+
+    <article
+      class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+    >
+
+      <!-- BRILLO BLANCO -->
+
+      <div
+        class="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-white blur-[50px] transition duration-700 group-hover:translate-x-10"
+        aria-hidden="true"
+      ></div>
+
+      <!-- BRILLO VERDE -->
+
+      <div
+        class="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-emerald-300/50 blur-[55px]"
+        aria-hidden="true"
+      ></div>
+
+      <!-- INTERIOR -->
+
+      <div
+        class="relative z-10 flex h-full min-h-[175px] flex-col rounded-[14px] bg-white p-5"
+      >
+
+        <div class="flex items-start justify-between gap-3">
+
+          <!-- ICONO -->
+
+          <span
+            class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700"
+          >
+
+            <svg
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+
+              <rect
+                x="5"
+                y="4"
+                width="14"
+                height="17"
+                rx="2"
+              />
+
+              <path d="M9 4V2h6v2M9 9h6M9 13h6M9 17h4" />
+
+            </svg>
+
+          </span>
+
+          <span
+            class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"
+          >
+            Publicadas
+          </span>
+
+        </div>
+
+        <p class="mt-5 text-sm text-slate-500">
+          Reseñas recibidas
+        </p>
+
+        <p class="font-display mt-1 text-3xl font-bold text-slate-900">
+          {{ cargando() ? '...' : cantidad() }}
+        </p>
+
+      </div>
+
+    </article>
+
+    <!-- ======================================
+         FILTRAR POR ALOJAMIENTO
+         ====================================== -->
+
+    <article
+      class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition duration-300 hover:-translate-y-1 hover:shadow-xl md:col-span-2 xl:col-span-1"
+    >
+
+      <!-- BRILLO BLANCO -->
+
+      <div
+        class="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-white blur-[50px] transition duration-700 group-hover:translate-x-10"
+        aria-hidden="true"
+      ></div>
+
+      <!-- BRILLO VERDE -->
+
+      <div
+        class="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-emerald-300/50 blur-[55px]"
+        aria-hidden="true"
+      ></div>
+
+      <!-- INTERIOR -->
+
+      <div
+        class="relative z-10 flex h-full min-h-[175px] flex-col rounded-[14px] bg-white p-5"
+      >
+
+        <label
+          for="review-filter"
+          class="text-sm font-bold text-slate-900"
+        >
+          Filtrar por alojamiento
+        </label>
+
+        <p class="mt-1 text-xs text-slate-500">
+          Elige una propiedad para consultar sus reseñas.
+        </p>
+
+        <!-- SELECT CON DATOS DEL BACKEND -->
+
+        <select
+          id="review-filter"
+          [value]="filter()"
+          (change)="cambiarFiltro($any($event.target).value)"
+          [disabled]="cargandoAlojamientos()"
+          class="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+        >
+
+          <option value="Todos">
+            Todos mis alojamientos
+          </option>
+
+          @for (a of accommodations(); track a.idAlojamiento) {
+
+            <option [value]="a.idAlojamiento">
+              {{ a.titulo }}
+            </option>
+
+          }
+
+        </select>
+
+        <!-- ERROR AL CARGAR ALOJAMIENTOS -->
+
+        @if (errorAlojamientos()) {
+
+          <p
+            class="mt-2 text-xs text-amber-700"
+            role="alert"
+          >
+            {{ errorAlojamientos() }}
+          </p>
+
+          <button
+            type="button"
+            (click)="cargarAlojamientos()"
+            class="mt-1 self-start text-xs font-bold text-emerald-700 underline"
+          >
+            Reintentar filtro
+          </button>
+
+        }
+
+      </div>
+
+    </article>
+
+  </div>
+
+  <!-- ======================================
+       ERRORES AL CONSULTAR RESEÑAS
+       ====================================== -->
+
+  @if (error()) {
+
+    <div
+      class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
+      role="alert"
+    >
+
+      <p>{{ error() }}</p>
+
+      <button
+        type="button"
+        (click)="cargarResenas()"
+        class="mt-3 font-bold underline"
+      >
+        Reintentar
+      </button>
+
     </div>
+
   }
-</div>
+
+  <!-- ======================================
+       LISTADO DE RESEÑAS REALES
+       ====================================== -->
+
+  <div class="mt-6 space-y-4">
+
+    <!-- CARGANDO -->
+
+    @if (cargando()) {
+
+      <div
+        class="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500"
+        role="status"
+      >
+        Cargando reseñas del anfitrión...
+      </div>
+
+    } @else if (!error()) {
+
+      <!-- RESUMEN DE RESULTADOS -->
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+
+        <p class="text-sm text-slate-500">
+          Mostrando {{ inicioPagina() }}-{{ finPagina() }}
+          de {{ cantidad() }} reseñas
+        </p>
+
+        <span
+          class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+        >
+          {{ nombreFiltro() }}
+        </span>
+
+      </div>
+
+      <!-- ======================================
+           CADA RESEÑA
+           ====================================== -->
+
+      @for (r of reviews(); track r.idResena) {
+
+        <article
+          class="group relative overflow-hidden rounded-2xl bg-[#24443b] p-[2px] shadow-lg shadow-emerald-950/10 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+
+          <!-- EFECTO DE LUZ BLANCA -->
+
+          <div
+            class="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-white blur-[50px] transition duration-700 group-hover:translate-x-12"
+            aria-hidden="true"
+          ></div>
+
+          <!-- EFECTO DE LUZ VERDE -->
+
+          <div
+            class="pointer-events-none absolute -bottom-24 -right-20 h-56 w-56 rounded-full bg-emerald-300/50 blur-[60px]"
+            aria-hidden="true"
+          ></div>
+
+          <!-- INTERIOR DE LA RESEÑA -->
+
+          <div class="relative z-10 rounded-[14px] bg-white p-6">
+
+            <div class="flex flex-wrap items-start justify-between gap-4">
+
+              <!-- DATOS DEL ALOJAMIENTO -->
+
+              <div class="min-w-0">
+
+                <h2 class="font-display text-lg font-bold text-slate-900">
+                  {{ r.tituloAlojamiento || 'Alojamiento #' + r.idAlojamiento }}
+                </h2>
+
+                <p class="mt-1 text-sm text-slate-500">
+                  Huésped: {{ r.nombreUsuario || 'Huésped' }}
+                  · {{ fechaFormateada(r.fecha) }}
+                </p>
+
+              </div>
+
+              <!-- ======================================
+                   CALIFICACIÓN CON ESTRELLAS
+                   ====================================== -->
+
+              <div
+                class="flex shrink-0 items-center gap-1"
+                [attr.aria-label]="r.calificacion + ' de 5 estrellas'"
+                role="img"
+              >
+
+                @for (estrella of starList; track estrella) {
+
+                  <span
+                    [class]="estrella <= r.calificacion ? 'text-amber-500' : 'text-slate-200'"
+                  >
+
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+
+                      <path
+                        d="m12 2 3 6 7 .9-5 4.8 1.4 6.8L12 17.3l-6.4 3.2L7 13.7 2 8.9 9 8Z"
+                      />
+
+                    </svg>
+
+                  </span>
+
+                }
+
+              </div>
+
+            </div>
+
+            <!-- ======================================
+                 COMENTARIO DEL HUÉSPED
+                 ====================================== -->
+
+            <div class="mt-5 border-t border-slate-100 pt-5">
+
+              @if (r.comentario) {
+
+                <p class="whitespace-pre-wrap break-words leading-7 text-slate-700">
+                  “{{ r.comentario }}”
+                </p>
+
+              } @else {
+
+                <p class="text-sm italic text-slate-400">
+                  El huésped dejó una calificación sin comentario.
+                </p>
+
+              }
+
+            </div>
+
+            <!-- ESTADO DE RESEÑA -->
+
+            <p class="mt-4 flex items-center gap-2 text-xs text-slate-400">
+
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+
+                <path d="M20 6 9 17l-5-5" />
+
+              </svg>
+
+              Reseña publicada · Solo lectura
+
+            </p>
+
+          </div>
+
+        </article>
+
+      } @empty {
+
+        <!-- ======================================
+             SIN RESEÑAS
+             ====================================== -->
+
+        <div
+          class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center sm:p-14"
+        >
+
+          <h2 class="font-display text-xl font-bold text-slate-900">
+            Aún no hay reseñas
+          </h2>
+
+          <p class="mt-2 text-sm text-slate-500">
+
+            @if (filter() === 'Todos') {
+
+              Las opiniones de tus huéspedes aparecerán aquí
+                cuando se publiquen.
+
+            } @else {
+
+              Todavía no hay reseñas publicadas
+                para este alojamiento.
+
+            }
+
+          </p>
+
+        </div>
+
+      }
+
+    }
+
+  </div>
+
+  <!-- ======================================
+       PAGINACIÓN
+       ====================================== -->
+
+  @if (!cargando() && !error() && totalPaginas() > 1) {
+
+    <div
+      class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600"
+    >
+
+      <!-- PÁGINA ACTUAL -->
+
+      <span>
+        Página {{ pagina() + 1 }} de {{ totalPaginas() }}
+      </span>
+
+      <div class="flex items-center gap-2">
+
+        <!-- ANTERIOR -->
+
+        <button
+          type="button"
+          (click)="cambiarPagina(pagina() - 1)"
+          [disabled]="pagina() === 0 || cargando()"
+          class="rounded-xl border border-slate-200 px-4 py-2 font-semibold hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Anterior
+        </button>
+
+        <!-- NÚMERO -->
+
+        <span
+          class="rounded-xl bg-emerald-700 px-4 py-2 font-bold text-white"
+        >
+          {{ pagina() + 1 }}
+        </span>
+
+        <!-- SIGUIENTE -->
+
+        <button
+          type="button"
+          (click)="cambiarPagina(pagina() + 1)"
+          [disabled]="pagina() + 1 >= totalPaginas() || cargando()"
+          class="rounded-xl border border-slate-200 px-4 py-2 font-semibold hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Siguiente
+        </button>
+
+      </div>
+
+    </div>
+
+  }
+
+</section>
