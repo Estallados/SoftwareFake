@@ -1,13 +1,16 @@
 
 import {
+  AfterViewInit,
   ChangeDetectorRef,
   Component,
+  ElementRef,
+  ViewChild,
   inject
 } from '@angular/core';
 
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   finalize,
@@ -15,7 +18,12 @@ import {
   timeout
 } from 'rxjs';
 
-import { Auth, LoginResponse } from '../services/auth';
+import {
+  Auth,
+  LoginResponse,
+  RegistroRol
+} from '../services/auth';
+
 import { SessionService } from '../services/session.service';
 
 // ======================================
@@ -25,92 +33,203 @@ import { SessionService } from '../services/session.service';
 interface ErrorBackend {
   message?: string;
   mensaje?: string;
-  error?: string;
   detalle?: string;
+  error?: string;
   requiereVerificacion?: boolean;
   requiereSegundoFactor?: boolean;
 }
 
+// ======================================
+// GOOGLE IDENTITY SERVICES
+// ======================================
+
+interface CredencialGoogle {
+  credential?: string;
+}
+
+interface GoogleSdk {
+  accounts: {
+    id: {
+      initialize(config: {
+        client_id: string;
+        callback: (
+          response: CredencialGoogle
+        ) => void;
+        auto_select?: boolean;
+      }): void;
+
+      renderButton(
+        element: HTMLElement,
+        config: {
+          type?: 'standard' | 'icon';
+          theme?: 'outline' | 'filled_black';
+          shape?: 'pill' | 'circle';
+          size?: 'large';
+          text?: 'continue_with';
+          logo_alignment?: 'left';
+          width?: number;
+          locale?: string;
+        }
+      ): void;
+    };
+  };
+}
+
+declare global {
+  interface Window {
+    google?: GoogleSdk;
+  }
+}
+
+// ======================================
+// COMPONENTE LOGIN
+// ======================================
+
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    RouterLink,
+    FormsModule
+  ],
   templateUrl: './login.html'
 })
-export class Login {
+export class Login implements AfterViewInit {
+
+  // ======================================
+  // SERVICIOS
+  // ======================================
 
   private readonly auth = inject(Auth);
+
   private readonly router = inject(Router);
+
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly sessionService = inject(SessionService);
+
+  private readonly sesion = inject(SessionService);
 
   // ======================================
-  // VARIABLES DEL FORMULARIO
+  // CONTENEDOR DEL BOTÓN GOOGLE
   // ======================================
+
+  @ViewChild('googleButton')
+  googleButton?: ElementRef<HTMLDivElement>;
+
+  // ======================================
+  // FORMULARIO DE LOGIN
+  // ======================================
+
+  correo = '';
+
+  contrasenia = '';
+
+  codigo = '';
 
   showPassword = false;
 
-  correo = '';
-  contrasenia = '';
-  codigo = '';
+  // ======================================
+  // ESTADOS DEL LOGIN
+  // ======================================
 
   cargando = false;
+
   reenviando = false;
 
   error = '';
+
   mensaje = '';
 
   requiereVerificacion = false;
+
   requiereSegundoFactor = false;
 
   // ======================================
-  // 1. INICIAR SESIÓN
+  // GOOGLE
+  // ======================================
+
+  rolGoogle: RegistroRol = 'HUESPED';
+
+  googleDisponible = false;
+
+  googleCargando = false;
+
+  googleError = '';
+
+  googleSegundoFactor = false;
+
+  codigoGoogle = '';
+
+  private googleIdToken = '';
+
+  // ======================================
+  // 1. INICIAR SESIÓN NORMAL
   // ======================================
 
   iniciarSesion(form: NgForm): void {
 
-    if (this.cargando || this.reenviando) {
+    if (
+      this.cargando ||
+      this.reenviando
+    ) {
       return;
     }
 
     if (form.invalid) {
-      this.error = 'Completa correctamente los campos.';
+
+      this.error =
+        'Completa correctamente los campos.';
+
       this.actualizarVista();
+
       return;
     }
 
     this.error = '';
+
     this.mensaje = '';
 
-    // Verificar correo con código.
+    // Verificar correo pendiente
+
     if (this.requiereVerificacion) {
+
       this.verificarCorreo();
+
       return;
     }
 
-    // Autenticación de dos factores.
+    // Verificar segundo factor
+
     if (this.requiereSegundoFactor) {
 
       if (!this.codigoValido()) {
-        this.error = 'Ingresa un código válido de 6 dígitos.';
+
+        this.error =
+          'Ingresa un código válido de 6 dígitos.';
+
         this.actualizarVista();
+
         return;
       }
 
-      this.ejecutarLogin(this.codigo.trim());
+      this.ejecutarLogin(
+        this.codigo.trim()
+      );
+
       return;
     }
 
-    // Inicio de sesión normal.
+    // Login normal
+
     this.ejecutarLogin();
   }
 
   // ======================================
-  // 2. EJECUTAR LOGIN
+  // 2. ENVIAR LOGIN AL BACKEND
+  // POST /auth/login
   // ======================================
 
   private ejecutarLogin(
-    codigoSegundoFactor?: string
+    codigo?: string
   ): void {
 
     if (this.cargando) {
@@ -118,52 +237,61 @@ export class Login {
     }
 
     this.cargando = true;
+
     this.error = '';
+
     this.mensaje = '';
 
     this.actualizarVista();
 
-    console.log('Iniciando petición de login...');
-
     this.auth.login({
+
       correo: this.correo.trim(),
+
       contrasenia: this.contrasenia,
-      ...(codigoSegundoFactor
-        ? { codigo: codigoSegundoFactor }
+
+      ...(codigo
+        ? { codigo }
         : {})
+
     })
       .pipe(
+
         timeout(15000),
 
         finalize(() => {
+
           this.cargando = false;
+
           this.actualizarVista();
-          console.log('Petición de login finalizada');
+
         })
+
       )
       .subscribe({
 
-        next: (respuesta: LoginResponse) => {
-
-          console.log('Login exitoso');
+        next: respuesta => {
 
           this.guardarSesion(respuesta);
+
         },
 
-        error: (err: unknown) => {
+        error: err => {
 
           this.procesarErrorLogin(err);
+
         }
+
       });
   }
 
   // ======================================
-  // 3. PROCESAR ERROR DE LOGIN
+  // 3. PROCESAR ERRORES DE LOGIN
   // ======================================
 
-  private procesarErrorLogin(err: unknown): void {
-
-    console.error('Error en login:', err);
+  private procesarErrorLogin(
+    err: unknown
+  ): void {
 
     if (this.esTimeout(err)) {
 
@@ -171,109 +299,113 @@ export class Login {
         'El servidor tardó demasiado en responder. Intenta nuevamente.';
 
       this.actualizarVista();
+
       return;
     }
 
-    if (!(err instanceof HttpErrorResponse)) {
+    if (
+      !(err instanceof HttpErrorResponse)
+    ) {
 
       this.error =
         'Ocurrió un error inesperado al iniciar sesión.';
 
       this.actualizarVista();
+
       return;
     }
 
-    const datos = this.obtenerDatosError(err);
+    const datos =
+      this.obtenerDatosError(err);
 
-    const mensajeBackend = this.obtenerMensaje(datos);
+    const mensaje =
+      this.obtenerMensaje(datos);
 
-    const textoNormalizado = mensajeBackend
+    const texto = mensaje
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
     // ======================================
-    // CORREO SIN VERIFICAR
+    // CORREO NO VERIFICADO
     // ======================================
 
     const correoSinVerificar =
+
       datos.requiereVerificacion === true ||
+
       (
         err.status === 403 &&
+
         (
-          textoNormalizado.includes('correo sin verificar') ||
-          textoNormalizado.includes('correo no verificado') ||
-          textoNormalizado.includes('correo no esta verificado') ||
-          textoNormalizado.includes('verificar tu correo') ||
-          textoNormalizado.includes('verificar el correo') ||
-          textoNormalizado.includes('verifica tu correo') ||
-          textoNormalizado.includes('correo aun no esta verificado') ||
-          textoNormalizado.includes('email not verified')
+          texto.includes('correo sin verificar') ||
+
+          texto.includes('correo no verificado') ||
+
+          texto.includes('correo no esta verificado') ||
+
+          texto.includes('verificar tu correo') ||
+
+          texto.includes('verificar el correo') ||
+
+          texto.includes('verifica tu correo') ||
+
+          texto.includes('email not verified')
         )
       );
 
     if (correoSinVerificar) {
 
       this.requiereVerificacion = true;
+
       this.requiereSegundoFactor = false;
+
       this.codigo = '';
 
       this.mensaje =
-        'Tu correo todavía no está verificado. ' +
-        'Ingresa el código recibido o solicita uno nuevo.';
+        'Tu correo no está verificado. ' +
+        'Introduce el código recibido o solicita otro.';
 
-      this.actualizarVista();
-      return;
-    }
+    } else if (
+      datos.requiereSegundoFactor === true
+    ) {
 
-    // ======================================
-    // SEGUNDO FACTOR
-    // ======================================
-
-    if (datos.requiereSegundoFactor === true) {
+      // ======================================
+      // SEGUNDO FACTOR REQUERIDO
+      // ======================================
 
       this.requiereSegundoFactor = true;
+
       this.requiereVerificacion = false;
+
       this.codigo = '';
 
       this.mensaje =
         'Ingresa el código de tu aplicación autenticadora.';
 
-      this.actualizarVista();
-      return;
-    }
+    } else if (err.status === 0) {
 
-    // ======================================
-    // ERROR DE CONEXIÓN
-    // ======================================
-
-    if (err.status === 0) {
+      // ======================================
+      // BACKEND NO DISPONIBLE
+      // ======================================
 
       this.error =
-        'No se pudo conectar con Spring Boot. ' +
-        'Verifica que esté ejecutándose en el puerto 8081.';
+        'No fue posible conectar con Spring Boot en el puerto 8081.';
 
-      this.actualizarVista();
-      return;
+    } else {
+
+      this.error =
+        mensaje ||
+        'No se pudo iniciar sesión. Comprueba tus credenciales.';
+
     }
-
-    // ======================================
-    // OTROS ERRORES
-    // ======================================
-
-    this.error =
-      mensajeBackend ||
-      (
-        err.status === 403
-          ? 'El servidor rechazó el acceso. Revisa la respuesta de /auth/login.'
-          : 'No se pudo iniciar sesión. Verifica tus credenciales.'
-      );
 
     this.actualizarVista();
   }
 
   // ======================================
-  // 4. VERIFICAR CORREO
+  // 4. VERIFICAR CORREO ELECTRÓNICO
+  // POST /auth/verificar
   // ======================================
 
   verificarCorreo(): void {
@@ -285,134 +417,115 @@ export class Login {
     if (!this.codigoValido()) {
 
       this.error =
-        'Ingresa el código de verificación de 6 dígitos.';
+        'Ingresa un código de verificación de 6 dígitos.';
 
       this.actualizarVista();
+
       return;
     }
 
+    const correo =
+      this.correo.trim();
+
+    const contrasenia =
+      this.contrasenia;
+
+    const codigo =
+      this.codigo.trim();
+
     this.cargando = true;
+
     this.error = '';
+
     this.mensaje = '';
 
     this.actualizarVista();
 
-    const correoActual = this.correo.trim();
-    const contraseniaActual = this.contrasenia;
-    const codigoActual = this.codigo.trim();
-
-    console.log('Verificando correo electrónico...');
-
-    // Primero verifica el código y luego
-    // ejecuta el login automáticamente.
     this.auth.verificarCorreo(
-      correoActual,
-      codigoActual
+      correo,
+      codigo
     )
       .pipe(
+
         timeout(15000),
 
         switchMap(() => {
 
           this.requiereVerificacion = false;
+
           this.requiereSegundoFactor = false;
+
           this.codigo = '';
 
           this.mensaje =
-            'Correo verificado correctamente. Iniciando sesión...';
+            'Correo verificado. Iniciando sesión...';
 
           this.actualizarVista();
 
           return this.auth.login({
-            correo: correoActual,
-            contrasenia: contraseniaActual
-          })
-            .pipe(
-              timeout(15000)
-            );
+
+            correo,
+
+            contrasenia
+
+          }).pipe(
+            timeout(15000)
+          );
+
         }),
 
         finalize(() => {
 
           this.cargando = false;
+
           this.actualizarVista();
+
         })
+
       )
       .subscribe({
 
-        next: (respuesta: LoginResponse) => {
-
-          console.log('Correo verificado e inicio de sesión exitoso');
+        next: respuesta => {
 
           this.guardarSesion(respuesta);
+
         },
 
-        error: (err: unknown) => {
-
-          console.error(
-            'Error durante la verificación o el inicio de sesión:',
-            err
-          );
+        error: err => {
 
           if (this.requiereVerificacion) {
 
-            this.procesarErrorVerificacion(err);
+            this.error = this.mensajeError(
+              err,
+              'El código es incorrecto o ha vencido.'
+            );
+
+            this.actualizarVista();
 
           } else {
 
             this.procesarErrorLogin(err);
+
           }
+
         }
+
       });
   }
 
   // ======================================
-  // 5. PROCESAR ERROR DE VERIFICACIÓN
-  // ======================================
-
-  private procesarErrorVerificacion(err: unknown): void {
-
-    if (this.esTimeout(err)) {
-
-      this.error =
-        'La verificación tardó demasiado. Intenta nuevamente.';
-
-      this.actualizarVista();
-      return;
-    }
-
-    if (err instanceof HttpErrorResponse) {
-
-      if (err.status === 0) {
-
-        this.error =
-          'No se pudo conectar con el servidor para verificar el código.';
-
-        this.actualizarVista();
-        return;
-      }
-
-      const datos = this.obtenerDatosError(err);
-
-      this.error =
-        this.obtenerMensaje(datos) ||
-        'El código es incorrecto o ha vencido. Solicita uno nuevo.';
-
-      this.actualizarVista();
-      return;
-    }
-
-    this.error =
-      'Ocurrió un error inesperado al verificar el correo.';
-
-    this.actualizarVista();
-  }
-
-  // ======================================
-  // 6. REENVIAR CÓDIGO
+  // 5. REENVIAR CÓDIGO
+  // POST /auth/reenviarcodigo
   // ======================================
 
   reenviarCodigo(): void {
+
+    if (
+      this.cargando ||
+      this.reenviando
+    ) {
+      return;
+    }
 
     if (!this.correo.trim()) {
 
@@ -420,42 +533,42 @@ export class Login {
         'Ingresa primero tu correo electrónico.';
 
       this.actualizarVista();
-      return;
-    }
 
-    if (this.reenviando || this.cargando) {
       return;
     }
 
     this.reenviando = true;
+
     this.error = '';
+
     this.mensaje = '';
 
     this.actualizarVista();
-
-    console.log('Solicitando nuevo código de verificación...');
 
     this.auth.reenviarCodigo(
       this.correo.trim()
     )
       .pipe(
+
         timeout(15000),
 
         finalize(() => {
 
           this.reenviando = false;
+
           this.actualizarVista();
+
         })
+
       )
       .subscribe({
 
-        next: (respuesta) => {
+        next: respuesta => {
 
           this.codigo = '';
 
-          // Mostrar el campo para ingresar
-          // el código nuevo.
           this.requiereVerificacion = true;
+
           this.requiereSegundoFactor = false;
 
           this.mensaje =
@@ -464,146 +577,65 @@ export class Login {
 
           this.actualizarVista();
 
-          console.log('Reenvío procesado correctamente');
         },
 
-        error: (err: unknown) => {
+        error: err => {
 
-          console.error('Error reenviando código:', err);
-
-          if (this.esTimeout(err)) {
-
-            this.error =
-              'El servidor tardó demasiado en responder.';
-
-            this.actualizarVista();
-            return;
-          }
-
-          if (err instanceof HttpErrorResponse) {
-
-            if (err.status === 0) {
-
-              this.error =
-                'No se pudo conectar con el servidor.';
-
-              this.actualizarVista();
-              return;
-            }
-
-            const datos = this.obtenerDatosError(err);
-
-            this.error =
-              this.obtenerMensaje(datos) ||
-              'No se pudo reenviar el código de verificación.';
-
-            this.actualizarVista();
-            return;
-          }
-
-          this.error =
-            'Ocurrió un error inesperado al reenviar el código.';
+          this.error = this.mensajeError(
+            err,
+            'No se pudo reenviar el código.'
+          );
 
           this.actualizarVista();
+
         }
+
       });
   }
 
   // ======================================
-  // 7. GUARDAR SESIÓN
-  // ======================================
-
-
-  private guardarSesion(respuesta: LoginResponse): void {
-
-    if (!respuesta.token || !respuesta.rol || !respuesta.correo) {
-      this.error =
-        'El servidor no devolvió los datos necesarios para iniciar sesión.';
-      this.actualizarVista();
-      return;
-    }
-
-    try {
-
-      // Guardar el JWT y actualizar la sesión de Angular.
-      this.sessionService.iniciarSesion({
-        token: respuesta.token,
-        rol: respuesta.rol,
-        correo: respuesta.correo
-      });
-
-      console.log('JWT guardado correctamente');
-      console.log('Rol autenticado:', this.sessionService.rol());
-
-      // Redirigir según el rol autorizado.
-      switch (this.sessionService.rol()) {
-
-        case 'Huésped':
-          this.router.navigateByUrl('/home');
-          break;
-
-        case 'Anfitrión':
-          this.router.navigateByUrl('/host/dashboard');
-          break;
-
-        case 'Administrador':
-          this.router.navigateByUrl('/admin/dashboard');
-          break;
-
-        default:
-          this.sessionService.cerrarSesion();
-          this.error = 'El rol recibido no es válido.';
-          this.actualizarVista();
-      }
-
-    } catch (err) {
-
-      console.error('Error guardando sesión:', err);
-
-      this.error =
-        'No se pudo establecer la sesión con el JWT recibido.';
-
-      this.actualizarVista();
-    }
-  }
-
-
-  // ======================================
-  // 8. CAMBIAR CORREO
+  // 6. CAMBIAR CORREO
   // ======================================
 
   cambiarCorreo(valor: string): void {
 
     this.correo = valor;
+
     this.reiniciarVerificacion();
   }
 
   // ======================================
-  // 9. CAMBIAR CONTRASEÑA
+  // 7. CAMBIAR CONTRASEÑA
   // ======================================
 
-  cambiarContrasenia(valor: string): void {
+  cambiarContrasenia(
+    valor: string
+  ): void {
 
     this.contrasenia = valor;
+
     this.reiniciarVerificacion();
   }
 
   // ======================================
-  // 10. REINICIAR VERIFICACIÓN
+  // 8. REINICIAR VERIFICACIÓN
   // ======================================
 
   private reiniciarVerificacion(): void {
 
     this.requiereVerificacion = false;
+
     this.requiereSegundoFactor = false;
 
     this.codigo = '';
+
     this.error = '';
+
     this.mensaje = '';
   }
 
   // ======================================
-  // 11. VALIDAR CÓDIGO
+  // 9. VALIDAR CÓDIGO
   // ======================================
 
   private codigoValido(): boolean {
@@ -614,20 +646,468 @@ export class Login {
   }
 
   // ======================================
-  // 12. DETECTAR TIMEOUT
+  // 10. GUARDAR SESIÓN JWT
   // ======================================
 
-  private esTimeout(err: unknown): boolean {
+  private guardarSesion(
+    respuesta: LoginResponse
+  ): void {
 
-    return (
-      err instanceof Error &&
-      err.name === 'TimeoutError'
+    if (
+      !respuesta.token ||
+      !respuesta.rol ||
+      !respuesta.correo
+    ) {
+
+      this.error =
+        'El servidor no devolvió los datos necesarios de la sesión.';
+
+      this.actualizarVista();
+
+      return;
+    }
+
+    try {
+
+      this.sesion.iniciarSesion({
+
+        token: respuesta.token,
+
+        rol: respuesta.rol,
+
+        correo: respuesta.correo
+
+      });
+
+      // ======================================
+      // REDIRECCIÓN SEGÚN ROL
+      // ======================================
+
+      switch (this.sesion.rol()) {
+
+        case 'Huésped':
+
+          void this.router.navigateByUrl(
+            '/home'
+          );
+
+          break;
+
+        case 'Anfitrión':
+
+          void this.router.navigateByUrl(
+            '/host/dashboard'
+          );
+
+          break;
+
+        case 'Administrador':
+
+          void this.router.navigateByUrl(
+            '/admin/dashboard'
+          );
+
+          break;
+
+        default:
+
+          this.sesion.cerrarSesion();
+
+          this.error =
+            'El rol recibido no es válido.';
+
+          this.actualizarVista();
+
+      }
+
+    } catch {
+
+      this.error =
+        'No se pudo establecer la sesión con el JWT recibido.';
+
+      this.actualizarVista();
+
+    }
+  }
+
+  // ======================================
+  // 11. INICIALIZAR GOOGLE
+  // ======================================
+
+  ngAfterViewInit(): void {
+
+    this.auth.configuracionGoogle()
+      .pipe(
+        timeout(15000)
+      )
+      .subscribe({
+
+        next: config => {
+
+          if (
+            !config.habilitado ||
+            !config.clientId
+          ) {
+
+            this.googleError =
+              'Google no está configurado en el servidor.';
+
+            this.actualizarVista();
+
+            return;
+          }
+
+          void this.inicializarGoogle(
+            config.clientId
+          );
+
+        },
+
+        error: () => {
+
+          this.googleError =
+            'No se pudo consultar la configuración de Google.';
+
+          this.actualizarVista();
+
+        }
+
+      });
+  }
+
+  // ======================================
+  // 12. SELECCIONAR ROL GOOGLE
+  // ======================================
+
+  cambiarRolGoogle(
+    valor: string
+  ): void {
+
+    if (
+      valor === 'HUESPED' ||
+      valor === 'ANFITRION'
+    ) {
+
+      this.rolGoogle = valor;
+
+    }
+  }
+
+  // ======================================
+  // 13. CARGAR LIBRERÍA DE GOOGLE
+  // ======================================
+
+  private cargarLibreriaGoogle():
+    Promise<void> {
+
+    if (
+      window.google?.accounts?.id
+    ) {
+
+      return Promise.resolve();
+
+    }
+
+    return new Promise(
+      (resolve, reject) => {
+
+        const script =
+          document.createElement('script');
+
+        script.src =
+          'https://accounts.google.com/gsi/client';
+
+        script.async = true;
+
+        script.defer = true;
+
+        script.onload = () => {
+
+          if (
+            window.google?.accounts?.id
+          ) {
+
+            resolve();
+
+          } else {
+
+            reject(
+              new Error(
+                'No se cargó Google Identity Services.'
+              )
+            );
+
+          }
+
+        };
+
+        script.onerror = () => {
+
+          reject(
+            new Error(
+              'No se pudo descargar Google Identity Services.'
+            )
+          );
+
+        };
+
+        document.head.appendChild(script);
+
+      }
     );
   }
 
   // ======================================
-  // 13. INTERPRETAR ERRORES DEL BACKEND
-  // CORRECCIÓN DEL ERROR TS2322
+  // 14. DIBUJAR BOTÓN GOOGLE
+  // DISEÑO BLANCO TIPO CÁPSULA
+  // ======================================
+
+  private async inicializarGoogle(
+    clientId: string
+  ): Promise<void> {
+
+    try {
+
+      await this.cargarLibreriaGoogle();
+
+      const sdk =
+        window.google?.accounts?.id;
+
+      const destino =
+        this.googleButton?.nativeElement;
+
+      if (
+        !sdk ||
+        !destino
+      ) {
+
+        throw new Error(
+          'No se encontró el contenedor de Google.'
+        );
+
+      }
+
+      // ======================================
+      // CONFIGURAR AUTENTICACIÓN GOOGLE
+      // ======================================
+
+      sdk.initialize({
+
+        client_id: clientId,
+
+        auto_select: false,
+
+        callback: respuesta => {
+
+          if (!respuesta.credential) {
+
+            this.googleError =
+              'Google no devolvió credenciales.';
+
+            this.actualizarVista();
+
+            return;
+          }
+
+          this.googleIdToken =
+            respuesta.credential;
+
+          this.ejecutarLoginGoogle();
+
+        }
+
+      });
+
+      // Limpiar botón anterior
+
+      destino.replaceChildren();
+
+      // ======================================
+      // NUEVO DISEÑO GOOGLE
+      // ======================================
+
+      sdk.renderButton(destino, {
+
+        // Botón con icono y texto
+        type: 'standard',
+
+        // Fondo blanco
+        theme: 'outline',
+
+        // Forma de cápsula
+        shape: 'pill',
+
+        // Tamaño del botón
+        size: 'large',
+
+        // Texto de Google
+        text: 'continue_with',
+
+        // Logotipo a la izquierda
+        logo_alignment: 'left',
+
+        // Ancho del botón
+        width: 230,
+
+        // Idioma español
+        locale: 'es'
+
+      });
+
+      this.googleDisponible = true;
+
+      this.googleError = '';
+
+      this.actualizarVista();
+
+    } catch {
+
+      this.googleError =
+        'No se pudo cargar Google. Comprueba la conexión y el Client ID.';
+
+      this.actualizarVista();
+
+    }
+  }
+
+  // ======================================
+  // 15. SEGUNDO FACTOR DE GOOGLE
+  // ======================================
+
+  verificarSegundoFactorGoogle(): void {
+
+    if (
+      !/^\d{6}$/.test(
+        this.codigoGoogle.trim()
+      )
+    ) {
+
+      this.googleError =
+        'Ingresa los 6 dígitos de tu autenticador.';
+
+      this.actualizarVista();
+
+      return;
+    }
+
+    this.ejecutarLoginGoogle(
+      this.codigoGoogle.trim()
+    );
+  }
+
+  // ======================================
+  // 16. INICIAR SESIÓN CON GOOGLE
+  // POST /auth/google
+  // ======================================
+
+  private ejecutarLoginGoogle(
+    codigo?: string
+  ): void {
+
+    if (
+      this.googleCargando ||
+      !this.googleIdToken
+    ) {
+      return;
+    }
+
+    this.googleCargando = true;
+
+    this.googleError = '';
+
+    this.actualizarVista();
+
+    this.auth.iniciarConGoogle(
+
+      this.googleIdToken,
+
+      this.rolGoogle,
+
+      codigo
+
+    )
+      .pipe(
+
+        timeout(15000),
+
+        finalize(() => {
+
+          this.googleCargando = false;
+
+          this.actualizarVista();
+
+        })
+
+      )
+      .subscribe({
+
+        next: respuesta => {
+
+          this.googleIdToken = '';
+
+          this.googleSegundoFactor = false;
+
+          this.codigoGoogle = '';
+
+          // Guardar JWT como login normal
+
+          this.guardarSesion(respuesta);
+
+        },
+
+        error: (err: unknown) => {
+
+          if (
+            err instanceof HttpErrorResponse
+          ) {
+
+            const datos =
+              this.obtenerDatosError(err);
+
+            // Google requiere segundo factor
+
+            if (
+              datos.requiereSegundoFactor === true
+            ) {
+
+              this.googleSegundoFactor = true;
+
+              this.googleError =
+                'Confirma el acceso con tu código de seguridad.';
+
+            } else if (
+              err.status === 503
+            ) {
+
+              this.googleError =
+                'Google no está habilitado en el backend.';
+
+            } else {
+
+              this.googleError =
+                this.obtenerMensaje(datos) ||
+                'No fue posible iniciar sesión con Google.';
+
+            }
+
+          } else {
+
+            this.googleError =
+              this.esTimeout(err)
+                ? 'Google tardó demasiado en responder.'
+                : 'No fue posible iniciar sesión con Google.';
+
+          }
+
+          this.actualizarVista();
+
+        }
+
+      });
+  }
+
+  // ======================================
+  // 17. INTERPRETAR ERRORES DEL BACKEND
   // ======================================
 
   private obtenerDatosError(
@@ -636,7 +1116,9 @@ export class Login {
 
     let datos: unknown = err.error;
 
-    if (typeof datos === 'string') {
+    if (
+      typeof datos === 'string'
+    ) {
 
       try {
 
@@ -644,11 +1126,10 @@ export class Login {
 
       } catch {
 
-        // CORREGIDO:
-        // Convertimos el valor a string.
         return {
           message: String(datos)
         };
+
       }
     }
 
@@ -659,16 +1140,19 @@ export class Login {
     ) {
 
       return datos as ErrorBackend;
+
     }
 
     return {};
   }
 
   // ======================================
-  // 14. OBTENER MENSAJE DEL BACKEND
+  // 18. OBTENER MENSAJE DEL BACKEND
   // ======================================
 
-  private obtenerMensaje(datos: ErrorBackend): string {
+  private obtenerMensaje(
+    datos: ErrorBackend
+  ): string {
 
     return (
       datos.message ||
@@ -680,7 +1164,62 @@ export class Login {
   }
 
   // ======================================
-  // 15. ACTUALIZAR VISTA
+  // 19. MENSAJE DE ERROR GENERAL
+  // ======================================
+
+  private mensajeError(
+    err: unknown,
+    mensajePorDefecto: string
+  ): string {
+
+    if (this.esTimeout(err)) {
+
+      return (
+        'El servidor tardó demasiado en responder.'
+      );
+
+    }
+
+    if (
+      !(err instanceof HttpErrorResponse)
+    ) {
+
+      return mensajePorDefecto;
+
+    }
+
+    if (err.status === 0) {
+
+      return (
+        'No se pudo conectar con Spring Boot.'
+      );
+
+    }
+
+    return (
+      this.obtenerMensaje(
+        this.obtenerDatosError(err)
+      ) ||
+      mensajePorDefecto
+    );
+  }
+
+  // ======================================
+  // 20. DETECTAR TIMEOUT
+  // ======================================
+
+  private esTimeout(
+    err: unknown
+  ): boolean {
+
+    return (
+      err instanceof Error &&
+      err.name === 'TimeoutError'
+    );
+  }
+
+  // ======================================
+  // 21. ACTUALIZAR VISTA
   // ======================================
 
   private actualizarVista(): void {
