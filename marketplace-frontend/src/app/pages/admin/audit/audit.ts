@@ -22,7 +22,11 @@ export class Audit implements OnInit {
   desde = signal('');
   hasta = signal('');
   /** Acciones distintas de la página actual, para sugerirlas en el filtro. */
-  accionesVistas = computed(() => [...new Set(this.auditEvents().map((e) => this.accionDe(e)).filter(Boolean))].sort());
+  accionesVistas = computed(() =>
+    [...new Set(this.auditEvents().map((e) => this.accionDe(e)).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b),
+    ),
+  );
   // ---- Detalle de un evento ----
   eventoDetalle = signal<EventoAuditoria | null>(null);
   cargandoDetalle = signal(false);
