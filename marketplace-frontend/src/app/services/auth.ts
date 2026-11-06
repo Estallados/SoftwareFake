@@ -2,6 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API_URL } from './api-url';
+import { Observable } from 'rxjs';
 
 // ======================================
 // ROLES PERMITIDOS EN REGISTRO
@@ -11,7 +12,7 @@ import { API_URL } from './api-url';
 export type RegistroRol = 'HUESPED' | 'ANFITRION';
 
 // ======================================
-// DATOS PARA CREAR USUARIO
+// 1. REGISTRO DE USUARIOS
 // ======================================
 
 /** Datos del registro (POST /auth/register). */
@@ -43,7 +44,7 @@ export interface RegistroResponse {
 }
 
 // ======================================
-// RESPUESTA DE VERIFICACIÓN
+// 2. VERIFICACIÓN DE CORREO
 // ======================================
 
 /** Respuesta de la verificación del correo, con la sesión iniciada. */
@@ -59,7 +60,7 @@ export interface VerificacionResponse {
 }
 
 // ======================================
-// RESPUESTA DE REENVÍO DE CÓDIGO
+// 3. REENVÍO DE CÓDIGO
 // ======================================
 
 /** Respuesta del reenvío del código de verificación. */
@@ -69,7 +70,7 @@ export interface ReenvioCodigoResponse {
 }
 
 // ======================================
-// DATOS PARA INICIAR SESIÓN
+// 4. INICIO DE SESIÓN
 // ======================================
 
 /** Datos del inicio de sesión. */
@@ -101,7 +102,7 @@ export interface LoginResponse {
 }
 
 // ======================================
-// RECUPERAR CONTRASEÑA
+// 5. RECUPERACIÓN DE CONTRASEÑA
 // ======================================
 
 /** Datos para pedir la recuperación de la contraseña. */
@@ -117,7 +118,7 @@ export interface RecuperarContrasenaResponse {
 }
 
 // ======================================
-// RESTABLECER CONTRASEÑA
+// 6. RESTABLECER CONTRASEÑA
 // ======================================
 
 /** Datos para cambiar la contraseña con el token de recuperación. */
@@ -135,7 +136,7 @@ export interface RestablecerContrasenaResponse {
 }
 
 // ======================================
-// CONFIGURACIÓN DE GOOGLE
+// 7. CONFIGURACIÓN DE GOOGLE
 // ======================================
 
 /** Configuración del botón de Google. */
@@ -147,7 +148,7 @@ export interface GoogleConfiguracionResponse {
 }
 
 // ======================================
-// SOLICITUD DE LOGIN CON GOOGLE
+// 8. LOGIN CON GOOGLE
 // ======================================
 
 /** Datos del inicio de sesión con Google. */
@@ -190,35 +191,42 @@ export class Auth {
   /** Cliente HTTP. */
   private readonly http = inject(HttpClient);
 
-  // URL BASE DEL BACKEND
-  // Por defecto: http://localhost:8081
+  private readonly baseUrl = inject(API_URL);
+
+  // URL BASE:
+  // http://localhost:8081/auth
 
   /** Ruta base de la autenticación. */
   private readonly apiUrl =
-    `${inject(API_URL)}/auth`;
+    `${this.baseUrl.replace(/\/+$/, '')}/auth`;
 
   // ======================================
   // 1. REGISTRAR USUARIO
   // POST /auth/register
   // ======================================
-
-  /**
-   * POST /auth/register. Crea la cuenta y el backend envía el código de verificación al correo.
-   *
-   * @param datos datos del registro
-   * @returns la respuesta del registro
-   */
-  registrar(datos: RegistroRequest) {
-
-    return this.http.post<RegistroResponse>(
-      `${this.apiUrl}/register`,
-      datos
-    );
-
-  }
+/**
+ * POST /auth/register. Crea la cuenta y el backend envía el código de verificación al correo.
+ *
+ * @param datos datos del registro
+ * @returns la respuesta del registro
+ */
+registrar(
+  datos: RegistroRequest
+): Observable<RegistroResponse> {
+  return this.http.post<RegistroResponse>(
+    `${this.apiUrl}/register`,
+    {
+      nombre: datos.nombre.trim(),
+      correo: datos.correo.trim().toLowerCase(),
+      telefono: datos.telefono?.trim() ?? '',
+      rol: datos.rol,
+      contrasenia: datos.contrasenia
+    }
+  );
+}
 
   // ======================================
-  // 2. VERIFICAR CORREO ELECTRÓNICO
+  // 2. VERIFICAR CORREO
   // POST /auth/verificar
   // ======================================
 
@@ -232,12 +240,12 @@ export class Auth {
   verificarCorreo(
     correo: string,
     codigo: string
-  ) {
+  ): Observable<VerificacionResponse> {
 
     return this.http.post<VerificacionResponse>(
       `${this.apiUrl}/verificar`,
       {
-        correo: correo.trim(),
+        correo: correo.trim().toLowerCase(),
         codigo: codigo.trim()
       }
     );
@@ -249,18 +257,24 @@ export class Auth {
   // POST /auth/reenviarcodigo
   // ======================================
 
+
   /**
    * POST /auth/reenviarcodigo. Pide un código de verificación nuevo.
    *
    * @param correo correo de la cuenta
    * @returns la respuesta con el mensaje
    */
-  reenviarCodigo(correo: string) {
+ 
+
+  reenviarCodigo(
+    correo: string
+  ): Observable<ReenvioCodigoResponse> {
+
 
     return this.http.post<ReenvioCodigoResponse>(
       `${this.apiUrl}/reenviarcodigo`,
       {
-        correo: correo.trim()
+        correo: correo.trim().toLowerCase()
       }
     );
 
@@ -271,6 +285,7 @@ export class Auth {
   // POST /auth/login
   // ======================================
 
+
   /**
    * POST /auth/login. Inicia sesión con correo y contraseña (y el código del segundo factor, si
    * aplica).
@@ -278,26 +293,37 @@ export class Auth {
    * @param datos credenciales
    * @returns la sesión iniciada
    */
-  login(datos: LoginRequest) {
 
+
+  login(
+    datos: LoginRequest
+  ): Observable<LoginResponse> {
+
+    const solicitud: LoginRequest = {
+
+      correo: datos.correo.trim().toLowerCase(),
+
+      contrasenia: datos.contrasenia,
+
+      ...(datos.codigo?.trim()
+        ? {
+          codigo: datos.codigo.trim()
+        }
+        : {})
+
+    };
     return this.http.post<LoginResponse>(
       `${this.apiUrl}/login`,
-      {
-        correo: datos.correo.trim(),
-        contrasenia: datos.contrasenia,
-
-        ...(datos.codigo
-          ? { codigo: datos.codigo.trim() }
-          : {})
-      }
+      solicitud
     );
 
   }
 
   // ======================================
-  // 5. RECUPERAR CONTRASEÑA
+  // 5. SOLICITAR RECUPERACIÓN
   // POST /auth/recuperar
   // ======================================
+
 
   /**
    * POST /auth/recuperar. Pide el correo con el código para recuperar la contraseña.
@@ -305,10 +331,14 @@ export class Auth {
    * @param correo correo de la cuenta
    * @returns la respuesta con el mensaje
    */
-  recuperarContrasena(correo: string) {
+  recuperarContrasena(
+    correo: string
+  ): Observable<RecuperarContrasenaResponse> {
 
     const datos: RecuperarContrasenaRequest = {
+
       correo: correo.trim().toLowerCase()
+
     };
 
     return this.http.post<RecuperarContrasenaResponse>(
@@ -333,11 +363,14 @@ export class Auth {
   restablecerContrasena(
     token: string,
     contrasenia: string
-  ) {
+  ): Observable<RestablecerContrasenaResponse> {
 
     const datos: RestablecerContrasenaRequest = {
+
       token: token.trim(),
-      contrasenia
+
+      contrasenia: contrasenia
+
     };
 
     return this.http.post<RestablecerContrasenaResponse>(
@@ -348,7 +381,7 @@ export class Auth {
   }
 
   // ======================================
-  // 7. OBTENER CONFIGURACIÓN DE GOOGLE
+  // 7. CONSULTAR CONFIGURACIÓN GOOGLE
   // GET /auth/google/configuracion
   // ======================================
 
@@ -357,7 +390,10 @@ export class Auth {
    *
    * @returns la configuración del botón
    */
-  configuracionGoogle() {
+
+  configuracionGoogle():
+    Observable<GoogleConfiguracionResponse> {
+
 
     return this.http.get<GoogleConfiguracionResponse>(
       `${this.apiUrl}/google/configuracion`
@@ -382,16 +418,18 @@ export class Auth {
     idToken: string,
     rol: RegistroRol = 'HUESPED',
     codigo?: string
-  ) {
+  ): Observable<GoogleLoginResponse> {
 
     const datos: GoogleLoginRequest = {
 
-      idToken,
+      idToken: idToken,
 
-      rol,
+      rol: rol,
 
-      ...(codigo
-        ? { codigo: codigo.trim() }
+      ...(codigo?.trim()
+        ? {
+          codigo: codigo.trim()
+        }
         : {})
 
     };

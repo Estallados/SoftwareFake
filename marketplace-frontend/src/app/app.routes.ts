@@ -14,10 +14,13 @@ import { roleGuard } from './guards/role.guard';
 import { Register } from './register/register';
 import { Login } from './login/login';
 
+// RECUPERAR Y RESTABLECER CONTRASEÑA
+import { Recover } from './login/recover/recover';
+
 // ======================================
 // HUÉSPED
 // ======================================
-import { Chat } from './pages/host/chat/chat';
+
 import { Home } from './pages/guest/home/home';
 import { Explore } from './pages/guest/explore/explore';
 import { MapView } from './pages/guest/map-view/map-view';
@@ -45,6 +48,11 @@ import {
 // ======================================
 // ANFITRIÓN
 // ======================================
+
+// CHAT DEL ANFITRIÓN
+import {
+  Chat
+} from './pages/host/chat/chat';
 
 // CREAR ALOJAMIENTO
 import {
@@ -81,6 +89,7 @@ import {
   Reservations as HostReservations
 } from './pages/host/reservations/reservations';
 
+// DETALLE DE RESERVA
 import {
   ReservationDetail as HostReservationDetail
 } from './pages/host/reservation-detail/reservation-detail';
@@ -89,8 +98,6 @@ import {
 import {
   Reviews as HostReviews
 } from './pages/host/reviews/reviews';
-
-
 
 // ======================================
 // ADMINISTRADOR
@@ -191,6 +198,26 @@ export const routes: Routes = [
   },
 
   // ====================================
+  // RECUPERACIÓN DE CONTRASEÑA
+  // PÚBLICA - SIN INICIAR SESIÓN
+  // ====================================
+
+  {
+    path: 'recuperar-contrasena',
+    component: Recover
+  },
+
+  // ====================================
+  // RESTABLECER CONTRASEÑA
+  // PÚBLICA - SIN INICIAR SESIÓN
+  // ====================================
+
+  {
+    path: 'restablecer-contrasena',
+    component: Recover
+  },
+
+  // ====================================
   // PERFIL DE USUARIO
   // ====================================
 
@@ -214,6 +241,7 @@ export const routes: Routes = [
   // RUTAS EXCLUSIVAS DE HUÉSPED
   // ====================================
 
+  // FAVORITOS
   {
     path: 'favoritos',
     component: Favorites,
@@ -223,6 +251,7 @@ export const routes: Routes = [
     }
   },
 
+  // MENSAJES
   {
     path: 'mensajes',
     component: Messages,
@@ -232,6 +261,7 @@ export const routes: Routes = [
     }
   },
 
+  // RESERVAS DEL HUÉSPED
   {
     path: 'reservas',
     component: GuestReservations,
@@ -241,6 +271,7 @@ export const routes: Routes = [
     }
   },
 
+  // DETALLE DE RESERVA DEL HUÉSPED
   {
     path: 'reservas/:id',
     component: GuestReservationDetail,
@@ -250,6 +281,7 @@ export const routes: Routes = [
     }
   },
 
+  // RESEÑAS DEL HUÉSPED
   {
     path: 'resenas',
     component: GuestReviews,
@@ -263,7 +295,7 @@ export const routes: Routes = [
   // RUTAS EXCLUSIVAS DE ANFITRIÓN
   // ====================================
 
-  // DASHBOARD
+  // DASHBOARD DEL ANFITRIÓN
   {
     path: 'host/dashboard',
     component: HostDashboard,
@@ -273,6 +305,9 @@ export const routes: Routes = [
     }
   },
 
+  // ====================================
+  // CHAT DEL ANFITRIÓN
+  // ====================================
 
   {
     path: 'host/chat',
@@ -283,7 +318,10 @@ export const routes: Routes = [
     }
   },
 
+  // ====================================
   // LISTADO DE ALOJAMIENTOS
+  // ====================================
+
   {
     path: 'host/alojamientos',
     component: HostListings,
@@ -308,7 +346,6 @@ export const routes: Routes = [
 
   // ====================================
   // EDITAR ALOJAMIENTO
-  // CARPETA: host/update
   // ====================================
 
   {
@@ -322,7 +359,6 @@ export const routes: Routes = [
 
   // ====================================
   // DISPONIBILIDAD DEL ALOJAMIENTO
-  // CARPETA: host/availability
   // ====================================
 
   {
@@ -336,7 +372,6 @@ export const routes: Routes = [
 
   // ====================================
   // VER DETALLES DEL ALOJAMIENTO
-  // CARPETA: host/details
   // ====================================
 
   {
@@ -360,6 +395,10 @@ export const routes: Routes = [
       roles: ['Anfitrión']
     }
   },
+
+  // ====================================
+  // DETALLE DE RESERVA DEL ANFITRIÓN
+  // ====================================
 
   {
     path: 'host/reservas/:id',
@@ -397,7 +436,7 @@ export const routes: Routes = [
     }
   },
 
-  // DASHBOARD ADMINISTRADOR
+  // DASHBOARD DEL ADMINISTRADOR
   {
     path: 'admin/dashboard',
     component: AdminDashboard,
@@ -407,7 +446,7 @@ export const routes: Routes = [
     }
   },
 
-  // USUARIOS
+  // USUARIOS DEL ADMINISTRADOR
   {
     path: 'admin/usuarios',
     component: Users,
@@ -417,6 +456,7 @@ export const routes: Routes = [
     }
   },
 
+  // DETALLE DE USUARIO
   {
     path: 'admin/usuarios/:id',
     component: UserDetail,
@@ -426,7 +466,7 @@ export const routes: Routes = [
     }
   },
 
-  // ALOJAMIENTOS
+  // ALOJAMIENTOS DEL ADMINISTRADOR
   {
     path: 'admin/alojamientos',
     component: AdminListings,
@@ -436,6 +476,7 @@ export const routes: Routes = [
     }
   },
 
+  // DETALLE DE ALOJAMIENTO
   {
     path: 'admin/alojamientos/:id',
     component: ListingDetail,
@@ -445,7 +486,7 @@ export const routes: Routes = [
     }
   },
 
-  // RESERVAS
+  // RESERVAS DEL ADMINISTRADOR
   {
     path: 'admin/reservas',
     component: AdminReservations,
@@ -455,7 +496,7 @@ export const routes: Routes = [
     }
   },
 
-  // RESEÑAS
+  // RESEÑAS DEL ADMINISTRADOR
   {
     path: 'admin/resenas',
     component: AdminReviews,
