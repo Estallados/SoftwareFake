@@ -1,21 +1,19 @@
 package co.edu.unbosque.marketplace.exception;
 
 /**
- * Clase la cual es publica para ser llamada dentro de otras clases la cual es
- * heredada de Exception
- *
- * @see "RNF-008"
+ * Se lanza cuando una contraseña no tiene ninguna letra minúscula.
+ * <p>
+ * La usa {@link ExceptionCheker#checkerSmall(String)} como parte de la
+ * validación de contraseñas.
+ * </p>
  */
 public class SmallException extends Exception {
 
-	/**
-	 *
-	 */
+	/** Versión de serialización. */
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Se crea un constructor el cual no recibe ningun tipo de parametro se llama el
-	 * super como constructor de la clase madre recibiendo un texto.
+	 * Crea la excepción con el mensaje que se le muestra al usuario.
 	 */
 	public SmallException() {
 		super("Debe contener al menos una letra minúscula.");

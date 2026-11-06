@@ -15,37 +15,48 @@ import co.edu.unbosque.marketplace.repository.ConfiguracionTarifaRepository;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Porcentajes de limpieza y servicio que se aplican al cotizar.
+ * Porcentajes de limpieza y de servicio que se aplican al cotizar.
  * <p>
  * Orden de prioridad: el porcentaje propio del alojamiento (lo fija su
- * anfitrión); si no tiene, el global vigente (lo fija un administrador); si no
- * hay configuración guardada, los valores por defecto documentados:
- * {@value #LIMPIEZA_POR_DEFECTO} % de limpieza y {@value #SERVICIO_POR_DEFECTO}
- * % de servicio.
+ * anfitrión); si no tiene, el global vigente (lo fija un administrador); y si
+ * no hay ninguna configuración guardada, los valores por defecto:
+ * {@value #LIMPIEZA_POR_DEFECTO} % de limpieza y
+ * {@value #SERVICIO_POR_DEFECTO} % de servicio.
  * </p>
- *
- * @see "RF-023, CA-084, CA-085, CA-180"
  */
 @Service
 public class TarifaService {
 
-	/** Porcentaje de limpieza por defecto (CA-085). */
+	/** Porcentaje de limpieza por defecto. */
 	public static final int LIMPIEZA_POR_DEFECTO = 5;
-	/** Porcentaje de servicio por defecto (CA-085). */
+	/** Porcentaje de servicio por defecto. */
 	public static final int SERVICIO_POR_DEFECTO = 10;
 
+	/** Cien, para validar y calcular porcentajes. */
 	private static final BigDecimal CIEN = BigDecimal.valueOf(100);
 
+	/** Repositorio de la configuración de tarifas. */
 	private final ConfiguracionTarifaRepository configuracionRepo;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param configuracionRepo repositorio de la configuración de tarifas
+	 * @param auditoriaService servicio de auditoría
+	 */
 	public TarifaService(ConfiguracionTarifaRepository configuracionRepo, AuditoriaService auditoriaService) {
 		this.configuracionRepo = configuracionRepo;
 		this.auditoriaService = auditoriaService;
 	}
 
 	/**
-	 * Configuración global vigente, o la de por defecto si no hay ninguna guardada.
+	 * Configuración global vigente, o la de por defecto si no hay ninguna
+	 * guardada.
+	 *
+	 * @return porcentajes globales vigentes
 	 */
 	public ConfiguracionTarifaDTO vigente() {
 		Optional<ConfiguracionTarifa> guardada = configuracionRepo.findTopByOrderByFechaDescIdConfiguracionDesc();
@@ -66,11 +77,14 @@ public class TarifaService {
 	}
 
 	/**
-	 * Cambia los porcentajes globales. Inserta una configuración nueva (se conserva
-	 * el historial); aplica a las cotizaciones siguientes.
+	 * Cambia los porcentajes globales. Inserta una configuración nueva, así se
+	 * conserva el historial; los cambios aplican a las cotizaciones
+	 * siguientes.
 	 *
-	 * @return 0 con la configuración nueva; 2 si algún porcentaje falta o no está
-	 *         entre 0 y 100.
+	 * @param datos porcentajes nuevos
+	 * @param idActor administrador que hace el cambio
+	 * @return la configuración nueva; o DATOS_INVALIDOS si algún porcentaje
+	 *         falta o no está entre 0 y 100
 	 */
 	@Transactional
 	public Resultado<ConfiguracionTarifaDTO> actualizar(ConfiguracionTarifaDTO datos, Long idActor) {
@@ -92,19 +106,36 @@ public class TarifaService {
 		return Resultado.exito(vigente());
 	}
 
-	/** Porcentaje de limpieza que aplica a un alojamiento. */
+	/**
+	 * Porcentaje de limpieza que aplica a un alojamiento: el propio si lo
+	 * tiene, si no el global.
+	 *
+	 * @param alojamiento alojamiento a cotizar
+	 * @return porcentaje de limpieza
+	 */
 	public BigDecimal porcentajeLimpieza(Alojamiento alojamiento) {
 		return alojamiento.getPorcentajeLimpieza() != null ? alojamiento.getPorcentajeLimpieza()
 				: vigente().getPorcentajeLimpieza();
 	}
 
-	/** Porcentaje de servicio que aplica a un alojamiento. */
+	/**
+	 * Porcentaje de servicio que aplica a un alojamiento: el propio si lo
+	 * tiene, si no el global.
+	 *
+	 * @param alojamiento alojamiento a cotizar
+	 * @return porcentaje de servicio
+	 */
 	public BigDecimal porcentajeServicio(Alojamiento alojamiento) {
 		return alojamiento.getPorcentajeServicio() != null ? alojamiento.getPorcentajeServicio()
 				: vigente().getPorcentajeServicio();
 	}
 
-	/** Un porcentaje es válido si está entre 0 y 100. */
+	/**
+	 * Un porcentaje es válido si está entre 0 y 100.
+	 *
+	 * @param porcentaje porcentaje a revisar
+	 * @return {@code true} si es válido
+	 */
 	public static boolean porcentajeValido(BigDecimal porcentaje) {
 		return porcentaje != null && porcentaje.signum() >= 0 && porcentaje.compareTo(CIEN) <= 0;
 	}

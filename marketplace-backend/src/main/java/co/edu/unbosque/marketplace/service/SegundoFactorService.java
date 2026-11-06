@@ -14,37 +14,53 @@ import co.edu.unbosque.marketplace.util.Resultado;
 import co.edu.unbosque.marketplace.util.TotpUtil;
 
 /**
- * Segundo factor de autenticación con TOTP. Activarlo tiene dos pasos: generar
- * el secreto (el usuario lo registra en su app) y confirmarlo con un código
- * válido. El secreto se guarda cifrado con AES y solo pertenece a su cuenta.
- *
- * @see "RNF-033, CA-174 a CA-178"
+ * Segundo factor de autenticación con códigos TOTP.
+ * <p>
+ * Activarlo tiene dos pasos: generar el secreto (el usuario lo registra en su
+ * app autenticadora) y confirmarlo con un código válido. El secreto se guarda
+ * cifrado con AES y solo pertenece a su cuenta.
+ * </p>
  */
 @Service
 public class SegundoFactorService {
 
+	/** Nombre de la aplicación que se ve en la app autenticadora. */
 	private static final String EMISOR = "MarketplaceInversionesLR";
 
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param auditoriaService servicio de auditoría
+	 */
 	public SegundoFactorService(UsuarioRepository usuarioRepo, AuditoriaService auditoriaService) {
 		this.usuarioRepo = usuarioRepo;
 		this.auditoriaService = auditoriaService;
 	}
 
-	/** Indica si la cuenta tiene el segundo factor habilitado. */
+	/**
+	 * Indica si la cuenta tiene el segundo factor habilitado.
+	 *
+	 * @param usuario usuario a revisar
+	 * @return {@code true} si está habilitado
+	 */
 	public static boolean estaHabilitado(Usuario usuario) {
 		return Boolean.TRUE.equals(usuario.getTotpHabilitado());
 	}
 
 	/**
-	 * Genera un secreto nuevo para el usuario autenticado. Queda pendiente de
-	 * confirmación.
+	 * Genera un secreto nuevo para el usuario. Queda pendiente hasta que lo
+	 * confirme con un código.
 	 *
-	 * @return 0 con el secreto y la URI otpauth; 1 usuario no existe; 4 ya está
-	 *         habilitado.
-	 * @see "CA-178"
+	 * @param idUsuario usuario autenticado
+	 * @return el secreto y la URI otpauth; NO_ENCONTRADO si el usuario no
+	 *         existe; ESTADO_INVALIDO si ya está habilitado
 	 */
 	@Transactional
 	public Resultado<SegundoFactorDTO> activar(Long idUsuario) {
@@ -69,9 +85,11 @@ public class SegundoFactorService {
 	/**
 	 * Confirma la activación con un código de la app.
 	 *
-	 * @return 0 habilitado; 1 usuario no existe; 2 código inválido; 4 no hay
-	 *         activación pendiente.
-	 * @see "CA-178"
+	 * @param idUsuario usuario autenticado
+	 * @param codigo código de 6 dígitos
+	 * @return éxito; NO_ENCONTRADO si el usuario no existe; DATOS_INVALIDOS si
+	 *         el código no es válido; ESTADO_INVALIDO si no hay activación
+	 *         pendiente
 	 */
 	@Transactional
 	public Resultado<Void> confirmar(Long idUsuario, String codigo) {
@@ -93,11 +111,13 @@ public class SegundoFactorService {
 	}
 
 	/**
-	 * Deshabilita el segundo factor validando un código actual.
+	 * Deshabilita el segundo factor; pide un código actual para confirmar que
+	 * es el dueño.
 	 *
-	 * @return 0 deshabilitado; 1 usuario no existe; 2 código inválido; 4 no estaba
-	 *         habilitado.
-	 * @see "CA-177"
+	 * @param idUsuario usuario autenticado
+	 * @param codigo código de 6 dígitos
+	 * @return éxito; NO_ENCONTRADO si el usuario no existe; DATOS_INVALIDOS si
+	 *         el código no es válido; ESTADO_INVALIDO si no estaba habilitado
 	 */
 	@Transactional
 	public Resultado<Void> desactivar(Long idUsuario, String codigo) {
@@ -122,7 +142,9 @@ public class SegundoFactorService {
 	/**
 	 * Verifica un código contra el secreto de la cuenta.
 	 *
-	 * @see "CA-175, CA-176"
+	 * @param usuario usuario dueño del secreto
+	 * @param codigo código que escribió
+	 * @return {@code true} si el código es válido
 	 */
 	public boolean verificar(Usuario usuario, String codigo) {
 		if (usuario.getSecretoTotp() == null) {
@@ -131,6 +153,13 @@ public class SegundoFactorService {
 		return TotpUtil.verificar(AESUtil.decrypt(usuario.getSecretoTotp()), codigo);
 	}
 
+	/**
+	 * Registra en la auditoría una operación del segundo factor.
+	 *
+	 * @param idUsuario usuario
+	 * @param resultado resultado de la operación
+	 * @param detalle detalle para la auditoría
+	 */
 	private void auditar(Long idUsuario, ResultadoAuditoria resultado, String detalle) {
 		auditoriaService.registrar(idUsuario, AuditoriaService.SEGUNDO_FACTOR, AuditoriaService.ENTIDAD_USUARIO,
 				idUsuario, resultado, detalle);

@@ -5,9 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import co.edu.unbosque.marketplace.entity.RegistroExportacion;
 
 /**
- * Repositorio de {@link RegistroExportacion}.
- *
- * @see "RF-006, CA-029"
+ * Acceso al historial de exportaciones de reportes. Solo usa las operaciones
+ * básicas de {@link JpaRepository}.
  */
 public interface RegistroExportacionRepository extends JpaRepository<RegistroExportacion, Long> {
 }

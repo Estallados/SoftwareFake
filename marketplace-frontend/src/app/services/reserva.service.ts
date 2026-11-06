@@ -4,11 +4,19 @@ import { Observable, map } from 'rxjs';
 import { Cotizacion, CotizacionSolicitud } from '../models/cotizacionDto';
 import { Reserva, SolicitudReserva } from '../models/reservaDto';
 import { API_URL } from './api-url';
+/**
+ * Cotizaciones y reservas del huésped: cotizar, reservar con pago de prueba, consultar y cancelar.
+ * Reservar y cancelar llevan una clave de idempotencia para no repetir la operación si se
+ * reintenta.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class ReservaService {
+  /** Cliente HTTP. */
   private http = inject(HttpClient);
+
+  /** Dirección base del backend. */
   private apiUrl = inject(API_URL);
   /**
    * POST /cotizaciones (201). Devuelve el desglose y sirve 30 minutos.
@@ -29,8 +37,11 @@ export class ReservaService {
     });
   }
   /**
-   * GET /reservas/mias (HUESPED). Mis reservas, las más recientes primero (el backend pagina: se piden hasta `tamanio`).
-   * OJO: endpoint supuesto; si tu ReservaController usa otra ruta, se cambia solo aquí.
+   * GET /reservas/mias (huésped). Mis reservas, las más recientes primero; el backend pagina y se
+   * piden hasta `tamanio`.
+   *
+   * @param tamanio cantidad máxima de reservas
+   * @returns las reservas del huésped
    */
   misReservas(tamanio = 100): Observable<Reserva[]> {
     return this.http

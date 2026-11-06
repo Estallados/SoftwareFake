@@ -10,7 +10,17 @@ import co.edu.unbosque.marketplace.entity.EstadoReserva;
  * ni cancelación. Se arma directamente en la consulta (una sola por página).
  * {@code completada} sigue la regla de {@code ReservaService.esCompletada}.
  *
- * @see "RF-016"
+ * @param idReserva         código de la reserva
+ * @param nombreHuesped     nombre del huésped
+ * @param tituloAlojamiento título del alojamiento
+ * @param ciudad            ciudad del alojamiento
+ * @param nombreAnfitrion   nombre del anfitrión
+ * @param fechaEntrada      día de llegada
+ * @param fechaSalida       día de salida
+ * @param noches            cantidad de noches
+ * @param total             valor total
+ * @param estado            estado de la reserva
+ * @param completada        {@code true} si está confirmada y la salida ya pasó
  */
 @SuppressWarnings("java:S107") // Proyección JPQL: un componente por columna.
 public record ReservaAdminDTO(Long idReserva, String nombreHuesped, String tituloAlojamiento, String ciudad,

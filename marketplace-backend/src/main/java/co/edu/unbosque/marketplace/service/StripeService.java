@@ -20,12 +20,10 @@ import co.edu.unbosque.marketplace.entity.Pago;
 import co.edu.unbosque.marketplace.service.PagoService.ResultadoPago;
 
 /**
- * Consumo de la API de Stripe en modo prueba: crea y confirma PaymentIntents y
- * hace devoluciones (Refunds). Interpreta las respuestas de Stripe y las
- * convierte en un {@link ResultadoPago}. La lógica de reservas y pagos está en
- * {@link PagoService}.
- *
- * @see "RF-002, RF-028, CA-003, CA-161, CA-162, CA-163"
+ * Cliente de la API de Stripe en modo de prueba: crea y confirma
+ * PaymentIntents y hace devoluciones (Refunds). Interpreta las respuestas de
+ * Stripe y las convierte en un {@link ResultadoPago}. La lógica de reservas y
+ * pagos está en {@link PagoService}.
  */
 @Service
 public class StripeService {
@@ -39,7 +37,10 @@ public class StripeService {
 	/** Código de Stripe para una tarjeta que exige 3D Secure. */
 	public static final String AUTENTICACION = "authentication_required";
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(StripeService.class);
+
+	/** Dirección base de la API de Stripe. */
 	private static final String URL_STRIPE = "https://api.stripe.com/v1/";
 
 	/**
@@ -59,9 +60,18 @@ public class StripeService {
 					"La tarjeta exige autenticación 3D Secure, que este pago no admite. " + "Usa otra tarjeta."),
 			Map.entry("resource_missing", "El método de pago no existe en Stripe."));
 
+	/** Clave secreta de Stripe; vacía si no se configuró. */
 	private final String claveSecreta;
+
+	/** Cliente HTTP para llamar a Stripe. */
 	private final ClienteHttp clienteHttp;
 
+	/**
+	 * Crea el cliente de Stripe.
+	 *
+	 * @param claveSecreta clave secreta ({@code STRIPE_SECRET_KEY})
+	 * @param clienteHttp cliente HTTP
+	 */
 	@Autowired
 	public StripeService(@Value("${app.stripe.secret-key:${STRIPE_SECRET_KEY:}}") String claveSecreta,
 			ClienteHttp clienteHttp) {
@@ -69,24 +79,43 @@ public class StripeService {
 		this.clienteHttp = clienteHttp;
 	}
 
-	/** Indica si se configuró alguna clave secreta de Stripe. */
+	/**
+	 * Indica si se configuró alguna clave secreta de Stripe.
+	 *
+	 * @return {@code true} si hay clave
+	 */
 	public boolean estaConfigurado() {
 		return !claveSecreta.isEmpty();
 	}
 
 	/**
-	 * Indica si la clave es de prueba ({@code sk_test_...}); las demás se rechazan.
+	 * Indica si la clave es de prueba ({@code sk_test_...}); las demás se
+	 * rechazan.
+	 *
+	 * @return {@code true} si es de prueba
 	 */
 	public boolean esClaveDePrueba() {
 		return claveSecreta.startsWith("sk_test_");
 	}
 
-	/** Mensaje en español para un código de rechazo de Stripe. */
+	/**
+	 * Mensaje en español para un código de rechazo de Stripe.
+	 *
+	 * @param codigo código de Stripe (decline_code o code)
+	 * @return mensaje para el usuario
+	 */
 	public static String mensajeRechazo(String codigo) {
 		return MENSAJES_RECHAZO.getOrDefault(codigo, "La tarjeta fue rechazada.");
 	}
 
-	/** Crea y confirma el PaymentIntent de la reserva. */
+	/**
+	 * Crea y confirma el PaymentIntent de la reserva.
+	 *
+	 * @param valor valor a cobrar
+	 * @param metodoPago PaymentMethod de Stripe
+	 * @param idReserva reserva; se usa como clave de idempotencia
+	 * @return resultado del cobro
+	 */
 	public ResultadoPago cobrar(BigDecimal valor, String metodoPago, Long idReserva) {
 		MultiValueMap<String, String> formulario = new LinkedMultiValueMap<>();
 		formulario.add("amount", centavos(valor));
@@ -110,6 +139,10 @@ public class StripeService {
 	/**
 	 * Devuelve el valor indicado del pago con un Refund. Si Stripe no hace la
 	 * devolución, el resultado queda APROBADO con el motivo en el detalle.
+	 *
+	 * @param pago pago a devolver
+	 * @param valor valor a devolver
+	 * @return resultado de la devolución
 	 */
 	public ResultadoPago devolver(Pago pago, BigDecimal valor) {
 		MultiValueMap<String, String> formulario = new LinkedMultiValueMap<>();
@@ -134,7 +167,13 @@ public class StripeService {
 		}
 	}
 
-	/** Interpreta la respuesta de Stripe al crear y confirmar el PaymentIntent. */
+	/**
+	 * Interpreta la respuesta de Stripe al crear y confirmar el PaymentIntent.
+	 *
+	 * @param estado estado HTTP de la respuesta
+	 * @param cuerpo cuerpo JSON de la respuesta
+	 * @return resultado del cobro
+	 */
 	private ResultadoPago resultadoCobro(HttpStatusCode estado, JsonNode cuerpo) {
 		if (cuerpo == null) {
 			return new ResultadoPago(EstadoPago.ERROR, null, PROVEEDOR, "Respuesta vacía de Stripe.");
@@ -169,6 +208,17 @@ public class StripeService {
 						: "La pasarela de pago no respondió correctamente.");
 	}
 
+	/**
+	 * Envía un formulario a la API de Stripe con la clave secreta y una clave
+	 * de idempotencia; si la petición se repite, Stripe devuelve la primera
+	 * respuesta.
+	 *
+	 * @param recurso recurso de Stripe, por ejemplo {@code payment_intents}
+	 * @param claveIdempotencia clave de idempotencia de la operación
+	 * @param formulario campos del formulario
+	 * @param interprete función que convierte la respuesta en el resultado
+	 * @return resultado de la operación
+	 */
 	private ResultadoPago enviar(String recurso, String claveIdempotencia, MultiValueMap<String, String> formulario,
 			BiFunction<HttpStatusCode, JsonNode, ResultadoPago> interprete) {
 		Map<String, String> encabezados = Map.of("Authorization", "Bearer " + claveSecreta,
@@ -178,12 +228,22 @@ public class StripeService {
 		return clienteHttp.postFormulario(URL_STRIPE + recurso, encabezados, formulario, interprete);
 	}
 
+	/**
+	 * Mensaje de error que trae la respuesta de Stripe.
+	 *
+	 * @param cuerpo cuerpo JSON de la respuesta; puede ser {@code null}
+	 * @return mensaje de error
+	 */
 	private static String mensajeError(JsonNode cuerpo) {
 		return cuerpo == null ? "sin respuesta" : cuerpo.path("error").path("message").asText("error desconocido");
 	}
 
 	/**
-	 * Stripe recibe el valor en la unidad mínima de la moneda: centavos de peso.
+	 * Convierte el valor a centavos, que es como Stripe recibe los montos (en
+	 * la unidad mínima de la moneda).
+	 *
+	 * @param valor valor en pesos
+	 * @return valor en centavos como texto
 	 */
 	private static String centavos(BigDecimal valor) {
 		return valor.movePointRight(2).toBigInteger().toString();

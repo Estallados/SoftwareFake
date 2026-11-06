@@ -7,9 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import co.edu.unbosque.marketplace.entity.RegistroIdempotencia;
 
 /**
- * Repositorio de {@link RegistroIdempotencia}.
- *
- * @see "RNF-013, RNF-014"
+ * Acceso a los registros de idempotencia, que guardan las peticiones hechas
+ * con la cabecera {@code Idempotency-Key} y su respuesta.
  */
 public interface RegistroIdempotenciaRepository extends JpaRepository<RegistroIdempotencia, Long> {
 

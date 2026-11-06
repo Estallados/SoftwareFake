@@ -18,18 +18,33 @@ import co.edu.unbosque.marketplace.repository.FavoritoRepository;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Alojamientos favoritos de cada usuario, sin duplicados.
- *
- * @see "RF-007, CA-170, CA-171, CA-172, CA-173, CA-198"
+ * Alojamientos favoritos de cada usuario. Un alojamiento aparece una sola vez
+ * en los favoritos de cada usuario, y solo se pueden guardar alojamientos
+ * publicados.
  */
 @Service
 public class FavoritoService {
 
+	/** Repositorio de favoritos. */
 	private final FavoritoRepository favoritoRepo;
+
+	/** Repositorio de alojamientos. */
 	private final AlojamientoRepository alojamientoRepo;
+
+	/** Para armar los datos del alojamiento de cada favorito. */
 	private final PublicacionService publicacionService;
+
+	/** Copia los datos de la entidad al DTO. */
 	private final ModelMapper modelMapper;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param favoritoRepo repositorio de favoritos
+	 * @param alojamientoRepo repositorio de alojamientos
+	 * @param publicacionService servicio de publicaciones
+	 * @param modelMapper copiador de entidades a DTO
+	 */
 	public FavoritoService(FavoritoRepository favoritoRepo, AlojamientoRepository alojamientoRepo,
 			PublicacionService publicacionService, ModelMapper modelMapper) {
 		this.favoritoRepo = favoritoRepo;
@@ -38,17 +53,25 @@ public class FavoritoService {
 		this.modelMapper = modelMapper;
 	}
 
-	/** Indica si el alojamiento ya está en los favoritos del usuario. */
+	/**
+	 * Indica si el alojamiento ya está en los favoritos del usuario.
+	 *
+	 * @param idUsuario usuario
+	 * @param idAlojamiento alojamiento
+	 * @return {@code true} si ya es favorito
+	 */
 	public boolean esFavorito(Long idUsuario, Long idAlojamiento) {
 		return favoritoRepo.findByIdUsuarioAndIdAlojamiento(idUsuario, idAlojamiento).isPresent();
 	}
 
 	/**
-	 * Agrega un alojamiento ACTIVA a los favoritos. Si ya estaba, se conserva el
-	 * favorito existente.
+	 * Agrega un alojamiento publicado (ACTIVA) a los favoritos. Si ya estaba,
+	 * devuelve el favorito que ya existía.
 	 *
-	 * @return 0 con el favorito; 1 si el alojamiento no existe o no está publicado.
-	 * @see "CA-172, CA-173"
+	 * @param idUsuario usuario
+	 * @param idAlojamiento alojamiento a guardar
+	 * @return el favorito; o NO_ENCONTRADO si el alojamiento no existe o no
+	 *         está publicado
 	 */
 	@Transactional
 	public Resultado<FavoritoDTO> agregar(Long idUsuario, Long idAlojamiento) {
@@ -76,8 +99,9 @@ public class FavoritoService {
 	/**
 	 * Quita un alojamiento de los favoritos del usuario.
 	 *
-	 * @return 0 eliminado; 1 si no estaba en sus favoritos.
-	 * @see "CA-171"
+	 * @param idUsuario usuario
+	 * @param idAlojamiento alojamiento a quitar
+	 * @return éxito; o NO_ENCONTRADO si no estaba en sus favoritos
 	 */
 	@Transactional
 	public Resultado<Void> eliminar(Long idUsuario, Long idAlojamiento) {
@@ -90,14 +114,23 @@ public class FavoritoService {
 	}
 
 	/**
-	 * Favoritos del usuario autenticado (solo los suyos); vacía si no tiene.
+	 * Favoritos del usuario autenticado (solo los suyos). Si no tiene, la
+	 * página viene vacía.
 	 *
-	 * @see "CA-170, CA-198"
+	 * @param idUsuario usuario
+	 * @param pagina página y orden
+	 * @return página de favoritos con los datos de cada alojamiento
 	 */
 	public PaginaDTO<FavoritoDTO> listar(Long idUsuario, Pageable pagina) {
 		return PaginaDTO.de(favoritoRepo.findByIdUsuario(idUsuario, pagina), this::convertirDTO);
 	}
 
+	/**
+	 * Convierte un favorito a DTO e incluye los datos del alojamiento.
+	 *
+	 * @param favorito favorito a convertir
+	 * @return favorito con los datos del alojamiento
+	 */
 	private FavoritoDTO convertirDTO(Favorito favorito) {
 		FavoritoDTO dto = modelMapper.map(favorito, FavoritoDTO.class);
 		alojamientoRepo.findById(favorito.getIdAlojamiento())

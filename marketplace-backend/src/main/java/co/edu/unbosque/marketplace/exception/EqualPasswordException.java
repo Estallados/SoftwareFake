@@ -1,19 +1,18 @@
 package co.edu.unbosque.marketplace.exception;
 
 /**
- * Clase la cual es publica para ser llamada dentro de otras clases la cual es
- * heredada de Exception
+ * Se lanza cuando la contraseña y su confirmación no coinciden.
+ * <p>
+ * La usa {@link ExceptionCheker#checkerEqualPassword(String, String)}.
+ * </p>
  */
 public class EqualPasswordException extends Exception {
 
-	/**
-	 * 
-	 */
+	/** Versión de serialización. */
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Se crea un constructor el cual no recibe ningun tipo de parametro se llama el
-	 * super como constructor de la clase madre recibiendo un texto.
+	 * Crea la excepción con el mensaje que se le muestra al usuario.
 	 */
 	public EqualPasswordException() {
 		super("Las contraseñas deben coincidir.");

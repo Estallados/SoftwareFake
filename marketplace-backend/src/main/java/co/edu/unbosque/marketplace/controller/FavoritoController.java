@@ -22,9 +22,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de favoritos. Ruta base: {@code /favoritos}.
- *
- * @see "RF-007"
+ * Controlador REST de favoritos. Ruta base: {@code /favoritos}. Cada usuario
+ * ve y maneja solo los suyos.
  */
 @RestController
 @RequestMapping("/favoritos")
@@ -33,12 +32,26 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class FavoritoController {
 
+	/** Servicio de favoritos. */
 	private final FavoritoService favoritoService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param favoritoService servicio de favoritos
+	 */
 	public FavoritoController(FavoritoService favoritoService) {
 		this.favoritoService = favoritoService;
 	}
 
+	/**
+	 * Mis favoritos. Ruta: {@code GET /favoritos}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de favoritos
+	 */
 	@Operation(summary = "Mis favoritos")
 	@ApiResponse(responseCode = "200", description = "Página de favoritos")
 	@GetMapping
@@ -48,6 +61,15 @@ public class FavoritoController {
 				RespuestaUtil.pagina(pagina, tamanio, Sort.by("fechaAgregado").descending())));
 	}
 
+	/**
+	 * Agrega un alojamiento a mis favoritos, sin duplicados. Ruta:
+	 * {@code POST /favoritos/{idAlojamiento}}.
+	 *
+	 * @param idAlojamiento alojamiento a guardar
+	 * @param authentication usuario autenticado
+	 * @return 201 con el favorito nuevo; 200 si ya estaba; 404 si el
+	 *         alojamiento no existe
+	 */
 	@Operation(summary = "Agregar a favoritos (sin duplicados)")
 	@ApiResponse(responseCode = "200", description = "Ya estaba en favoritos: el favorito existente")
 	@ApiResponse(responseCode = "201", description = "Favorito guardado")
@@ -59,6 +81,14 @@ public class FavoritoController {
 		return RespuestaUtil.desde(favoritoService.agregar(idUsuario, idAlojamiento), exito);
 	}
 
+	/**
+	 * Quita un alojamiento de mis favoritos. Ruta:
+	 * {@code DELETE /favoritos/{idAlojamiento}}.
+	 *
+	 * @param idAlojamiento alojamiento a quitar
+	 * @param authentication usuario autenticado
+	 * @return 200 si se quitó; 404 si no estaba en mis favoritos
+	 */
 	@Operation(summary = "Quitar de favoritos")
 	@ApiResponse(responseCode = "200", description = "Alojamiento quitado de favoritos.")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no está en tus favoritos.")

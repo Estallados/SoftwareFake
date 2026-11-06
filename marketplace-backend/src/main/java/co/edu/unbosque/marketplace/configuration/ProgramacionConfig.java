@@ -4,10 +4,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Habilita las tareas programadas, como la cancelación de reservas que quedaron
- * sin pagar ({@code ReservaService.cancelarPendientesVencidas}).
- *
- * @see "RF-020"
+ * Habilita las tareas programadas, como la cancelación automática de las
+ * reservas que quedaron sin pagar ({@code ReservaService.cancelarPendientesVencidas}).
  */
 @Configuration
 @EnableScheduling

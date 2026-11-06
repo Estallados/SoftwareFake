@@ -15,18 +15,38 @@ import { RespuestaMensaje } from '../models/respuestaMensajeDto';
 import { ServicioAdicional } from '../models/servicioAdicionalDto';
 import { API_URL } from './api-url';
 import {ResumenResenas} from '../models/resenaDto';
+/**
+ * Publicaciones de alojamiento: catálogo, búsqueda, detalle y, para el anfitrión, crear, editar,
+ * imágenes, cambios de estado y servicios adicionales. Guarda en caché las consultas y la limpia
+ * cuando algo cambia.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class AlojamientoService {
+  /** Cliente HTTP. */
   private http = inject(HttpClient);
+
+  /** Ruta base de los alojamientos. */
   private base = `${inject(API_URL)}/alojamientos`;
   // Cachés de consultas GET
+
+  /** Catálogo guardado por tamaño de página. */
   private disponiblesCache = new Map<number, Observable<Alojamiento[]>>();
+
+  /** Resultados guardados por búsqueda. */
   private busquedaCache = new Map<string, Observable<Alojamiento[]>>();
+
+  /** Políticas de cancelación guardadas. */
   private politicasCache$?: Observable<PoliticaCancelacion[]>;
+
+  /** Alojamientos del anfitrión guardados. */
   private miosCache$?: Observable<Alojamiento[]>;
+
+  /** Detalle de cada alojamiento guardado. */
   private detalleCache = new Map<number, Observable<Alojamiento>>();
+
+  /** Historial de estados de cada alojamiento guardado. */
   private historialCache = new Map<number, Observable<HistorialEstadoAlojamiento[]>>();
   // ================= Consulta =================
   /**
@@ -162,6 +182,15 @@ export class AlojamientoService {
     return request$;
   }
   // ================= Creación y edición =================
+
+  /**
+   * POST /alojamientos. Crea el alojamiento en BORRADOR con sus imágenes (multipart: el JSON en
+   * 'datos' y las imágenes en 'archivos').
+   *
+   * @param datos datos del alojamiento
+   * @param archivos imágenes (la primera queda como portada)
+   * @returns el alojamiento creado
+   */
   crear(
     datos: AlojamientoEntrada,
     archivos: File[] = [],
@@ -173,6 +202,14 @@ export class AlojamientoService {
       tap(() => this.invalidarListados()),
     );
   }
+
+  /**
+   * PUT /alojamientos/{id}. Edita los datos del alojamiento.
+   *
+   * @param id alojamiento
+   * @param datos campos a cambiar
+   * @returns el alojamiento actualizado
+   */
   actualizar(
     id: number,
     datos: Partial<AlojamientoEntrada>,
@@ -182,6 +219,14 @@ export class AlojamientoService {
     );
   }
   // ================= Imágenes =================
+
+  /**
+   * POST /alojamientos/{id}/imagenes. Sube una o varias imágenes.
+   *
+   * @param id alojamiento
+   * @param archivos imágenes a subir
+   * @returns el alojamiento con sus imágenes
+   */
   subirImagenes(id: number, archivos: File[]): Observable<Alojamiento> {
     const form = new FormData();
     archivos.forEach((f) => form.append('archivos', f));
@@ -191,6 +236,14 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
+
+  /**
+   * DELETE /alojamientos/{id}/imagenes/{idImagen}. Elimina una imagen.
+   *
+   * @param id alojamiento
+   * @param idImagen imagen
+   * @returns el alojamiento con las imágenes restantes
+   */
   eliminarImagen(
     id: number,
     idImagen: number,
@@ -201,6 +254,14 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
+
+  /**
+   * PATCH /alojamientos/{id}/imagenes/{idImagen}/principal. Marca una imagen como portada.
+   *
+   * @param id alojamiento
+   * @param idImagen imagen
+   * @returns el alojamiento con sus imágenes
+   */
   marcarPrincipal(
     id: number,
     idImagen: number,
@@ -215,6 +276,13 @@ export class AlojamientoService {
       );
   }
   // ================= Ciclo de estados =================
+
+  /**
+   * POST /alojamientos/{id}/enviarrevision. Envía el borrador a revisión del administrador.
+   *
+   * @param id alojamiento
+   * @returns el alojamiento en PENDIENTE_REVISION
+   */
   enviarRevision(id: number): Observable<Alojamiento> {
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/enviarrevision`, {})
@@ -222,6 +290,13 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
+
+  /**
+   * POST /alojamientos/{id}/pausar. Pausa la publicación.
+   *
+   * @param id alojamiento
+   * @returns el alojamiento en PAUSADA
+   */
   pausar(id: number): Observable<Alojamiento> {
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/pausar`, {})
@@ -229,6 +304,13 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
+
+  /**
+   * POST /alojamientos/{id}/reanudar. Vuelve a publicar un alojamiento pausado.
+   *
+   * @param id alojamiento
+   * @returns el alojamiento en ACTIVA
+   */
   reanudar(id: number): Observable<Alojamiento> {
     return this.http
       .post<Alojamiento>(`${this.base}/${id}/reanudar`, {})
@@ -237,6 +319,14 @@ export class AlojamientoService {
       );
   }
   // ================= Servicios adicionales =================
+
+  /**
+   * POST /alojamientos/{id}/servicios. Agrega un servicio adicional.
+   *
+   * @param id alojamiento
+   * @param servicio nombre y costo
+   * @returns el servicio creado
+   */
   agregarServicio(
     id: number,
     servicio: ServicioAdicional,
@@ -247,6 +337,15 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
+
+  /**
+   * PUT /alojamientos/{id}/servicios/{idServicio}. Modifica un servicio adicional.
+   *
+   * @param id alojamiento
+   * @param idServicio servicio
+   * @param servicio nombre y costo nuevos
+   * @returns el servicio actualizado
+   */
   actualizarServicio(
     id: number,
     idServicio: number,
@@ -261,6 +360,14 @@ export class AlojamientoService {
         tap(() => this.invalidarAlojamiento(id)),
       );
   }
+
+  /**
+   * DELETE /alojamientos/{id}/servicios/{idServicio}. Elimina un servicio adicional.
+   *
+   * @param id alojamiento
+   * @param idServicio servicio
+   * @returns la respuesta con el mensaje
+   */
   eliminarServicio(
     id: number,
     idServicio: number,
@@ -350,6 +457,13 @@ export class AlojamientoService {
     return p;
   }
   // ================= Utilidades =================
+
+  /**
+   * Arma los parámetros de la URL; omite los valores vacíos y repite la clave para las listas.
+   *
+   * @param valores valores a enviar
+   * @returns parámetros HTTP
+   */
   private params(valores: Record<string, unknown>): HttpParams {
     let params = new HttpParams();
     for (const [clave, valor] of Object.entries(valores)) {

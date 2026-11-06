@@ -29,23 +29,17 @@ import co.edu.unbosque.marketplace.repository.ServicioAdicionalRepository;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Cotización de una estancia. Calcula cada componente con los porcentajes
- * vigentes y guarda la cotización por {@value #MINUTOS_VIGENCIA} minutos; la
- * reserva se crea desde ella con el mismo monto.
+ * Cotización de una estancia. Calcula cada componente del precio con los
+ * porcentajes vigentes y guarda la cotización por {@value #MINUTOS_VIGENCIA}
+ * minutos; la reserva se crea desde ella con el mismo monto.
  * <p>
- * Fórmula (redondeo a 2 decimales, mitad hacia arriba):
+ * Fórmula (redondeo a 2 decimales, mitad hacia arriba): precio base = noches ×
+ * precio por noche; descuento = 0 (todavía no hay reglas de descuento);
+ * limpieza = (base − descuento) × % limpieza; servicio = (base − descuento) ×
+ * % servicio; adicionales = suma del costo de cada servicio adicional elegido
+ * (una vez por estancia); total = base − descuento + limpieza + servicio +
+ * adicionales.
  * </p>
- * <ul>
- * <li>precio base = noches × precio por noche</li>
- * <li>descuento = 0 (no hay reglas de descuento definidas)</li>
- * <li>limpieza = (base − descuento) × % limpieza</li>
- * <li>servicio = (base − descuento) × % servicio</li>
- * <li>adicionales = suma del costo de cada servicio adicional elegido (por
- * estancia)</li>
- * <li>total = base − descuento + limpieza + servicio + adicionales</li>
- * </ul>
- *
- * @see "RF-021, RF-023, RNF-027, RNF-031, CA-080, CA-081, CA-179 a CA-184"
  */
 @Service
 public class CotizacionService {
@@ -53,16 +47,41 @@ public class CotizacionService {
 	/** Minutos que una cotización sirve para reservar. */
 	public static final int MINUTOS_VIGENCIA = 30;
 
+	/** Cien, para pasar de porcentaje a fracción. */
 	private static final BigDecimal CIEN = BigDecimal.valueOf(100);
 
+	/** Repositorio de alojamientos. */
 	private final AlojamientoRepository alojamientoRepo;
+
+	/** Repositorio de servicios adicionales. */
 	private final ServicioAdicionalRepository servicioRepo;
+
+	/** Repositorio de cotizaciones. */
 	private final CotizacionRepository cotizacionRepo;
+
+	/** Valida que las fechas estén disponibles. */
 	private final CalendarioService calendarioService;
+
+	/** Da los porcentajes de limpieza y servicio. */
 	private final TarifaService tarifaService;
+
+	/** Copia los datos de la entidad al DTO. */
 	private final ModelMapper modelMapper;
+
+	/** Guarda y lee los servicios elegidos en JSON. */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param alojamientoRepo repositorio de alojamientos
+	 * @param servicioRepo repositorio de servicios adicionales
+	 * @param cotizacionRepo repositorio de cotizaciones
+	 * @param calendarioService servicio de calendario
+	 * @param tarifaService servicio de tarifas
+	 * @param modelMapper copiador de entidades a DTO
+	 * @param objectMapper conversor a JSON
+	 */
 	public CotizacionService(AlojamientoRepository alojamientoRepo, ServicioAdicionalRepository servicioRepo,
 			CotizacionRepository cotizacionRepo, CalendarioService calendarioService, TarifaService tarifaService,
 			ModelMapper modelMapper, ObjectMapper objectMapper) {
@@ -75,15 +94,30 @@ public class CotizacionService {
 		this.objectMapper = objectMapper;
 	}
 
-	/** Componentes del precio de una estancia. */
+	/**
+	 * Componentes del precio de una estancia.
+	 *
+	 * @param precioBase precio por noche multiplicado por las noches
+	 * @param descuento descuento aplicado
+	 * @param valorLimpieza valor de la limpieza
+	 * @param valorServicio valor de la tarifa de servicio
+	 * @param valorAdicionales suma de los servicios adicionales
+	 * @param total valor total
+	 */
 	public record Desglose(BigDecimal precioBase, BigDecimal descuento, BigDecimal valorLimpieza,
 			BigDecimal valorServicio, BigDecimal valorAdicionales, BigDecimal total) {
 	}
 
 	/**
-	 * Calcula el desglose de una estancia (función pura).
+	 * Calcula el desglose de una estancia. Es una función pura: no consulta la
+	 * base de datos, así se puede probar sola.
 	 *
-	 * @see "CA-081"
+	 * @param precioNoche precio por noche
+	 * @param noches cantidad de noches
+	 * @param porcentajeLimpieza porcentaje de limpieza
+	 * @param porcentajeServicio porcentaje de servicio
+	 * @param costosAdicionales costo de cada servicio adicional elegido
+	 * @return desglose con todos los componentes
 	 */
 	public static Desglose calcular(BigDecimal precioNoche, long noches, BigDecimal porcentajeLimpieza,
 			BigDecimal porcentajeServicio, List<BigDecimal> costosAdicionales) {
@@ -100,10 +134,12 @@ public class CotizacionService {
 	/**
 	 * Cotiza una estancia y guarda la cotización.
 	 *
-	 * @return 0 con la cotización; 1 el alojamiento no existe; 2 fechas, huéspedes
-	 *         o servicios inválidos; 4 el alojamiento no está ACTIVA; 5 las fechas
-	 *         no están disponibles.
-	 * @see "CA-082, CA-083, CA-179, CA-181, CA-182, CA-183, CA-184"
+	 * @param solicitud alojamiento, fechas, huéspedes y servicios elegidos
+	 * @param idUsuario huésped que cotiza
+	 * @return la cotización; NO_ENCONTRADO si el alojamiento no existe;
+	 *         DATOS_INVALIDOS si las fechas, los huéspedes o los servicios no
+	 *         son válidos; ESTADO_INVALIDO si el alojamiento no está publicado;
+	 *         NO_DISPONIBLE si las fechas no están libres
 	 */
 	@Transactional
 	public Resultado<CotizacionDTO> cotizar(CotizacionDTO solicitud, Long idUsuario) {
@@ -187,7 +223,10 @@ public class CotizacionService {
 
 	/**
 	 * Convierte una cotización guardada a DTO, con los servicios adicionales
-	 * congelados.
+	 * tal como quedaron al cotizar.
+	 *
+	 * @param cotizacion cotización guardada
+	 * @return cotización para la API
 	 */
 	public CotizacionDTO convertirDTO(Cotizacion cotizacion) {
 		CotizacionDTO dto = modelMapper.map(cotizacion, CotizacionDTO.class);
@@ -197,6 +236,14 @@ public class CotizacionService {
 		return dto;
 	}
 
+	/**
+	 * Convierte los servicios elegidos a JSON para guardarlos en la
+	 * cotización.
+	 *
+	 * @param servicios servicios elegidos
+	 * @return JSON con nombre y costo de cada servicio
+	 * @throws IllegalStateException si no se puede convertir
+	 */
 	private String serializar(List<ServicioAdicionalDTO> servicios) {
 		try {
 			return objectMapper.writeValueAsString(servicios);
@@ -205,6 +252,13 @@ public class CotizacionService {
 		}
 	}
 
+	/**
+	 * Lee los servicios guardados en JSON.
+	 *
+	 * @param json JSON guardado; puede ser {@code null}
+	 * @return servicios, o lista vacía si no hay
+	 * @throws IllegalStateException si el JSON no se puede leer
+	 */
 	private List<ServicioAdicionalDTO> leerServicios(String json) {
 		if (json == null || json.isBlank()) {
 			return List.of();
@@ -217,6 +271,12 @@ public class CotizacionService {
 		}
 	}
 
+	/**
+	 * Redondea un valor a 2 decimales, mitad hacia arriba.
+	 *
+	 * @param valor valor a redondear
+	 * @return valor redondeado
+	 */
 	private static BigDecimal redondear(BigDecimal valor) {
 		return valor.setScale(2, RoundingMode.HALF_UP);
 	}

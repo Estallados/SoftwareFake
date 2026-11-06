@@ -1,7 +1,5 @@
-/**
- * Respuesta con un mensaje simple (RespuestaUtil.mensaje del backend).
- * ⚠️ No recibí RespuestaUtil: confirma que el campo se llame "mensaje".
- */
+/** Respuesta con un mensaje simple del backend. */
 export interface RespuestaMensaje {
+  /** Texto del mensaje. */
   mensaje: string;
 }

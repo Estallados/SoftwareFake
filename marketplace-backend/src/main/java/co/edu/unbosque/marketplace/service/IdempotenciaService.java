@@ -29,44 +29,54 @@ import co.edu.unbosque.marketplace.entity.RegistroIdempotencia;
 import co.edu.unbosque.marketplace.repository.RegistroIdempotenciaRepository;
 
 /**
- * Idempotencia por la cabecera {@code Idempotency-Key}, reutilizable en
- * reservas, pagos y cancelaciones.
+ * Idempotencia con la cabecera {@code Idempotency-Key}, para reservas, pagos y
+ * cancelaciones: si el cliente reenvía la misma petición (por un doble clic o
+ * un reintento), no se crea dos veces la reserva ni se cobra dos veces.
  * <p>
- * Uso desde un controller:
+ * Uso desde un controlador:
+ * {@code return idempotenciaService.ejecutar(idUsuario, "CREAR_RESERVA", clave, dto, () -> crearReserva(dto));}
  * </p>
- *
- * <pre>
- * return idempotenciaService.ejecutar(idUsuario, "CREAR_RESERVA", clave, dto, () -&gt; crearReserva(dto));
- * </pre>
  * <p>
- * Reglas:
+ * Reglas: la primera vez con una clave ejecuta la acción y guarda su
+ * respuesta. Con la misma clave y los mismos datos devuelve la respuesta
+ * guardada sin volver a ejecutar la acción (con la cabecera
+ * {@code Idempotent-Replayed: true}). Con la misma clave y datos distintos
+ * responde 422. Si la primera petición sigue en curso responde 409. Si la
+ * acción falla con una excepción o con un 5xx, la clave se libera para poder
+ * reintentar.
  * </p>
- * <ul>
- * <li>Primera vez con una clave: ejecuta la acción y guarda su respuesta.</li>
- * <li>Misma clave y mismos datos: devuelve la respuesta guardada sin volver a
- * ejecutar la acción (con la cabecera {@code Idempotent-Replayed: true}).</li>
- * <li>Misma clave con datos distintos: 422.</li>
- * <li>Misma clave mientras la primera petición sigue en curso: 409.</li>
- * <li>Si la acción falla con excepción o con un 5xx, la clave se libera para
- * poder reintentar.</li>
- * </ul>
- *
- * @see "RNF-013, RNF-014"
  */
 @Service
 public class IdempotenciaService {
 
+	/** Nombre de la cabecera que manda el cliente. */
 	public static final String CABECERA = "Idempotency-Key";
+
+	/** Cabecera que se agrega cuando se devuelve una respuesta guardada. */
 	public static final String CABECERA_REPETIDA = "Idempotent-Replayed";
 
+	/** Largo máximo de la clave. */
 	private static final int MAX_CLAVE = 100;
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(IdempotenciaService.class);
 
+	/** Repositorio de los registros de idempotencia. */
 	private final RegistroIdempotenciaRepository registroRepo;
+
+	/** Transacción independiente para registrar y liberar las claves. */
 	private final TransactionTemplate transaccionPropia;
+
+	/** Convierte las peticiones y respuestas a JSON. */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Crea el servicio y prepara la transacción propia (REQUIRES_NEW).
+	 *
+	 * @param registroRepo repositorio de registros de idempotencia
+	 * @param transactionManager administrador de transacciones de Spring
+	 * @param objectMapper conversor a JSON
+	 */
 	public IdempotenciaService(RegistroIdempotenciaRepository registroRepo,
 			PlatformTransactionManager transactionManager, ObjectMapper objectMapper) {
 		this.registroRepo = registroRepo;
@@ -126,6 +136,14 @@ public class IdempotenciaService {
 				.body(respuesta.getBody());
 	}
 
+	/**
+	 * Responde a una clave que ya se usó: 422 si los datos son otros, 409 si
+	 * la petición sigue en curso, o la respuesta guardada si ya terminó.
+	 *
+	 * @param registro registro de la clave
+	 * @param huella huella de la petición actual
+	 * @return respuesta para el cliente
+	 */
 	private ResponseEntity<Object> responderExistente(RegistroIdempotencia registro, String huella) {
 		if (!registro.getHuellaPeticion().equals(huella)) {
 			return mensaje(HttpStatus.UNPROCESSABLE_ENTITY,
@@ -147,6 +165,15 @@ public class IdempotenciaService {
 				.contentType(MediaType.APPLICATION_JSON).body(cuerpo);
 	}
 
+	/**
+	 * Arma el registro de una clave nueva, en estado EN_PROCESO.
+	 *
+	 * @param idUsuario usuario
+	 * @param operacion operación protegida
+	 * @param clave valor de la cabecera
+	 * @param huella huella de la petición
+	 * @return registro sin guardar
+	 */
 	private static RegistroIdempotencia nuevoRegistro(Long idUsuario, String operacion, String clave, String huella) {
 		RegistroIdempotencia registro = new RegistroIdempotencia();
 		registro.setIdUsuario(idUsuario);
@@ -158,6 +185,14 @@ public class IdempotenciaService {
 		return registro;
 	}
 
+	/**
+	 * Guarda la respuesta de la acción en el registro. Si no se puede guardar
+	 * el cuerpo, igual marca el registro como completado, porque la acción ya
+	 * se hizo.
+	 *
+	 * @param registro registro de la clave
+	 * @param respuesta respuesta de la acción
+	 */
 	private void guardarRespuesta(RegistroIdempotencia registro, ResponseEntity<?> respuesta) {
 		String cuerpo = null;
 		try {
@@ -176,8 +211,13 @@ public class IdempotenciaService {
 	}
 
 	/**
-	 * Marca el registro como completado. Se actualiza la fila recién leída en
-	 * esta transacción, no la copia de la transacción anterior.
+	 * Marca el registro como completado con el código y el cuerpo de la
+	 * respuesta. Se actualiza la fila recién leída en esta transacción, no la
+	 * copia de la transacción anterior.
+	 *
+	 * @param registro registro de la clave
+	 * @param respuesta respuesta de la acción
+	 * @param cuerpo cuerpo de la respuesta en JSON; puede ser {@code null}
 	 */
 	private void completar(RegistroIdempotencia registro, ResponseEntity<?> respuesta, String cuerpo) {
 		transaccionPropia
@@ -188,10 +228,23 @@ public class IdempotenciaService {
 				}));
 	}
 
+	/**
+	 * Borra el registro para que la clave se pueda volver a usar.
+	 *
+	 * @param registro registro a borrar
+	 */
 	private void liberar(RegistroIdempotencia registro) {
 		transaccionPropia.executeWithoutResult(estado -> registroRepo.deleteById(registro.getIdRegistro()));
 	}
 
+	/**
+	 * Calcula el SHA-256 del cuerpo de la petición, para detectar si la clave
+	 * se reusa con otros datos.
+	 *
+	 * @param peticion cuerpo de la petición
+	 * @return huella en hexadecimal
+	 * @throws IllegalStateException si no se puede calcular
+	 */
 	private String huella(Object peticion) {
 		try {
 			byte[] datos = objectMapper.writeValueAsString(peticion).getBytes(StandardCharsets.UTF_8);
@@ -201,6 +254,13 @@ public class IdempotenciaService {
 		}
 	}
 
+	/**
+	 * Arma una respuesta con el formato de la API.
+	 *
+	 * @param status estado HTTP
+	 * @param texto mensaje para el usuario
+	 * @return respuesta {@code {"message": texto}}
+	 */
 	private static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
 		return ResponseEntity.status(status).body(Map.of("message", texto));
 	}

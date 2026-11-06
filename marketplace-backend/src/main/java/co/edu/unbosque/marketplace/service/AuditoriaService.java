@@ -32,70 +32,143 @@ import co.edu.unbosque.marketplace.util.Resultado;
  * operaciones rechazadas. Si la auditoría falla, la operación auditada no se
  * interrumpe; el evento sigue quedando en el log.
  * </p>
- *
- * @see "RNF-023, RNF-024, RNF-025, RNF-026"
  */
 @Service
 public class AuditoriaService {
 
-	/** Acciones auditadas del módulo de identidad. */
+	/** Un usuario se registró. */
 	public static final String REGISTRO_USUARIO = "REGISTRO_USUARIO";
+
+	/** Se creó un administrador. */
 	public static final String CREACION_ADMINISTRADOR = "CREACION_ADMINISTRADOR";
+
+	/** Intento de inicio de sesión. */
 	public static final String LOGIN = "LOGIN";
+
+	/** Un usuario cambió sus datos. */
 	public static final String PERFIL_ACTUALIZADO = "PERFIL_ACTUALIZADO";
+
+	/** Un usuario desactivó su cuenta. */
 	public static final String CUENTA_DESACTIVADA = "CUENTA_DESACTIVADA";
+
+	/** Un usuario reactivó su cuenta. */
 	public static final String CUENTA_REACTIVADA = "CUENTA_REACTIVADA";
+
+	/** Se pidió recuperar la contraseña. */
 	public static final String RECUPERACION_SOLICITADA = "RECUPERACION_SOLICITADA";
+
+	/** Se cambió la contraseña con un token de recuperación. */
 	public static final String CONTRASENIA_RESTABLECIDA = "CONTRASENIA_RESTABLECIDA";
+
+	/** Se envió un código de verificación del correo. */
 	public static final String CODIGO_VERIFICACION_ENVIADO = "CODIGO_VERIFICACION_ENVIADO";
+
+	/** Un usuario confirmó su correo. */
 	public static final String CORREO_VERIFICADO = "CORREO_VERIFICADO";
 
-	/** Acciones de alojamientos, disponibilidad y tarifas. */
+	/** Se creó un alojamiento. */
 	public static final String ALOJAMIENTO_CREADO = "ALOJAMIENTO_CREADO";
+
+	/** Se editó un alojamiento. */
 	public static final String ALOJAMIENTO_ACTUALIZADO = "ALOJAMIENTO_ACTUALIZADO";
+
+	/** Un alojamiento cambió de estado. */
 	public static final String ALOJAMIENTO_CAMBIO_ESTADO = "ALOJAMIENTO_CAMBIO_ESTADO";
+
+	/** Se subió, eliminó o cambió la portada de una imagen. */
 	public static final String IMAGEN_ALOJAMIENTO = "IMAGEN_ALOJAMIENTO";
+
+	/** Se creó, editó o eliminó un servicio adicional. */
 	public static final String SERVICIO_ADICIONAL = "SERVICIO_ADICIONAL";
+
+	/** Se creó, editó o eliminó un período de disponibilidad. */
 	public static final String DISPONIBILIDAD = "DISPONIBILIDAD";
+
+	/** Un administrador cambió las tarifas globales. */
 	public static final String TARIFA_ACTUALIZADA = "TARIFA_ACTUALIZADA";
 
-	/** Acciones de reservas, pagos, cancelaciones y reseñas. */
+	/** Se creó una reserva. */
 	public static final String RESERVA_CREADA = "RESERVA_CREADA";
+
+	/** Se intentó un pago. */
 	public static final String PAGO = "PAGO";
+
+	/** Se canceló una reserva. */
 	public static final String CANCELACION = "CANCELACION";
+
+	/** Se publicó una reseña. */
 	public static final String RESENA_CREADA = "RESENA_CREADA";
+
+	/** Un administrador ocultó o mostró una reseña. */
 	public static final String RESENA_MODERADA = "RESENA_MODERADA";
 
-	/** Acciones administrativas y opcionales. */
+	/** Un administrador restringió una cuenta. */
 	public static final String USUARIO_RESTRINGIDO = "USUARIO_RESTRINGIDO";
+
+	/** Un administrador volvió a habilitar una cuenta. */
 	public static final String USUARIO_LIBERADO = "USUARIO_LIBERADO";
+
+	/** Se exportó un reporte. */
 	public static final String REPORTE_EXPORTADO = "REPORTE_EXPORTADO";
+
+	/** Se activó, confirmó o desactivó el segundo factor. */
 	public static final String SEGUNDO_FACTOR = "SEGUNDO_FACTOR";
 
-	/** Acciones transversales. */
+	/** Alguien intentó entrar a una ruta sin el rol necesario. */
 	public static final String ACCESO_DENEGADO = "ACCESO_DENEGADO";
+
+	/** Ocurrió un error inesperado en el servidor. */
 	public static final String ERROR_INTERNO = "ERROR_INTERNO";
 
-	/** Tipos de entidad auditada. */
+	/** Entidad auditada: usuario. */
 	public static final String ENTIDAD_USUARIO = "USUARIO";
+
+	/** Entidad auditada: alojamiento. */
 	public static final String ENTIDAD_ALOJAMIENTO = "ALOJAMIENTO";
+
+	/** Entidad auditada: período de disponibilidad. */
 	public static final String ENTIDAD_PERIODO = "PERIODO_DISPONIBILIDAD";
+
+	/** Entidad auditada: configuración de tarifas. */
 	public static final String ENTIDAD_CONFIGURACION = "CONFIGURACION_TARIFA";
+
+	/** Entidad auditada: reserva. */
 	public static final String ENTIDAD_RESERVA = "RESERVA";
+
+	/** Entidad auditada: reseña. */
 	public static final String ENTIDAD_RESENA = "RESENA";
+
+	/** Entidad auditada: reporte. */
 	public static final String ENTIDAD_REPORTE = "REPORTE";
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(AuditoriaService.class);
 
 	/** Log de auditoría: una línea JSON por evento. */
 	private static final Logger LOG_AUDITORIA = LoggerFactory.getLogger("AUDITORIA");
 
+	/** Largo máximo del detalle que se guarda. */
 	private static final int MAX_DETALLE = 1000;
 
+	/** Repositorio de solo inserción de la auditoría. */
 	private final AuditoriaRepository auditoriaRepo;
+
+	/**
+	 * Transacción independiente para guardar el evento aunque la operación se
+	 * revierta.
+	 */
 	private final TransactionTemplate transaccionPropia;
+
+	/** Convierte el evento a JSON para el log. */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Crea el servicio y prepara la transacción propia (REQUIRES_NEW).
+	 *
+	 * @param auditoriaRepo repositorio de la auditoría
+	 * @param transactionManager administrador de transacciones de Spring
+	 * @param objectMapper conversor a JSON
+	 */
 	public AuditoriaService(AuditoriaRepository auditoriaRepo, PlatformTransactionManager transactionManager,
 			ObjectMapper objectMapper) {
 		this.auditoriaRepo = auditoriaRepo;
@@ -139,13 +212,12 @@ public class AuditoriaService {
 	/**
 	 * Consulta paginada de la auditoría con filtros opcionales. Solo lectura.
 	 *
-	 * @param accion  Acción exacta, o null.
-	 * @param idActor Usuario que hizo la acción, o null.
-	 * @param desde   Fecha mínima, o null.
-	 * @param hasta   Fecha máxima, o null.
-	 * @param pagina  Página solicitada.
-	 * @return Página de eventos, del más reciente al más antiguo.
-	 * @see "RF-015, CA-062, CA-139"
+	 * @param accion acción exacta, o {@code null}
+	 * @param idActor usuario que hizo la acción, o {@code null}
+	 * @param desde fecha mínima, o {@code null}
+	 * @param hasta fecha máxima, o {@code null}
+	 * @param pagina página solicitada
+	 * @return página de eventos, del más reciente al más antiguo
 	 */
 	public PaginaDTO<EventoAuditoriaDTO> consultar(String accion, Long idActor, LocalDateTime desde,
 			LocalDateTime hasta, Pageable pagina) {
@@ -157,14 +229,20 @@ public class AuditoriaService {
 	/**
 	 * Detalle de un evento de auditoría.
 	 *
-	 * @return 0 con el evento; 1 si no existe.
-	 * @see "RF-015, CA-064"
+	 * @param idEvento evento a consultar
+	 * @return el evento; o NO_ENCONTRADO si no existe
 	 */
 	public Resultado<EventoAuditoriaDTO> obtener(Long idEvento) {
 		return auditoriaRepo.findById(idEvento).map(e -> Resultado.exito(convertirDTO(e)))
 				.orElseGet(() -> Resultado.error(Resultado.NO_ENCONTRADO, "El evento de auditoría no existe."));
 	}
 
+	/**
+	 * Convierte un evento a DTO.
+	 *
+	 * @param evento evento guardado
+	 * @return evento para la API
+	 */
 	private static EventoAuditoriaDTO convertirDTO(EventoAuditoria evento) {
 		EventoAuditoriaDTO dto = new EventoAuditoriaDTO();
 		dto.setIdEvento(evento.getIdEvento());
@@ -178,6 +256,11 @@ public class AuditoriaService {
 		return dto;
 	}
 
+	/**
+	 * Escribe el evento como una línea JSON en el log {@code AUDITORIA}.
+	 *
+	 * @param evento evento a escribir
+	 */
 	private void escribirLog(EventoAuditoria evento) {
 		Map<String, Object> linea = new LinkedHashMap<>();
 		linea.put("fecha", evento.getFecha().toString());
@@ -195,6 +278,13 @@ public class AuditoriaService {
 		}
 	}
 
+	/**
+	 * Corta el detalle a {@link #MAX_DETALLE} caracteres para que quepa en la
+	 * columna.
+	 *
+	 * @param detalle detalle original; puede ser {@code null}
+	 * @return el detalle, recortado si hacía falta
+	 */
 	private static String recortar(String detalle) {
 		if (detalle == null || detalle.length() <= MAX_DETALLE) {
 			return detalle;

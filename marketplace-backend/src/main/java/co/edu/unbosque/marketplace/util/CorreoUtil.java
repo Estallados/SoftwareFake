@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class CorreoUtil {
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(CorreoUtil.class);
 
 	/** Servicio de Spring para el envío de correos electrónicos. */

@@ -1,16 +1,25 @@
 package co.edu.unbosque.marketplace.exception;
 
 /**
- * No se pudo guardar una imagen en Cloudinary (falta la configuración o el
- * servicio no respondió). Se responde 503 y, como es una excepción no
- * verificada, la transacción en curso se revierte.
- *
- * @see "RF-017"
+ * Se lanza cuando no se puede guardar una imagen en Cloudinary, ya sea porque
+ * falta la configuración ({@code CLOUDINARY_URL}) o porque el servicio no
+ * respondió.
+ * <p>
+ * El {@link ManejadorGlobalExcepciones} la convierte en un 503. Como es una
+ * excepción no verificada, la transacción en curso se revierte y no quedan
+ * registros de imágenes que no se alcanzaron a subir.
+ * </p>
  */
 public class AlmacenamientoNoDisponibleException extends RuntimeException {
 
+	/** Versión de serialización. */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Crea la excepción con el mensaje que verá el usuario.
+	 *
+	 * @param mensaje explicación del problema
+	 */
 	public AlmacenamientoNoDisponibleException(String mensaje) {
 		super(mensaje);
 	}

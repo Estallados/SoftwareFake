@@ -34,25 +34,42 @@ import io.jsonwebtoken.UnsupportedJwtException;
  * <li>que Google haya verificado el correo.</li>
  * </ul>
  * Sin {@code GOOGLE_CLIENT_ID} el inicio con Google queda deshabilitado.
- *
- * @see "RF-008"
  */
 @Component
 public class GoogleTokenVerificador {
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(GoogleTokenVerificador.class);
+
+	/** Emisores que Google pone en sus ID tokens (con y sin esquema). */
 	private static final Set<String> EMISORES = Set.of("accounts.google.com", "https://accounts.google.com");
+
+	/** Margen para diferencias de reloj al revisar el vencimiento. */
 	private static final long TOLERANCIA_RELOJ_SEGUNDOS = 60;
 
 	/**
 	 * Datos de la cuenta de Google que se usan para iniciar sesión o registrarse.
+	 *
+	 * @param idGoogle identificador único de la cuenta en Google (claim
+	 *                 {@code sub})
+	 * @param correo   correo verificado de la cuenta
+	 * @param nombre   nombre que muestra Google; puede venir {@code null}
 	 */
 	public record CuentaGoogle(String idGoogle, String correo, String nombre) {
 	}
 
+	/** Client ID de la aplicación en Google Cloud; vacío si no se configuró. */
 	private final String clientId;
+
+	/** Busca la clave pública de Google a partir de su identificador. */
 	private final Function<String, PublicKey> buscarClave;
 
+	/**
+	 * Constructor que usa Spring: las claves salen de {@link GoogleClavesService}.
+	 *
+	 * @param clientId client ID de Google ({@code app.google.client-id})
+	 * @param claves   servicio que descarga y guarda las claves públicas de Google
+	 */
 	@Autowired
 	public GoogleTokenVerificador(@Value("${app.google.client-id:}") String clientId, GoogleClavesService claves) {
 		this(clientId, claves::buscar);
@@ -60,21 +77,31 @@ public class GoogleTokenVerificador {
 
 	/**
 	 * Constructor con otra fuente de claves (identificador de clave → clave
-	 * pública); lo usan las pruebas para firmar tokens propios.
+	 * pública). Lo usan las pruebas para firmar sus propios tokens.
+	 *
+	 * @param clientId    client ID esperado como audiencia
+	 * @param buscarClave función que devuelve la clave pública de cada
+	 *                    identificador, o {@code null} si no la conoce
 	 */
 	public GoogleTokenVerificador(String clientId, Function<String, PublicKey> buscarClave) {
 		this.clientId = clientId == null ? "" : clientId.trim();
 		this.buscarClave = buscarClave;
 	}
 
-	/** Indica si se configuró el client ID de Google. */
+	/**
+	 * Devuelve {@code true} si se configuró el client ID de Google.
+	 *
+	 * @return {@code true} si se configuró el client ID de Google
+	 */
 	public boolean estaConfigurado() {
 		return !clientId.isEmpty();
 	}
 
 	/**
-	 * Client ID con el que el front inicializa el botón de Google; null si no está
-	 * configurado. No es secreto.
+	 * Client ID con el que el frontend inicializa el botón de Google. No es
+	 * secreto.
+	 *
+	 * @return client ID, o {@code null} si no está configurado
 	 */
 	public String getClientId() {
 		return estaConfigurado() ? clientId : null;
@@ -83,6 +110,7 @@ public class GoogleTokenVerificador {
 	/**
 	 * Verifica el ID token.
 	 *
+	 * @param idToken ID token que entregó el botón de Google en el frontend
 	 * @return la cuenta de Google, o vacío si el token no es válido, venció, no es
 	 *         para esta aplicación o el correo no está verificado.
 	 */

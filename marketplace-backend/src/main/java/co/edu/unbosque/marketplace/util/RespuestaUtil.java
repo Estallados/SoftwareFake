@@ -14,38 +14,57 @@ import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
 
 /**
- * Utilidades comunes de los controllers: respuestas {@code {"message": ...}},
- * traducción de {@link Resultado} a HTTP, identidad del token y paginación.
- *
- * @see "RNF-022, CA-149"
+ * Utilidades que comparten todos los controladores.
+ * <p>
+ * Aquí está todo lo que se repetía en cada endpoint: armar respuestas con el
+ * formato {@code {"message": ...}}, traducir un {@link Resultado} a su código
+ * HTTP, sacar del token quién es el usuario y validar los parámetros de
+ * paginación.
+ * </p>
  */
 public final class RespuestaUtil {
 
 	/** Tamaño máximo de página que acepta la API. */
 	public static final int TAMANIO_MAXIMO = 100;
 
+	/** Clase utilitaria: no se instancia. */
 	private RespuestaUtil() {
 		throw new IllegalStateException("Clase utilitaria");
 	}
 
-	/** Respuesta JSON uniforme: {"message": "..."}. */
+	/**
+	 * Arma una respuesta con un mensaje, con el formato que usa toda la API:
+	 * {@code {"message": "..."}}.
+	 *
+	 * @param status estado HTTP de la respuesta
+	 * @param texto  mensaje para el usuario
+	 * @return respuesta con el estado y el mensaje
+	 */
 	public static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
 		return ResponseEntity.status(status).body(Map.of("message", texto));
 	}
 
 	/**
-	 * Traduce un {@link Resultado} a HTTP: 200 con el dato si fue exitoso; si no,
-	 * el estado que corresponde al código y {"message": causa}. Si el resultado
-	 * rechazado trae dato (por ejemplo, la reserva con pago rechazado), se incluye
-	 * como "dato".
+	 * Traduce un {@link Resultado} a HTTP. Si fue exitoso responde 200 con el
+	 * dato; si no, responde el estado que corresponde al código y
+	 * {@code {"message": causa}}. Cuando el resultado rechazado trae un dato (por
+	 * ejemplo, la reserva con el pago rechazado) también lo incluye en el campo
+	 * {@code "dato"}.
+	 *
+	 * @param resultado resultado que devolvió el servicio
+	 * @return respuesta HTTP equivalente
 	 */
 	public static ResponseEntity<Object> desde(Resultado<?> resultado) {
 		return desde(resultado, HttpStatus.OK);
 	}
 
 	/**
-	 * Igual que {@link #desde(Resultado)} pero con el estado de éxito indicado (por
-	 * ejemplo 201).
+	 * Igual que {@link #desde(Resultado)}, pero con el estado de éxito que se le
+	 * indique (por ejemplo, 201 al crear un recurso).
+	 *
+	 * @param resultado   resultado que devolvió el servicio
+	 * @param estadoExito estado HTTP que se responde si fue exitoso
+	 * @return respuesta HTTP equivalente
 	 */
 	public static ResponseEntity<Object> desde(Resultado<?> resultado, HttpStatus estadoExito) {
 		if (resultado.esExito()) {
@@ -61,7 +80,13 @@ public final class RespuestaUtil {
 		return ResponseEntity.status(estado).body(cuerpo);
 	}
 
-	/** Estado HTTP de cada código de {@link Resultado}. */
+	/**
+	 * Estado HTTP que corresponde a cada código de {@link Resultado}.
+	 *
+	 * @param codigo código de error del resultado
+	 * @return 404, 400, 403, 409, 402 o 502 según el código; 500 si no lo
+	 *         reconoce
+	 */
 	public static HttpStatus estadoDe(int codigo) {
 		return switch (codigo) {
 		case Resultado.NO_ENCONTRADO -> HttpStatus.NOT_FOUND;
@@ -75,8 +100,11 @@ public final class RespuestaUtil {
 	}
 
 	/**
-	 * Id del usuario autenticado (el principal es la entidad Usuario); null si no
-	 * hay sesión.
+	 * Id del usuario que hizo la petición. El principal que deja el filtro JWT es
+	 * la entidad {@link Usuario}.
+	 *
+	 * @param authentication autenticación de la petición; puede ser {@code null}
+	 * @return id del usuario, o {@code null} si no hay sesión
 	 */
 	public static Long idUsuario(Authentication authentication) {
 		if (authentication != null && authentication.getPrincipal() instanceof Usuario usuario) {
@@ -85,16 +113,27 @@ public final class RespuestaUtil {
 		return null;
 	}
 
-	/** Indica si el usuario autenticado es administrador. */
+	/**
+	 * Indica si el usuario que hizo la petición es administrador.
+	 *
+	 * @param authentication autenticación de la petición; puede ser {@code null}
+	 * @return {@code true} si tiene el rol {@link Role#ADMIN}
+	 */
 	public static boolean esAdmin(Authentication authentication) {
 		return authentication != null && authentication.getPrincipal() instanceof Usuario usuario
 				&& usuario.getRol() == Role.ADMIN;
 	}
 
 	/**
-	 * Página saneada: página &gt;= 0 y tamaño entre 1 y {@link #TAMANIO_MAXIMO}.
-	 * La página se limita para que el desplazamiento (página × tamaño) quepa en
-	 * un int; si no, la consulta falla con 500.
+	 * Arma una página válida a partir de lo que mandó el cliente: la página nunca
+	 * es negativa y el tamaño queda entre 1 y {@link #TAMANIO_MAXIMO}. También
+	 * limito la página para que el desplazamiento (página × tamaño) quepa en un
+	 * {@code int}; si no, la consulta revienta con un 500.
+	 *
+	 * @param pagina  número de página pedido (desde 0)
+	 * @param tamanio cantidad de elementos por página pedida
+	 * @param orden   orden de los resultados
+	 * @return paginación lista para pasarla al repositorio
 	 */
 	public static Pageable pagina(int pagina, int tamanio, Sort orden) {
 		int tamanioValido = Math.min(Math.max(tamanio, 1), TAMANIO_MAXIMO);

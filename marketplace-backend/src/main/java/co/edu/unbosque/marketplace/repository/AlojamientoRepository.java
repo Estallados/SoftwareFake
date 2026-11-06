@@ -16,38 +16,63 @@ import co.edu.unbosque.marketplace.entity.EstadoAlojamiento;
 import jakarta.persistence.LockModeType;
 
 /**
- * Repositorio de {@link Alojamiento}. La búsqueda pública usa especificaciones
- * ({@link AlojamientoEspecificacion}).
- *
- * @see "RF-017, RF-019, RF-024"
+ * Acceso a los alojamientos. La búsqueda pública usa especificaciones de JPA
+ * ({@link AlojamientoEspecificacion}) para combinar solo los filtros que mande
+ * el usuario.
  */
 public interface AlojamientoRepository extends JpaRepository<Alojamiento, Long>, JpaSpecificationExecutor<Alojamiento> {
 
-	/** Publicaciones de un anfitrión. */
+	/**
+	 * Publicaciones de un anfitrión, paginadas.
+	 *
+	 * @param idAnfitrion anfitrión dueño
+	 * @param pageable página y orden
+	 * @return página de alojamientos
+	 */
 	public Page<Alojamiento> findByIdAnfitrion(Long idAnfitrion, Pageable pageable);
 
-	/** Publicaciones en un estado (cola de revisión del administrador). */
+	/**
+	 * Publicaciones en un estado, por ejemplo la cola de revisión del
+	 * administrador.
+	 *
+	 * @param estado estado a filtrar
+	 * @param pageable página y orden
+	 * @return página de alojamientos
+	 */
 	public Page<Alojamiento> findByEstado(EstadoAlojamiento estado, Pageable pageable);
 
-	/** Cantidad de publicaciones en un estado (dashboard). */
+	/**
+	 * Cantidad de publicaciones en un estado.
+	 *
+	 * @param estado estado a contar
+	 * @return cantidad
+	 */
 	public long countByEstado(EstadoAlojamiento estado);
 
-	/** Cantidad de alojamientos por estado (dashboard). Cada fila es [estado, cantidad]. */
+	/**
+	 * Cantidad de alojamientos por estado, para el dashboard.
+	 *
+	 * @return filas con la forma [estado, cantidad]
+	 */
 	@Query("select a.estado, count(a) from Alojamiento a group by a.estado")
 	public List<Object[]> contarPorEstado();
 
 	/**
-	 * Cantidad de alojamientos por tipo, en orden alfabético. Cada fila es
-	 * [tipo, cantidad].
+	 * Cantidad de alojamientos por tipo, en orden alfabético, para los filtros
+	 * de la página de inicio.
+	 *
+	 * @return filas con la forma [tipo, cantidad]
 	 */
 	@Query("select a.tipo, count(a) from Alojamiento a where a.tipo is not null group by a.tipo order by a.tipo")
 	public List<Object[]> contarPorTipo();
 
 	/**
-	 * Lee el alojamiento con bloqueo pesimista de escritura: dos reservas
-	 * simultáneas sobre el mismo alojamiento se procesan una después de la otra.
+	 * Lee el alojamiento con bloqueo pesimista de escritura. Así dos reservas
+	 * que llegan al mismo tiempo sobre el mismo alojamiento se procesan una
+	 * después de la otra y no pueden ocupar las mismas fechas.
 	 *
-	 * @see "RNF-028, RNF-029, CA-073"
+	 * @param id alojamiento a bloquear
+	 * @return el alojamiento, si existe
 	 */
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select a from Alojamiento a where a.idAlojamiento = :id")

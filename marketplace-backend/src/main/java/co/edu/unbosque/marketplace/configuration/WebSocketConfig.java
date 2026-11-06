@@ -20,21 +20,35 @@ import co.edu.unbosque.marketplace.security.WebSocketAuthInterceptor;
  *
  * @see <a href="https://spring.io/guides/gs/messaging-stomp-websocket">Guía
  *      STOMP de Spring</a>
- * @see "RF-003, RF-029"
  */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+	/** Interceptor que autentica la conexión y controla las suscripciones. */
 	private final WebSocketAuthInterceptor authInterceptor;
+
+	/** Orígenes del frontend que pueden abrir el WebSocket (los mismos de CORS). */
 	private final List<String> origenesPermitidos;
 
+	/**
+	 * Crea la configuración.
+	 *
+	 * @param authInterceptor    interceptor de seguridad de STOMP
+	 * @param origenesPermitidos orígenes permitidos; por defecto
+	 *                           {@code http://localhost:4200}
+	 */
 	public WebSocketConfig(WebSocketAuthInterceptor authInterceptor,
 			@Value("${app.cors.allowed-origins:http://localhost:4200}") List<String> origenesPermitidos) {
 		this.authInterceptor = authInterceptor;
 		this.origenesPermitidos = origenesPermitidos;
 	}
 
+	/**
+	 * Registra el punto de conexión {@code /ws}, sin SockJS.
+	 *
+	 * @param registry registro de endpoints STOMP
+	 */
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry registry) {
 		// Mismos orígenes que CORS (SecurityConfig)
@@ -42,12 +56,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 				.toArray(String[]::new));
 	}
 
+	/**
+	 * Usa el broker simple en memoria con destinos {@code /queue} y el prefijo
+	 * {@code /user} para los destinos de cada usuario.
+	 *
+	 * @param registry registro del broker
+	 */
 	@Override
 	public void configureMessageBroker(MessageBrokerRegistry registry) {
 		registry.enableSimpleBroker("/queue");
 		registry.setUserDestinationPrefix("/user");
 	}
 
+	/**
+	 * Pone el interceptor de seguridad en el canal de entrada, para que revise
+	 * cada frame que manda el cliente.
+	 *
+	 * @param registration configuración del canal de entrada
+	 */
 	@Override
 	public void configureClientInboundChannel(ChannelRegistration registration) {
 		registration.interceptors(authInterceptor);

@@ -16,16 +16,38 @@ import jakarta.annotation.PostConstruct;
 @Component
 public class VerificadorConfiguracion {
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(VerificadorConfiguracion.class);
 
+	/** Propiedades y variables de entorno de la aplicación. */
 	private final Environment environment;
+
+	/** Para saber si Cloudinary está configurado. */
 	private final CloudinaryService cloudinaryService;
 
+	/**
+	 * Crea el verificador.
+	 *
+	 * @param environment       entorno de Spring
+	 * @param cloudinaryService cliente de Cloudinary
+	 */
 	public VerificadorConfiguracion(Environment environment, CloudinaryService cloudinaryService) {
 		this.environment = environment;
 		this.cloudinaryService = cloudinaryService;
 	}
 
+	/**
+	 * Hace las revisiones al crear el bean:
+	 * <ul>
+	 * <li>{@code AES_SECRET_KEY} es obligatoria: si falta o no es válida, la
+	 * aplicación no arranca, porque sin ella no se puede registrar ni iniciar
+	 * sesión.</li>
+	 * <li>{@code MAIL_PASSWORD} y {@code CLOUDINARY_URL} son opcionales: si
+	 * faltan, solo se deja un aviso en el log.</li>
+	 * </ul>
+	 *
+	 * @throws IllegalStateException si {@code AES_SECRET_KEY} falta o no es válida
+	 */
 	@PostConstruct
 	public void verificar() {
 		// Sin AES_SECRET_KEY no se puede registrar ni iniciar sesión: mejor no arrancar
@@ -41,9 +63,15 @@ public class VerificadorConfiguracion {
 	}
 
 	/**
-	 * No se usa {@code @Value} porque spring.mail.password apunta a
-	 * ${MAIL_PASSWORD}: si esa variable no existe, {@code @Value} lanza una
-	 * excepción y la app no arranca. El correo es opcional, solo se avisa.
+	 * Indica si hay contraseña de correo configurada.
+	 * <p>
+	 * No uso {@code @Value} porque {@code spring.mail.password} apunta a
+	 * {@code ${MAIL_PASSWORD}}: si esa variable no existe, {@code @Value} lanza
+	 * una excepción y la app no arranca. El correo es opcional, así que solo se
+	 * avisa.
+	 * </p>
+	 *
+	 * @return {@code true} si la contraseña de correo está definida
 	 */
 	private boolean correoConfigurado() {
 		try {

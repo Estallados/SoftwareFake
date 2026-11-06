@@ -30,21 +30,37 @@ import co.edu.unbosque.marketplace.util.AESUtil;
 @Component
 public class AdminInicializador implements CommandLineRunner {
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(AdminInicializador.class);
 
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Codificador con el que se guarda la contraseña. */
 	private final PasswordEncoder passwordEncoder;
+
+	/** Servicio donde queda registrada la creación del administrador. */
 	private final AuditoriaService auditoriaService;
 
+	/** Correo del administrador ({@code ADMIN_EMAIL}). */
 	@Value("${app.admin.email}")
 	private String correo;
 
+	/** Contraseña del administrador ({@code ADMIN_PASSWORD}); vacía si no se definió. */
 	@Value("${app.admin.password:}")
 	private String contrasenia;
 
+	/** Nombre que se le pone al administrador. */
 	@Value("${app.admin.full-name:Administrador}")
 	private String nombre;
 
+	/**
+	 * Crea el inicializador.
+	 *
+	 * @param usuarioRepo      repositorio de usuarios
+	 * @param passwordEncoder  codificador de contraseñas
+	 * @param auditoriaService servicio de auditoría
+	 */
 	public AdminInicializador(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder,
 			AuditoriaService auditoriaService) {
 		this.usuarioRepo = usuarioRepo;
@@ -52,6 +68,15 @@ public class AdminInicializador implements CommandLineRunner {
 		this.auditoriaService = auditoriaService;
 	}
 
+	/**
+	 * Revisa si hay que crear el administrador y lo crea. No hace nada (solo deja
+	 * un aviso en el log) si ya hay un administrador, si no se definió la
+	 * contraseña, si la contraseña no cumple las reglas o si el correo ya es de
+	 * otro usuario. El administrador queda activo y con el correo verificado,
+	 * porque lo configura quien despliega la aplicación.
+	 *
+	 * @param args argumentos de la línea de comandos (no se usan)
+	 */
 	@Override
 	public void run(String... args) {
 		if (usuarioRepo.existsByRol(Role.ADMIN)) {

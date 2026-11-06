@@ -25,14 +25,29 @@ import co.edu.unbosque.marketplace.service.CloudinaryService;
 @ConditionalOnProperty(name = "app.imagenes.migrar", havingValue = "true")
 public class MigracionImagenesInicializador implements CommandLineRunner {
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(MigracionImagenesInicializador.class);
+
+	/** Consulta que lee la tabla vieja de imágenes en orden. */
 	private static final String CONSULTA = "SELECT id_imagen, id_alojamiento, url, ruta_archivo, principal "
 			+ "FROM imagen ORDER BY id_imagen";
 
+	/** Acceso JDBC directo, porque la tabla vieja ya no tiene entidad. */
 	private final JdbcTemplate jdbc;
+
+	/** Servicio que sube cada imagen a Cloudinary. */
 	private final AlmacenamientoService almacenamientoService;
+
+	/** Para revisar que Cloudinary esté configurado antes de empezar. */
 	private final CloudinaryService cloudinaryService;
 
+	/**
+	 * Crea el inicializador.
+	 *
+	 * @param jdbc                  acceso JDBC a la base
+	 * @param almacenamientoService servicio de almacenamiento de imágenes
+	 * @param cloudinaryService     cliente de Cloudinary
+	 */
 	public MigracionImagenesInicializador(JdbcTemplate jdbc, AlmacenamientoService almacenamientoService,
 			CloudinaryService cloudinaryService) {
 		this.jdbc = jdbc;
@@ -40,6 +55,13 @@ public class MigracionImagenesInicializador implements CommandLineRunner {
 		this.cloudinaryService = cloudinaryService;
 	}
 
+	/**
+	 * Recorre la tabla vieja y migra cada imagen. Al final deja en el log cuántas
+	 * se leyeron y cuántas fallaron. Si falta la configuración de Cloudinary o no
+	 * se puede leer la tabla, no hace nada.
+	 *
+	 * @param args argumentos de la línea de comandos (no se usan)
+	 */
 	@Override
 	public void run(String... args) {
 		if (!cloudinaryService.estaConfigurado()) {

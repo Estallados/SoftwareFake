@@ -23,8 +23,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 /**
  * Controlador REST de notificaciones. Ruta base: {@code /notificaciones}. Cada
  * usuario ve y marca solo las suyas.
- *
- * @see "RF-003, CA-013"
  */
 @RestController
 @RequestMapping("/notificaciones")
@@ -33,12 +31,27 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class NotificacionController {
 
+	/** Servicio de notificaciones. */
 	private final NotificacionService notificacionService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param notificacionService servicio de notificaciones
+	 */
 	public NotificacionController(NotificacionService notificacionService) {
 		this.notificacionService = notificacionService;
 	}
 
+	/**
+	 * Mis notificaciones, de la más reciente a la más antigua. Ruta:
+	 * {@code GET /notificaciones}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de notificaciones
+	 */
 	@Operation(summary = "Mis notificaciones, de la más reciente a la más antigua")
 	@ApiResponse(responseCode = "200", description = "Página de notificaciones, las más recientes primero")
 	@GetMapping
@@ -48,6 +61,13 @@ public class NotificacionController {
 				.pagina(pagina, tamanio, Sort.by("fecha").descending().and(Sort.by("idNotificacion").descending()))));
 	}
 
+	/**
+	 * Cantidad de notificaciones sin leer, para el contador de la campana.
+	 * Ruta: {@code GET /notificaciones/noleidas}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @return 200 con {cantidad}
+	 */
 	@Operation(summary = "Cantidad de notificaciones sin leer (contador de la campana)", description = "Devuelve {cantidad}.")
 	@ApiResponse(responseCode = "200", description = "{cantidad}: notificaciones sin leer")
 	@GetMapping("/noleidas")
@@ -56,6 +76,13 @@ public class NotificacionController {
 				.ok(Map.of("cantidad", notificacionService.contarNoLeidas(RespuestaUtil.idUsuario(authentication))));
 	}
 
+	/**
+	 * Marca todas mis notificaciones como leídas. Ruta:
+	 * {@code PATCH /notificaciones/leidas}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @return 200 con {actualizadas}: cuántas se marcaron
+	 */
 	@Operation(summary = "Marcar todas mis notificaciones como leídas", description = "Devuelve {actualizadas}.")
 	@ApiResponse(responseCode = "200", description = "{actualizadas}: cuántas se marcaron")
 	@PatchMapping("/leidas")
@@ -64,6 +91,14 @@ public class NotificacionController {
 				Map.of("actualizadas", notificacionService.marcarTodasLeidas(RespuestaUtil.idUsuario(authentication))));
 	}
 
+	/**
+	 * Marca una notificación propia como leída. Ruta:
+	 * {@code PATCH /notificaciones/{id}/leida}.
+	 *
+	 * @param id notificación
+	 * @param authentication usuario autenticado
+	 * @return 200 con la notificación; 404 si no existe o es de otro usuario
+	 */
 	@Operation(summary = "Marcar una notificación propia como leída")
 	@ApiResponse(responseCode = "200", description = "Notificación marcada como leída")
 	@ApiResponse(responseCode = "404", description = "La notificación no existe.")

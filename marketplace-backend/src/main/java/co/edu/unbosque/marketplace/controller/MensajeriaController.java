@@ -23,10 +23,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de mensajería huésped-anfitrión. Ruta base:
+ * Controlador REST de la mensajería entre huésped y anfitrión. Ruta base:
  * {@code /conversaciones}. Solo los participantes acceden a cada conversación.
- *
- * @see "RF-029"
+ * Los mensajes nuevos también llegan en tiempo real por WebSocket.
  */
 @RestController
 @RequestMapping("/conversaciones")
@@ -35,12 +34,29 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class MensajeriaController {
 
+	/** Servicio de mensajería. */
 	private final MensajeriaService mensajeriaService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param mensajeriaService servicio de mensajería
+	 */
 	public MensajeriaController(MensajeriaService mensajeriaService) {
 		this.mensajeriaService = mensajeriaService;
 	}
 
+	/**
+	 * Inicia o retoma una conversación con el anfitrión de un alojamiento.
+	 * Ruta: {@code POST /conversaciones}.
+	 *
+	 * @param datos DTO con {@code idAlojamiento} y, si se quiere, un primer
+	 *              {@code mensaje}
+	 * @param authentication usuario autenticado
+	 * @return 201 con la conversación nueva; 200 si ya existía; 400 si los
+	 *         datos no son válidos; 403 si es su propio alojamiento; 404 si el
+	 *         alojamiento no existe
+	 */
 	@Operation(summary = "Iniciar o retomar una conversación con el anfitrión de un alojamiento")
 	@ApiResponse(responseCode = "200", description = "Ya existía: la conversación de antes (con el mensaje nuevo, si "
 			+ "se envió)")
@@ -58,6 +74,14 @@ public class MensajeriaController {
 		return RespuestaUtil.desde(mensajeriaService.iniciar(datos, idUsuario), exito);
 	}
 
+	/**
+	 * Mis conversaciones. Ruta: {@code GET /conversaciones}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de conversaciones
+	 */
 	@Operation(summary = "Mis conversaciones")
 	@ApiResponse(responseCode = "200", description = "Página de conversaciones del usuario")
 	@GetMapping
@@ -67,6 +91,17 @@ public class MensajeriaController {
 				RespuestaUtil.pagina(pagina, tamanio, Sort.by("fechaCreacion").descending())));
 	}
 
+	/**
+	 * Mensajes de una conversación (solo para sus participantes). Ruta:
+	 * {@code GET /conversaciones/{id}/mensajes}.
+	 *
+	 * @param id conversación
+	 * @param authentication usuario autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de mensajes; 403 si no participa; 404 si no
+	 *         existe
+	 */
 	@Operation(summary = "Mensajes de una conversación (solo participantes)")
 	@ApiResponse(responseCode = "200", description = "Página de mensajes")
 	@ApiResponse(responseCode = "403", description = "No participas en esta conversación.")
@@ -78,6 +113,16 @@ public class MensajeriaController {
 				RespuestaUtil.pagina(pagina, tamanio, Sort.by("fechaEnvio").and(Sort.by("idMensaje")))));
 	}
 
+	/**
+	 * Envía un mensaje en una conversación propia y se le notifica al otro
+	 * participante. Ruta: {@code POST /conversaciones/{id}/mensajes}.
+	 *
+	 * @param id conversación
+	 * @param datos DTO con el {@code contenido}
+	 * @param authentication usuario autenticado
+	 * @return 201 con el mensaje; 400 si está vacío o es muy largo; 403 si no
+	 *         participa; 404 si no existe
+	 */
 	@Operation(summary = "Enviar un mensaje (solo participantes)")
 	@ApiResponse(responseCode = "201", description = "Mensaje enviado; se notifica al otro participante")
 	@ApiResponse(responseCode = "400", description = "El mensaje debe tener entre 1 y 2000 caracteres.")

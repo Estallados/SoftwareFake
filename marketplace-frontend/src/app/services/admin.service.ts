@@ -14,21 +14,31 @@ import { Usuario } from '../models/usuarioDto';
 import { API_URL } from './api-url';
 /** Filtros opcionales de la auditoría. desde/hasta en ISO date-time (ej. 2026-10-31T00:00:00). */
 export interface FiltrosAuditoria {
+  /** Acción exacta, por ejemplo LOGIN. */
   accion?: string;
+  /** Usuario que hizo la acción. */
   idActor?: number;
+  /** Fecha y hora mínima (ISO). */
   desde?: string;
+  /** Fecha y hora máxima (ISO). */
   hasta?: string;
 }
 /** Página del backend: contenido más los totales para paginar. */
 export interface Pagina<T> {
+  /** Elementos de la página. */
   contenido: T[];
+  /** Número de la página, desde 0. */
   pagina: number;
+  /** Elementos por página. */
   tamanio: number;
+  /** Total de elementos en todas las páginas. */
   totalElementos: number;
+  /** Total de páginas. */
   totalPaginas: number;
 }
 /** Acciones de moderación sobre un alojamiento. */
 export type AccionAlojamiento = 'aprobar' | 'rechazar' | 'bloquear' | 'desbloquear';
+/** Estados de un alojamiento con el texto que se muestra en pantalla. */
 export const ESTADOS_ALOJAMIENTO = [
   { valor: 'PENDIENTE_REVISION', texto: 'Pendiente de revisión' },
   { valor: 'ACTIVA', texto: 'Activa' },
@@ -36,18 +46,26 @@ export const ESTADOS_ALOJAMIENTO = [
   { valor: 'BLOQUEADA', texto: 'Bloqueada' },
   { valor: 'BORRADOR', texto: 'Borrador' },
 ];
+/** Textos y comportamiento del cuadro de confirmación de una acción sobre un alojamiento. */
 export interface ConfigAccion {
+  /** Título del cuadro. */
   titulo: string;
+  /** Explicación de lo que va a pasar. */
   texto: string;
+  /** Etiqueta del campo del motivo. */
   etiquetaMotivo: string;
+  /** Texto del botón que confirma. */
   confirmar: string;
+  /** Texto del botón que abre la acción. */
   boton: string;
+  /** Indica si el motivo es obligatorio. */
   requiereMotivo: boolean;
   /** Acción destructiva: se pinta en rojo. */
   peligro: boolean;
   /** Estado en el que queda el alojamiento si la acción se aplica. */
   resultado: string;
 }
+/** Configuración de cada acción que el administrador puede hacer sobre un alojamiento. */
 export const ACCIONES_ALOJAMIENTO: Record<AccionAlojamiento, ConfigAccion> = {
   aprobar: {
     titulo: 'Aprobar alojamiento',
@@ -117,6 +135,12 @@ export function valorDe(obj: unknown, ...claves: string[]): string {
   }
   return '';
 }
+/**
+ * Estado de un alojamiento como texto.
+ *
+ * @param a alojamiento
+ * @returns el estado, o vacío
+ */
 export function estadoDe(a: Alojamiento | null | undefined): string {
   return valorDe(a, 'estado');
 }
@@ -124,9 +148,21 @@ export function estadoDe(a: Alojamiento | null | undefined): string {
 export function conEstado(a: Alojamiento, estado: string): Alojamiento {
   return { ...a, estado } as Alojamiento;
 }
+/**
+ * Texto en español de un estado de alojamiento.
+ *
+ * @param estado estado del backend
+ * @returns texto para mostrar
+ */
 export function etiquetaEstado(estado: string): string {
   return ESTADOS_ALOJAMIENTO.find((e) => e.valor === estado)?.texto ?? (estado || 'Sin estado');
 }
+/**
+ * Clases de Tailwind de la etiqueta de color de un estado.
+ *
+ * @param estado estado del alojamiento
+ * @returns clases CSS
+ */
 export function claseBadge(estado: string): string {
   const tono =
     estado === 'ACTIVA'
@@ -144,11 +180,16 @@ export function claseBadge(estado: string): string {
  */
 @Injectable({ providedIn: 'root' })
 export class AdminService {
+  /** Cliente HTTP. */
   private http = inject(HttpClient);
+
+  /** Ruta base de la administración. */
   private base = `${inject(API_URL)}/admin`;
   // ================= Caché =================
   /** Tiempo que se reutiliza una respuesta antes de volver a pedirla. */
   private readonly TTL_MS = 60_000;
+
+  /** Respuestas guardadas por URL, con su momento de vencimiento. */
   private readonly cache = new Map<string, { expira: number; fuente$: Observable<unknown> }>();
   /** Reutiliza la misma petición mientras no venza el TTL; los errores no se guardan. */
   private cacheado<T>(clave: string, pedir: () => Observable<T>, ttl = this.TTL_MS): Observable<T> {
@@ -351,10 +392,26 @@ export class AdminService {
         ),
       );
   }
+
+  /**
+   * Nombre del archivo descargado, tomado de la cabecera Content-Disposition.
+   *
+   * @param cabecera valor de la cabecera
+   * @param tipo tipo de reporte
+   * @param formato pdf o excel
+   * @returns nombre del archivo
+   */
   private nombreDeArchivo(cabecera: string | null, tipo: string, formato: string): string {
     const encontrado = cabecera?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
     return encontrado ? decodeURIComponent(encontrado[1]) : `reporte-${tipo}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
   }
+
+  /**
+   * Intenta leer un texto como JSON.
+   *
+   * @param texto texto recibido
+   * @returns el objeto, o el mismo texto si no es JSON
+   */
   private comoJson(texto: string): unknown {
     try {
       return JSON.parse(texto);
@@ -363,7 +420,13 @@ export class AdminService {
     }
   }
   // ================= Utilidades =================
-  /** Mensaje legible a partir de un error HTTP del backend. */
+  /**
+   * Mensaje legible a partir de un error HTTP del backend.
+   *
+   * @param error error recibido
+   * @param porDefecto mensaje si el error no trae uno
+   * @returns mensaje para el usuario
+   */
   mensajeDeError(error: unknown, porDefecto: string): string {
     const e = error as HttpErrorResponse;
     if (e?.status === 0) {
@@ -375,7 +438,13 @@ export class AdminService {
     }
     return cuerpo?.mensaje ?? cuerpo?.message ?? cuerpo?.error ?? porDefecto;
   }
-  /** GET de una lista paginada del backend; devuelve solo el arreglo `contenido`. */
+  /**
+   * GET de una lista paginada del backend; devuelve solo el arreglo `contenido`.
+   *
+   * @param url ruta a consultar
+   * @param valores parámetros de la consulta
+   * @returns los elementos
+   */
   private lista<T>(url: string, valores: Record<string, unknown> = {}): Observable<T[]> {
     const params = this.params(valores);
     return this.cacheado(`${url}|${params.toString()}`, () =>
@@ -384,7 +453,13 @@ export class AdminService {
         .pipe(map((r) => r?.contenido ?? r?.content ?? [])),
     );
   }
-  /** Pide la primera página y, si hay más, el resto en paralelo (hasta `maxPaginas`). */
+  /**
+   * Pide la primera página y, si hay más, el resto en paralelo (hasta `maxPaginas`).
+   *
+   * @param pedir función que pide una página
+   * @param maxPaginas máximo de páginas a pedir
+   * @returns todos los elementos y el total
+   */
   private todasLasPaginas<T>(
     pedir: (pagina: number) => Observable<Pagina<T>>,
     maxPaginas: number,
@@ -405,7 +480,13 @@ export class AdminService {
       }),
     );
   }
-  /** GET de una lista paginada conservando los totales. */
+  /**
+   * GET de una lista paginada conservando los totales.
+   *
+   * @param url ruta a consultar
+   * @param valores parámetros de la consulta
+   * @returns la página
+   */
   private paginado<T>(url: string, valores: Record<string, unknown> = {}): Observable<Pagina<T>> {
     const params = this.params(valores);
     return this.cacheado(`${url}|${params.toString()}`, () =>

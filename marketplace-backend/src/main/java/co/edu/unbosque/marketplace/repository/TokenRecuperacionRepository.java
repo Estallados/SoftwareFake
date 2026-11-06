@@ -13,18 +13,21 @@ import org.springframework.stereotype.Repository;
 import co.edu.unbosque.marketplace.entity.TokenRecuperacion;
 
 /**
- * Almacén en memoria de {@link TokenRecuperacion}; no usa la base de datos.
+ * Almacén en memoria de los tokens de recuperación de contraseña; no usa la
+ * base de datos.
+ * <p>
  * Guarda un solo token por usuario, porque cada token nuevo invalida el
  * anterior. Los tokens se pierden al reiniciar la aplicación (el usuario pide
  * otro) y no se comparten entre instancias.
- *
- * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
+ * </p>
  */
 @Repository
 public class TokenRecuperacionRepository {
 
+	/** Cada cuánto se limpian los tokens usados o vencidos (5 minutos). */
 	private static final long INTERVALO_LIMPIEZA_MS = 300_000;
 
+	/** Token vigente de cada usuario. */
 	private final Map<Long, TokenRecuperacion> tokens = new ConcurrentHashMap<>();
 
 	/**
@@ -59,12 +62,20 @@ public class TokenRecuperacionRepository {
 				.stream().toList();
 	}
 
-	/** @return Todos los tokens guardados. */
+	/**
+	 * Devuelve Todos los tokens guardados.
+	 *
+	 * @return Todos los tokens guardados.
+	 */
 	public List<TokenRecuperacion> findAll() {
 		return new ArrayList<>(tokens.values());
 	}
 
-	/** @return Cantidad de tokens guardados. */
+	/**
+	 * Devuelve Cantidad de tokens guardados.
+	 *
+	 * @return Cantidad de tokens guardados.
+	 */
 	public long count() {
 		return tokens.size();
 	}

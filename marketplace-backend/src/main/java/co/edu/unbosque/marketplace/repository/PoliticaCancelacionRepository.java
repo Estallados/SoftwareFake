@@ -7,11 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import co.edu.unbosque.marketplace.entity.PoliticaCancelacion;
 
 /**
- * Repositorio de {@link PoliticaCancelacion}.
- *
- * @see "RF-002"
+ * Acceso a las políticas de cancelación (FLEXIBLE, MODERADA y ESTRICTA).
  */
 public interface PoliticaCancelacionRepository extends JpaRepository<PoliticaCancelacion, Long> {
 
+	/**
+	 * Busca una política por su nombre.
+	 *
+	 * @param nombre nombre de la política
+	 * @return la política, si existe
+	 */
 	public Optional<PoliticaCancelacion> findByNombre(String nombre);
 }

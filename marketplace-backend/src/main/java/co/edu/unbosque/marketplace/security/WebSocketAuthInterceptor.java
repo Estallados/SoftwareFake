@@ -33,17 +33,39 @@ import io.jsonwebtoken.JwtException;
 @Component
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
+	/** Prefijo del encabezado de autorización. */
 	private static final String PREFIJO_BEARER = "Bearer ";
+
+	/** Mensaje del frame ERROR cuando el token no sirve. */
 	private static final String NO_AUTENTICADO = "No autenticado: token ausente, inválido o expirado";
 
+	/** Lee y valida los JWT. */
 	private final JwtUtil jwtUtil;
+
+	/** Carga el usuario dueño del token. */
 	private final UserDetailsService userDetailsService;
 
+	/**
+	 * Crea el interceptor.
+	 *
+	 * @param jwtUtil            utilidad de JWT
+	 * @param userDetailsService servicio que carga los usuarios
+	 */
 	public WebSocketAuthInterceptor(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
 		this.jwtUtil = jwtUtil;
 		this.userDetailsService = userDetailsService;
 	}
 
+	/**
+	 * Revisa cada frame antes de procesarlo: autentica el CONNECT, limita los
+	 * SUBSCRIBE a las colas propias y rechaza los SEND.
+	 *
+	 * @param message frame STOMP recibido
+	 * @param channel canal por el que llegó
+	 * @return el mismo frame si se permite
+	 * @throws MessageDeliveryException si el frame no cumple las reglas; el
+	 *                                  cliente recibe un frame ERROR
+	 */
 	@Override
 	public Message<?> preSend(Message<?> message, MessageChannel channel) {
 		StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
@@ -68,6 +90,11 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 	/**
 	 * Usuario de la conexión. Su nombre es el id, así los services envían a
 	 * {@code /user/{id}/queue/...} sin buscar ni descifrar el correo.
+	 *
+	 * @param encabezado valor del encabezado {@code Authorization} del CONNECT
+	 * @return usuario autenticado de la conexión
+	 * @throws MessageDeliveryException si no hay token, no es válido o el usuario
+	 *                                  está desactivado o restringido
 	 */
 	private Principal autenticar(String encabezado) {
 		if (encabezado != null && encabezado.startsWith(PREFIJO_BEARER)) {

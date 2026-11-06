@@ -23,11 +23,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de reseñas. Registrar requiere ser el huésped de una reserva
- * completada; la consulta por alojamiento es pública. El huésped ve sus reseñas
- * y el anfitrión las de sus alojamientos.
- *
- * @see "RF-004"
+ * Controlador REST de reseñas. Para reseñar hay que ser el huésped de una
+ * reserva completada; la consulta por alojamiento es pública. El huésped ve
+ * sus reseñas y el anfitrión las de sus alojamientos.
  */
 @RestController
 @SecurityRequirement(name = "bearerAuth")
@@ -35,14 +33,32 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class ResenaController {
 
+	/** Orden de las reseñas: las más recientes primero. */
 	private static final Sort RECIENTES = Sort.by("fecha").descending();
 
+	/** Servicio de reseñas. */
 	private final ResenaService resenaService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param resenaService servicio de reseñas
+	 */
 	public ResenaController(ResenaService resenaService) {
 		this.resenaService = resenaService;
 	}
 
+	/**
+	 * Reseña una estancia completada (solo huéspedes): una reseña por reserva,
+	 * con calificación de 1 a 5. Ruta: {@code POST /resenas}.
+	 *
+	 * @param datos DTO con {@code idReserva}, {@code calificacion} y
+	 *              {@code comentario}
+	 * @param authentication huésped autenticado
+	 * @return 201 con la reseña; 400 si los datos no son válidos; 404 si la
+	 *         reserva no existe; 409 si la estancia no está completada o ya
+	 *         tiene reseña
+	 */
 	@Operation(summary = "Reseñar una estancia completada (HUESPED)", description = "Una reseña por reserva, calificación de 1 a 5.")
 	@PreAuthorize("hasRole('HUESPED')")
 	@ApiResponse(responseCode = "201", description = "Reseña publicada; se notifica al anfitrión")
@@ -57,6 +73,15 @@ public class ResenaController {
 				HttpStatus.CREATED);
 	}
 
+	/**
+	 * Mis reseñas como huésped, incluidas las ocultas. Ruta:
+	 * {@code GET /resenas/mias}.
+	 *
+	 * @param authentication huésped autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de reseñas y su estado
+	 */
 	@Operation(summary = "Mis reseñas como huésped, incluidas las ocultas (HUESPED)")
 	@PreAuthorize("hasRole('HUESPED')")
 	@ApiResponse(responseCode = "200", description = "Página de reseñas del huésped con su estado")
@@ -67,6 +92,18 @@ public class ResenaController {
 				RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
+	/**
+	 * Reseñas visibles de mis alojamientos con promedio y cantidad (solo
+	 * anfitriones). Con {@code idAlojamiento} se filtran las de ese
+	 * alojamiento, que debe ser propio. Ruta: {@code GET /resenas/anfitrion}.
+	 *
+	 * @param authentication anfitrión autenticado
+	 * @param idAlojamiento alojamiento a filtrar; opcional
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con las reseñas, el promedio y la cantidad; 404 si el
+	 *         alojamiento no existe o no es propio
+	 */
 	@Operation(summary = "Reseñas visibles de mis alojamientos con promedio y cantidad (ANFITRION)", description = "Con idAlojamiento se filtran las de ese alojamiento (debe ser propio).")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Reseñas de los alojamientos del anfitrión con promedio y "
@@ -80,6 +117,16 @@ public class ResenaController {
 				idAlojamiento, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
+	/**
+	 * Reseñas visibles de un alojamiento con promedio y cantidad. Ruta
+	 * pública: {@code GET /alojamientos/{idAlojamiento}/resenas}.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con las reseñas, el promedio y la cantidad; 404 si el
+	 *         alojamiento no existe
+	 */
 	@Operation(summary = "Reseñas visibles de un alojamiento con promedio y cantidad (público)")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Reseñas visibles con promedio y cantidad")

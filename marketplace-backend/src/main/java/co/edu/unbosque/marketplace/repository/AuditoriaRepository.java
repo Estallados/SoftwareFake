@@ -12,14 +12,12 @@ import org.springframework.data.repository.query.Param;
 import co.edu.unbosque.marketplace.entity.EventoAuditoria;
 
 /**
- * Repositorio de solo inserción para {@link EventoAuditoria}.
+ * Acceso de solo inserción a la auditoría.
  * <p>
  * Extiende {@link Repository} (no {@code JpaRepository}) para exponer
- * únicamente guardar y consultar: no hay métodos de actualización ni de
- * borrado.
+ * únicamente guardar y consultar: no hay métodos para modificar ni borrar
+ * eventos.
  * </p>
- *
- * @see "RNF-023, RNF-026"
  */
 public interface AuditoriaRepository extends Repository<EventoAuditoria, Long> {
 
@@ -49,9 +47,15 @@ public interface AuditoriaRepository extends Repository<EventoAuditoria, Long> {
 	public Page<EventoAuditoria> findByAccion(String accion, Pageable pageable);
 
 	/**
-	 * Consulta paginada con filtros opcionales (null = sin filtro).
+	 * Consulta paginada con filtros opcionales; un filtro en {@code null} no
+	 * se aplica.
 	 *
-	 * @see "RF-015, CA-062"
+	 * @param accion acción a filtrar, por ejemplo LOGIN
+	 * @param idActor usuario que hizo la acción
+	 * @param desde fecha y hora mínima
+	 * @param hasta fecha y hora máxima
+	 * @param pageable página y orden
+	 * @return página de eventos
 	 */
 	@Query("select e from EventoAuditoria e where (:accion is null or e.accion = :accion) "
 			+ "and (:idActor is null or e.idUsuario = :idActor) "
@@ -63,7 +67,8 @@ public interface AuditoriaRepository extends Repository<EventoAuditoria, Long> {
 	/**
 	 * Detalle de un evento.
 	 *
-	 * @see "RF-015, CA-064"
+	 * @param idEvento evento a consultar
+	 * @return el evento, si existe
 	 */
 	public Optional<EventoAuditoria> findById(Long idEvento);
 }

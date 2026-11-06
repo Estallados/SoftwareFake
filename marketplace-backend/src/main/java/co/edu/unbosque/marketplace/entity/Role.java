@@ -1,17 +1,17 @@
 package co.edu.unbosque.marketplace.entity;
 
 /**
- * Enumeración que define los roles disponibles para los usuarios en el sistema.
- * Los roles determinan los permisos y niveles de acceso de cada usuario.
+ * Roles de los usuarios. Determinan a qué rutas puede entrar cada uno; Spring
+ * los ve con el prefijo {@code ROLE_} (por ejemplo, {@code ROLE_ADMIN}).
  */
 public enum Role {
 
-	/** Rol de administrador, con permisos completos en el sistema. */
+	/** Administrador: modera usuarios, alojamientos y reseñas, y ve los reportes. */
 	ADMIN,
 
-	/** Rol de usuario estándar, con permisos limitados. */
+	/** Huésped: busca alojamientos, reserva, paga y deja reseñas. */
 	HUESPED,
 
-	/** Rol de anfitrión, con permisos limitados. */
+	/** Anfitrión: publica alojamientos y administra sus reservas. */
 	ANFITRION
 }

@@ -7,13 +7,11 @@ import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
 
 /**
- * Interfaz que define el repositorio para la entidad {@link Usuario}.
- * Proporciona métodos para realizar operaciones CRUD y consultas personalizadas
- * sobre la entidad {@link Usuario} en la base de datos.
+ * Acceso a los usuarios.
  * <p>
- * El correo se guarda cifrado con AES-GCM (IV aleatorio), así que no se puede
- * buscar por él directamente. Las búsquedas usan {@code correoHash}, que es el
- * HMAC del correo normalizado (ver {@code AESUtil.hash}).
+ * El correo se guarda cifrado con AES-GCM, con un IV aleatorio, así que no se
+ * puede buscar por él directamente. Las búsquedas usan {@code correoHash}, que
+ * es el HMAC del correo normalizado (ver {@code AESUtil.hash}).
  * </p>
  */
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {

@@ -40,14 +40,12 @@ import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
  * Dashboard administrativo y exportación de reportes en PDF o Excel. Cada
- * exportación queda en {@link RegistroExportacion} (quién y cuándo) y en la
- * auditoría.
+ * exportación queda en {@link RegistroExportacion} (quién la pidió y cuándo) y
+ * en la auditoría.
  * <p>
- * Ingresos estimados = pagos aprobados o reembolsados − devoluciones
+ * Ingresos estimados = pagos aprobados o reembolsados menos las devoluciones
  * registradas en las cancelaciones.
  * </p>
- *
- * @see "RF-005, RF-006, CA-022 a CA-029"
  */
 @Service
 public class ReporteService {
@@ -58,18 +56,47 @@ public class ReporteService {
 	/** Formatos disponibles. */
 	public static final List<String> FORMATOS = List.of("pdf", "excel");
 
+	/** Máximo de ciudades en el ranking del dashboard. */
 	private static final int CIUDADES_MAXIMAS = 50;
+
+	/** Formato de las fechas en los reportes. */
 	private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+	/** Estados de pago que cuentan como cobrados. */
 	private static final List<EstadoPago> PAGOS_COBRADOS = List.of(EstadoPago.APROBADO, EstadoPago.REEMBOLSADO);
 
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Repositorio de alojamientos. */
 	private final AlojamientoRepository alojamientoRepo;
+
+	/** Repositorio de reservas. */
 	private final ReservaRepository reservaRepo;
+
+	/** Repositorio de pagos. */
 	private final PagoRepository pagoRepo;
+
+	/** Repositorio de cancelaciones. */
 	private final CancelacionRepository cancelacionRepo;
+
+	/** Historial de exportaciones. */
 	private final RegistroExportacionRepository exportacionRepo;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param alojamientoRepo repositorio de alojamientos
+	 * @param reservaRepo repositorio de reservas
+	 * @param pagoRepo repositorio de pagos
+	 * @param cancelacionRepo repositorio de cancelaciones
+	 * @param exportacionRepo historial de exportaciones
+	 * @param auditoriaService servicio de auditoría
+	 */
 	public ReporteService(UsuarioRepository usuarioRepo, AlojamientoRepository alojamientoRepo,
 			ReservaRepository reservaRepo, PagoRepository pagoRepo, CancelacionRepository cancelacionRepo,
 			RegistroExportacionRepository exportacionRepo, AuditoriaService auditoriaService) {
@@ -83,12 +110,13 @@ public class ReporteService {
 	}
 
 	/**
-	 * Indicadores del dashboard, todos con consultas agregadas (COUNT y GROUP
-	 * BY). Los conteos por estado traen todos los estados, con 0 si no hay.
+	 * Indicadores del dashboard, todos calculados con consultas agregadas
+	 * (COUNT y GROUP BY). Los conteos por estado traen todos los estados, con
+	 * 0 si no hay.
 	 *
 	 * @param topCiudades cantidad de ciudades con más reservas (entre 1 y
-	 *                    {@value #CIUDADES_MAXIMAS}).
-	 * @see "CA-022, CA-023, CA-024, CA-025, CA-026"
+	 *                    {@value #CIUDADES_MAXIMAS})
+	 * @return indicadores del dashboard
 	 */
 	@Transactional(readOnly = true)
 	public DashboardDTO dashboard(int topCiudades) {
@@ -100,7 +128,16 @@ public class ReporteService {
 				reservaRepo.contarCiudadesTop(PageRequest.of(0, limite)));
 	}
 
-	/** Pone 0 en cada estado, aplica las filas [estado, cantidad] y suma el total. */
+	/**
+	 * Arma un conteo por estado: pone 0 en cada estado, aplica las filas
+	 * [estado, cantidad] y suma el total.
+	 *
+	 * @param estados todos los valores del enum de estados
+	 * @param filas filas [estado, cantidad] de la consulta
+	 * @param finalizadas reservas confirmadas ya finalizadas; {@code null} si
+	 *                    no aplica
+	 * @return conteo por estado
+	 */
 	private static ConteoPorEstadoDTO conteo(Enum<?>[] estados, List<Object[]> filas, Long finalizadas) {
 		Map<String, Long> porEstado = new LinkedHashMap<>();
 		for (Enum<?> estado : estados) {
@@ -117,10 +154,10 @@ public class ReporteService {
 	/**
 	 * Exporta un reporte y registra quién lo pidió.
 	 *
-	 * @param tipo    usuarios, alojamientos, reservas, ingresos o demanda.
-	 * @param formato pdf o excel.
-	 * @return 0 con el archivo; 2 si el tipo o el formato no existen.
-	 * @see "CA-027, CA-028, CA-029"
+	 * @param tipo usuarios, alojamientos, reservas, ingresos o demanda
+	 * @param formato pdf o excel
+	 * @param idActor administrador que exporta
+	 * @return el archivo; o DATOS_INVALIDOS si el tipo o el formato no existen
 	 */
 	@Transactional
 	public Resultado<ArchivoReporte> exportar(String tipo, String formato, Long idActor) {
@@ -161,7 +198,8 @@ public class ReporteService {
 	 * Historial de exportaciones, de la más reciente a la más antigua, con el
 	 * nombre de quien exportó.
 	 *
-	 * @see "CA-029"
+	 * @param pagina página y orden
+	 * @return página de exportaciones
 	 */
 	public PaginaDTO<RegistroExportacionDTO> historial(Pageable pagina) {
 		return PaginaDTO.de(exportacionRepo.findAll(pagina), registro -> {
@@ -178,6 +216,13 @@ public class ReporteService {
 		});
 	}
 
+	/**
+	 * Llena los encabezados y las filas del reporte según su tipo.
+	 *
+	 * @param tipo tipo de reporte
+	 * @param encabezados lista donde se agregan los encabezados
+	 * @param filas lista donde se agregan las filas
+	 */
 	private void llenar(String tipo, List<String> encabezados, List<List<String>> filas) {
 		switch (tipo) {
 		case "usuarios":
@@ -220,10 +265,21 @@ public class ReporteService {
 		}
 	}
 
+	/**
+	 * Ingresos estimados: pagos cobrados menos devoluciones.
+	 *
+	 * @return ingresos estimados
+	 */
 	private BigDecimal ingresosEstimados() {
 		return pagoRepo.sumarValores(PAGOS_COBRADOS).subtract(cancelacionRepo.sumarReembolsos());
 	}
 
+	/**
+	 * Convierte un valor a texto para el reporte.
+	 *
+	 * @param valor valor; puede ser {@code null}
+	 * @return el texto, o vacío si es {@code null}
+	 */
 	private static String texto(Object valor) {
 		return valor == null ? "" : valor.toString();
 	}

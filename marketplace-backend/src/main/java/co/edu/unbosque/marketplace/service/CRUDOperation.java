@@ -5,10 +5,10 @@ import java.util.List;
 import co.edu.unbosque.marketplace.entity.Usuario;
 
 /**
- * Interfaz que define las operaciones CRUD (Crear, Leer, Actualizar, Eliminar)
- * para cualquier entidad genérica.
+ * Operaciones básicas (crear, leer, actualizar y eliminar) que comparten los
+ * servicios que administran una entidad.
  *
- * @param <D> Tipo de dato genérico que representa la entidad.
+ * @param <D> tipo de dato que maneja el servicio (normalmente un DTO)
  */
 public interface CRUDOperation<D> {
 
@@ -60,26 +60,26 @@ public interface CRUDOperation<D> {
 	public int updateById(Long id, D newData);
 
 	/**
-	 * Obtiene un usuario por su ID.
+	 * Obtiene un elemento por su id.
 	 *
-	 * @param id ID del usuario.
-	 * @return DTO del usuario encontrado.
+	 * @param id identificador del elemento
+	 * @return el elemento encontrado
 	 */
 	public D getById(Long id);
 
 	/**
-	 * Verifica si un correo de usuario ya está registrado.
+	 * Verifica si el correo de un usuario ya está registrado.
 	 *
-	 * @param newUser Usuario con el correo a verificar.
-	 * @return true si el correo ya está registrado, false en caso contrario.
+	 * @param newUser usuario con el correo a verificar
+	 * @return {@code true} si el correo ya está registrado
 	 */
 	public boolean findUsernameAlreadyTaken(Usuario newUser);
 
 	/**
 	 * Verifica si un correo ya existe en el sistema.
 	 *
-	 * @param username Correo a verificar.
-	 * @return true si el correo existe, false en caso contrario.
+	 * @param username correo a verificar
+	 * @return {@code true} si el correo existe
 	 */
 	boolean encontrarCorreoExitente(String username);
 }

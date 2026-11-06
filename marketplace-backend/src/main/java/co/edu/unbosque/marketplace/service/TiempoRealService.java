@@ -11,15 +11,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 /**
  * Envíos en tiempo real por WebSocket/STOMP a un usuario concreto. El cliente
  * los recibe en {@code /user/queue/<destino>}; el nombre de cada sesión es el
- * id del usuario ({@code WebSocketAuthInterceptor}).
+ * id del usuario (lo asigna {@code WebSocketAuthInterceptor}).
  * <p>
- * Si hay una transacción en curso, el envío espera a que se confirme: así nadie
- * recibe un mensaje o una notificación que al final se revirtió. Un fallo del
- * envío no afecta la operación, que ya quedó guardada y se puede consultar por
- * la API REST.
+ * Si hay una transacción en curso, el envío espera a que se confirme: así
+ * nadie recibe un mensaje o una notificación que al final se revirtió. Si el
+ * envío falla no pasa nada grave, porque la operación ya quedó guardada y se
+ * puede consultar por la API REST.
  * </p>
- *
- * @see "RF-003, RF-029"
  */
 @Service
 public class TiempoRealService {
@@ -29,10 +27,17 @@ public class TiempoRealService {
 	/** Notificaciones nuevas del usuario. */
 	public static final String NOTIFICACIONES = "/queue/notificaciones";
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(TiempoRealService.class);
 
+	/** Plantilla de Spring para enviar mensajes por STOMP. */
 	private final SimpMessagingTemplate plantilla;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param plantilla plantilla de mensajería de Spring
+	 */
 	public TiempoRealService(SimpMessagingTemplate plantilla) {
 		this.plantilla = plantilla;
 	}
@@ -60,6 +65,13 @@ public class TiempoRealService {
 		}
 	}
 
+	/**
+	 * Envía el mensaje de inmediato. Si falla, solo lo deja en el log.
+	 *
+	 * @param idUsuario destinatario
+	 * @param destino cola de destino
+	 * @param carga objeto a enviar como JSON
+	 */
 	private void enviarAhora(Long idUsuario, String destino, Object carga) {
 		try {
 			plantilla.convertAndSendToUser(String.valueOf(idUsuario), destino, carga);

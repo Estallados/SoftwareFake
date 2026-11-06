@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+/** Pie de página común a todas las pantallas, con los grupos de enlaces. */
 @Component({
   selector: 'app-footer',
   standalone: true,
@@ -8,6 +9,7 @@ import { RouterLink } from '@angular/router';
   templateUrl: './footer.component.html',
 })
 export class FooterComponent {
+  /** Grupos de enlaces del pie de página. */
   readonly groups = [
     {
       title: 'Explora',

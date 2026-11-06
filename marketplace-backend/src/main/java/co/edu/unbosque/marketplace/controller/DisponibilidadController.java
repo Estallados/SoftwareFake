@@ -29,11 +29,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de disponibilidad. Ruta base:
+ * Controlador REST de la disponibilidad de un alojamiento. Ruta base:
  * {@code /alojamientos/{idAlojamiento}/disponibilidad}. El calendario y la
- * consulta por fechas son públicos para alojamientos ACTIVA.
- *
- * @see "RF-020, RF-025, RF-026, RNF-027"
+ * consulta por fechas son públicos para los alojamientos ACTIVA; registrar,
+ * modificar y eliminar períodos lo hacen el anfitrión dueño o un
+ * administrador.
  */
 @RestController
 @RequestMapping("/alojamientos/{idAlojamiento}/disponibilidad")
@@ -42,12 +42,28 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class DisponibilidadController {
 
+	/** Servicio del calendario. */
 	private final CalendarioService calendarioService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param calendarioService servicio del calendario
+	 */
 	public DisponibilidadController(CalendarioService calendarioService) {
 		this.calendarioService = calendarioService;
 	}
 
+	/**
+	 * Calendario: períodos disponibles y rangos reservados. Es público si el
+	 * alojamiento está ACTIVA; en otro estado solo lo ven su anfitrión o un
+	 * administrador. Ruta:
+	 * {@code GET /alojamientos/{idAlojamiento}/disponibilidad}.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param authentication usuario autenticado; puede ser {@code null}
+	 * @return 200 con el calendario; 404 si no existe o no se puede ver
+	 */
 	@Operation(summary = "Calendario: períodos disponibles y rangos reservados", description = "Público si el alojamiento está ACTIVA; en otro estado solo para su anfitrión o un administrador.")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Períodos ofrecidos y fechas reservadas")
@@ -58,6 +74,16 @@ public class DisponibilidadController {
 				RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Consulta si el alojamiento está disponible en unas fechas. Ruta pública:
+	 * {@code GET /alojamientos/{idAlojamiento}/disponibilidad/consultar}.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param llegada día de llegada (yyyy-MM-dd)
+	 * @param salida día de salida (yyyy-MM-dd)
+	 * @return 200 con la respuesta y, si no está disponible, el motivo; 400 si
+	 *         las fechas no son válidas; 404 si no existe
+	 */
 	@Operation(summary = "Consultar disponibilidad en unas fechas (público)", description = "La salida debe ser posterior a la llegada.")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Si está disponible en esas fechas y, si no, el motivo")
@@ -72,6 +98,16 @@ public class DisponibilidadController {
 		return RespuestaUtil.desde(calendarioService.consultar(idAlojamiento, llegada, salida));
 	}
 
+	/**
+	 * Registra un período disponible (dueño o administrador). Ruta:
+	 * {@code POST /alojamientos/{idAlojamiento}/disponibilidad}.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param datos fechas del período
+	 * @param authentication usuario autenticado
+	 * @return 201 con el período; 400 si las fechas no son válidas; 403 si no
+	 *         es el dueño; 404 si no existe; 409 si se cruza con otro período
+	 */
 	@Operation(summary = "Registrar período disponible (propietario o ADMIN)")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "201", description = "Período creado")
@@ -90,6 +126,16 @@ public class DisponibilidadController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)), HttpStatus.CREATED);
 	}
 
+	/**
+	 * Modifica un período; no puede dejar por fuera reservas existentes. Ruta:
+	 * {@code PUT /alojamientos/{idAlojamiento}/disponibilidad/{idPeriodo}}.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param idPeriodo período
+	 * @param datos fechas nuevas
+	 * @param authentication usuario autenticado
+	 * @return 200 con el período; 400, 403, 404 o 409 según el caso
+	 */
 	@Operation(summary = "Modificar período (no puede afectar reservas existentes)")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Período actualizado")
@@ -108,6 +154,16 @@ public class DisponibilidadController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Elimina un período sin reservas. Ruta:
+	 * {@code DELETE /alojamientos/{idAlojamiento}/disponibilidad/{idPeriodo}}.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param idPeriodo período
+	 * @param authentication usuario autenticado
+	 * @return 200 si se eliminó; 403 si no es el dueño; 404 si no existe; 409
+	 *         si tiene reservas activas
+	 */
 	@Operation(summary = "Eliminar período sin reservas")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Período eliminado.")

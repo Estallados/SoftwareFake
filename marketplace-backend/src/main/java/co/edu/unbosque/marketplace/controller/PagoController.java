@@ -14,11 +14,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de pagos. Ruta base: {@code /pagos}. El cobro ocurre al
- * crear la reserva ({@code POST /reservas}); aquí el front consulta cómo
- * cobrar.
- *
- * @see "RF-028"
+ * Controlador REST de pagos. Ruta base: {@code /pagos}. El cobro se hace al
+ * crear la reserva ({@code POST /reservas}); aquí el frontend solo consulta
+ * cómo cobrar.
  */
 @RestController
 @RequestMapping("/pagos")
@@ -26,12 +24,26 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class PagoController {
 
+	/** Servicio de pagos. */
 	private final PagoService pagoService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param pagoService servicio de pagos
+	 */
 	public PagoController(PagoService pagoService) {
 		this.pagoService = pagoService;
 	}
 
+	/**
+	 * Configuración de pagos para el frontend. Ruta pública:
+	 * {@code GET /pagos/configuracion}. Dice si los cobros van al modo de
+	 * prueba de Stripe o al simulador, la clave publicable para Stripe
+	 * Elements, la moneda y los métodos de prueba con su resultado.
+	 *
+	 * @return 200 con la configuración de pagos
+	 */
 	@Operation(summary = "Configuración de pagos para el front (público)", description = "modo STRIPE_TEST (cobros en el modo de prueba de Stripe) o SIMULADO (sin clave de Stripe), "
 			+ "clave publicable para Stripe Elements, moneda y métodos de prueba con su resultado. El "
 			+ "metodoPago de POST /reservas es uno de esos métodos o el PaymentMethod (pm_...) que crea "

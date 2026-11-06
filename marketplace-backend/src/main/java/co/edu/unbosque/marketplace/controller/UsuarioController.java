@@ -31,10 +31,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controlador REST de usuarios. Ruta base: {@code /usuarios}. Todas sus rutas
- * requieren token JWT; la identidad sale siempre del token.
- *
- * @see "RF-001"
- * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
+ * exigen token JWT, y la identidad del usuario sale siempre del token, nunca
+ * del cuerpo de la petición.
  */
 @RestController
 @RequestMapping("/usuarios")
@@ -43,16 +41,31 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class UsuarioController {
 
+	/** Autoridad del rol administrador. */
 	private static final String ROL_ADMIN = "ROLE_ADMIN";
+
+	/** Mensaje cuando el usuario no existe. */
 	private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado.";
 
+	/** Servicio de usuarios. */
 	private final UsuarioService usuarioService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param usuarioService servicio de usuarios
+	 */
 	public UsuarioController(UsuarioService usuarioService) {
 		this.usuarioService = usuarioService;
 	}
 
 	// Consultar el perfil propio
+	/**
+	 * Consulta el perfil propio. Ruta: {@code GET /usuarios/perfil}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @return 200 con el perfil; 404 si no existe
+	 */
 	@Operation(summary = "Consultar el perfil propio")
 	@ApiResponse(responseCode = "200", description = "Perfil del usuario autenticado")
 	@ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
@@ -68,6 +81,15 @@ public class UsuarioController {
 	}
 
 	// Actualizar el perfil propio: solo nombre y teléfono
+	/**
+	 * Actualiza el perfil propio; solo cambia el nombre y el teléfono, los
+	 * demás campos se ignoran. Ruta: {@code PUT /usuarios/perfil}.
+	 *
+	 * @param cambios DTO con {@code nombre} y/o {@code telefono}
+	 * @param authentication usuario autenticado
+	 * @return 200 si se actualizó; 400 si los datos no son válidos; 404 si no
+	 *         existe
+	 */
 	@Operation(summary = "Actualizar el perfil propio", description = "Solo cambia nombre y teléfono; los demás campos enviados se ignoran.")
 	@ApiResponse(responseCode = "200", description = "Perfil actualizado correctamente.")
 	@ApiResponse(responseCode = "400", description = "Envía un nombre no vacío (máximo 255 caracteres) y/o un teléfono de 7 a 15 dígitos.")
@@ -83,7 +105,16 @@ public class UsuarioController {
 		};
 	}
 
-	// Desactivar la cuenta propia; la respuesta trae el nuevo estado (CA-052)
+	// Desactivar la cuenta propia; la respuesta trae el nuevo estado
+	/**
+	 * Desactiva la cuenta propia; se puede reactivar luego con
+	 * {@code POST /auth/reactivar}. Ruta:
+	 * {@code PATCH /usuarios/perfil/desactivar}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @return 200 con {message, estado}; 403 si la cuenta no se puede
+	 *         desactivar; 404 si no existe
+	 */
 	@Operation(summary = "Desactivar la cuenta propia", description = "Responde {message, estado}. Se puede reactivar luego con POST /auth/reactivar.")
 	@ApiResponse(responseCode = "200", description = "Cuenta desactivada correctamente: {message, estado}")
 	@ApiResponse(responseCode = "403", description = "Esta cuenta no se puede desactivar.")
@@ -98,7 +129,16 @@ public class UsuarioController {
 		};
 	}
 
-	// Crear otro administrador: solo administradores (decisión sobre RF-001)
+	// Crear otro administrador: solo administradores (el registro público nunca los crea)
+	/**
+	 * Crea un administrador (solo administradores). El rol enviado se ignora.
+	 * Ruta: {@code POST /usuarios/crearadministrador}.
+	 *
+	 * @param datos datos del nuevo administrador
+	 * @param authentication administrador autenticado
+	 * @return 201 si se creó; 400 si los datos o la contraseña no son válidos;
+	 *         409 si el correo ya existe; 500 si falló el guardado
+	 */
 	@Operation(summary = "Crear un administrador (solo ADMIN)", description = "El registro público nunca crea administradores; el rol enviado se ignora.")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ApiResponse(responseCode = "201", description = "Administrador creado correctamente.")
@@ -124,6 +164,12 @@ public class UsuarioController {
 	}
 
 	// Listar todos los usuarios: solo administradores
+	/**
+	 * Lista todos los usuarios (solo administradores). Ruta:
+	 * {@code GET /usuarios/listar}.
+	 *
+	 * @return 200 con todos los usuarios
+	 */
 	@Operation(summary = "Listar usuarios (solo ADMIN)")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Todos los usuarios")
@@ -133,6 +179,14 @@ public class UsuarioController {
 	}
 
 	// Consultar usuario por ID: propio usuario o administrador
+	/**
+	 * Consulta un usuario por id: el propio o, si es administrador,
+	 * cualquiera. Ruta: {@code GET /usuarios/obtener/{id}}.
+	 *
+	 * @param id usuario a consultar
+	 * @param authentication usuario autenticado
+	 * @return 200 con el usuario; 403 si no tiene permiso; 404 si no existe
+	 */
 	@Operation(summary = "Consultar un usuario por id (el propio o, si eres ADMIN, cualquiera)")
 	@ApiResponse(responseCode = "200", description = "Usuario")
 	@ApiResponse(responseCode = "403", description = "No tienes permisos para consultar este usuario.")
@@ -161,6 +215,13 @@ public class UsuarioController {
 	}
 
 	// Consultar usuario por correo: solo administradores
+	/**
+	 * Consulta un usuario por correo (solo administradores). Ruta:
+	 * {@code GET /usuarios/obtenercorreo}.
+	 *
+	 * @param correo correo a buscar
+	 * @return 200 con el usuario; 404 si no existe
+	 */
 	@Operation(summary = "Consultar un usuario por correo (solo ADMIN)")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Usuario")
@@ -176,6 +237,13 @@ public class UsuarioController {
 		return ResponseEntity.ok(usuario);
 	}
 
+	/**
+	 * Arma una respuesta con el formato de la API.
+	 *
+	 * @param status estado HTTP
+	 * @param texto mensaje para el usuario
+	 * @return respuesta {@code {"message": texto}}
+	 */
 	private static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
 		return RespuestaUtil.mensaje(status, texto);
 	}

@@ -23,33 +23,57 @@ import co.edu.unbosque.marketplace.util.AESUtil;
 import co.edu.unbosque.marketplace.util.CorreoUtil;
 
 /**
- * Operaciones de cuenta que no requieren sesión: recuperación de contraseña y
- * reactivación de una cuenta desactivada por su dueño.
+ * Operaciones de cuenta que no requieren sesión: recuperar la contraseña y
+ * reactivar una cuenta que su dueño desactivó.
  * <p>
- * Recuperación: el token se envía por correo al usuario. Vence a los 30 minutos
- * y sirve una sola vez. Si el correo no se puede enviar (por ejemplo, en
- * desarrollo sin MAIL_PASSWORD), el token se escribe en el log.
+ * Recuperación: el token se envía por correo al usuario, vence a los 30
+ * minutos y sirve una sola vez. Si el correo no se puede enviar (por ejemplo,
+ * en desarrollo sin MAIL_PASSWORD), el token se escribe en el log para no
+ * dejar al usuario sin salida.
  * </p>
- *
- * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
  */
 @Service
 public class AuthService {
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(AuthService.class);
 
 	/** Vigencia del token en minutos (se informa en el correo). */
 	private static final int MINUTOS_VIGENCIA = 30;
+
+	/** Vigencia del token como duración. */
 	private static final Duration VIGENCIA_TOKEN = Duration.ofMinutes(MINUTOS_VIGENCIA);
+
+	/** Largo del token en bytes (256 bits). */
 	private static final int BYTES_TOKEN = 32;
+
+	/** Generador de los tokens. */
 	private static final SecureRandom RANDOM = new SecureRandom();
 
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Almacén de los tokens de recuperación. */
 	private final TokenRecuperacionRepository tokenRepo;
+
+	/** Codificador de contraseñas. */
 	private final PasswordEncoder passwordEncoder;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
+
+	/** Envía el correo con el token. */
 	private final CorreoUtil correoUtil;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param tokenRepo almacén de tokens de recuperación
+	 * @param passwordEncoder codificador de contraseñas
+	 * @param auditoriaService servicio de auditoría
+	 * @param correoUtil utilidad de correo
+	 */
 	public AuthService(UsuarioRepository usuarioRepo, TokenRecuperacionRepository tokenRepo,
 			PasswordEncoder passwordEncoder, AuditoriaService auditoriaService, CorreoUtil correoUtil) {
 		this.usuarioRepo = usuarioRepo;
@@ -60,15 +84,13 @@ public class AuthService {
 	}
 
 	/**
-	 * Genera un token de recuperación para el correo indicado. Invalida los tokens
-	 * anteriores sin usar del mismo usuario.
-	 * <p>
-	 * Siempre responde igual exista o no el correo, para no revelar qué correos
-	 * están registrados.
-	 * </p>
+	 * Genera un token de recuperación para el correo indicado y se lo envía
+	 * por correo. Invalida los tokens anteriores sin usar del mismo usuario.
+	 * Siempre responde igual exista o no el correo, para no revelar qué
+	 * correos están registrados.
 	 *
-	 * @param correo Correo de la cuenta.
-	 * @return 0 solicitud recibida; 2 correo vacío.
+	 * @param correo correo de la cuenta
+	 * @return 0 si la solicitud se recibió; 2 si el correo está vacío
 	 */
 	@Transactional
 	public int solicitarRecuperacion(String correo) {
@@ -115,10 +137,11 @@ public class AuthService {
 	/**
 	 * Cambia la contraseña usando un token de recuperación vigente.
 	 *
-	 * @param token            Token recibido (en esta versión, tomado del log).
-	 * @param nuevaContrasenia Contraseña nueva; debe cumplir RNF-008.
-	 * @return 0 contraseña cambiada; 1 token inválido, vencido o ya usado; 2 datos
-	 *         incompletos; 3 contraseña débil.
+	 * @param token token que le llegó al usuario por correo
+	 * @param nuevaContrasenia contraseña nueva; debe cumplir las reglas de
+	 *                         contraseña
+	 * @return 0 si se cambió; 1 si el token es inválido, venció o ya se usó; 2
+	 *         si faltan datos; 3 si la contraseña es débil
 	 */
 	@Transactional
 	public int restablecerContrasenia(String token, String nuevaContrasenia) {
@@ -157,13 +180,14 @@ public class AuthService {
 	}
 
 	/**
-	 * Reactiva una cuenta que su dueño desactivó, validando sus credenciales. Una
-	 * cuenta RESTRINGIDA por un administrador no puede reactivarse sola.
+	 * Reactiva una cuenta que su dueño desactivó, validando sus credenciales.
+	 * Una cuenta RESTRINGIDA por un administrador no puede reactivarse sola.
 	 *
-	 * @param correo      Correo de la cuenta.
-	 * @param contrasenia Contraseña actual.
-	 * @return 0 reactivada; 1 credenciales inválidas; 2 datos incompletos; 3 cuenta
-	 *         restringida por un administrador; 4 la cuenta ya está activa.
+	 * @param correo correo de la cuenta
+	 * @param contrasenia contraseña actual
+	 * @return 0 si se reactivó; 1 si las credenciales no son válidas; 2 si
+	 *         faltan datos; 3 si un administrador la restringió; 4 si ya estaba
+	 *         activa
 	 */
 	@Transactional
 	public int reactivarCuenta(String correo, String contrasenia) {
@@ -197,6 +221,13 @@ public class AuthService {
 		return 0;
 	}
 
+	/**
+	 * Arma el texto del correo de recuperación.
+	 *
+	 * @param nombre nombre del usuario, para el saludo
+	 * @param token token de recuperación
+	 * @return cuerpo del correo
+	 */
 	private static String cuerpoCorreo(String nombre, String token) {
 		return String.format("Hola %s,%n%n" + "Recibimos una solicitud para restablecer la contraseña de tu cuenta. "
 				+ "Usa este código de recuperación:%n%n    %s%n%n"
@@ -205,6 +236,11 @@ public class AuthService {
 				+ "Equipo Marketplace Inversiones LR", nombre, token, MINUTOS_VIGENCIA);
 	}
 
+	/**
+	 * Genera un token aleatorio en Base64 URL (sin relleno).
+	 *
+	 * @return token nuevo
+	 */
 	private static String generarToken() {
 		byte[] bytes = new byte[BYTES_TOKEN];
 		RANDOM.nextBytes(bytes);

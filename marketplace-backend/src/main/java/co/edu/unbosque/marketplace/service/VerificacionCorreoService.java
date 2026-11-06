@@ -20,47 +20,84 @@ import co.edu.unbosque.marketplace.util.CorreoUtil;
 
 /**
  * Verificación del correo con un código de 6 dígitos. Al registrarse, el
- * usuario recibe el código en el correo de bienvenida y no puede iniciar sesión
- * hasta confirmarlo con {@code POST /auth/verificar}.
+ * usuario recibe el código en el correo de bienvenida y no puede iniciar
+ * sesión hasta confirmarlo con {@code POST /auth/verificar}.
  * <p>
  * Reglas: el código vence a los 15 minutos, sirve una sola vez y admite 5
- * intentos fallidos; pedir uno nuevo invalida el anterior y solo se permite una
- * vez por minuto. Se guarda únicamente el hash del código. Si el correo no se
- * puede enviar (por ejemplo, en desarrollo sin MAIL_PASSWORD), el código se
+ * intentos fallidos; pedir uno nuevo invalida el anterior y solo se permite
+ * una vez por minuto. Se guarda únicamente el hash del código. Si el correo no
+ * se puede enviar (por ejemplo, en desarrollo sin MAIL_PASSWORD), el código se
  * escribe en el log para no dejar la cuenta bloqueada.
  * </p>
- *
- * @see "RF-001"
  */
 @Service
 public class VerificacionCorreoService {
 
-	/** Resultados de {@link #verificar(String, String)}. */
+	/**
+	 * Resultado de {@link #verificar(String, String)}: el correo quedó
+	 * verificado.
+	 */
 	public static final int VERIFICADO = 0;
+
+	/** El código no es correcto, venció o la cuenta no existe. */
 	public static final int CODIGO_INVALIDO = 1;
+
+	/** Falta el correo o el código. */
 	public static final int DATOS_INVALIDOS = 2;
+
+	/** Se agotaron los intentos; hay que pedir otro código. */
 	public static final int INTENTOS_AGOTADOS = 3;
+
+	/** El correo ya estaba verificado. */
 	public static final int YA_VERIFICADO = 4;
 
-	/** Resultados de {@link #reenviar(String)}. */
+	/** Resultado de {@link #reenviar(String)}: el código se envió. */
 	public static final int ENVIADO = 0;
+
+	/** Hay que esperar un minuto antes de pedir otro código. */
 	public static final int ESPERAR = 3;
 
 	/** Vigencia del código en minutos (se informa en el correo). */
 	public static final int MINUTOS_VIGENCIA = 15;
 
+	/** Vigencia del código como duración. */
 	private static final Duration VIGENCIA_CODIGO = Duration.ofMinutes(MINUTOS_VIGENCIA);
+
+	/** Tiempo mínimo entre dos reenvíos. */
 	private static final Duration ESPERA_REENVIO = Duration.ofMinutes(1);
+
+	/** Intentos fallidos permitidos por código. */
 	private static final int MAXIMO_INTENTOS = 5;
+
+	/** Límite superior para generar el código (6 dígitos). */
 	private static final int LIMITE_CODIGO = 1_000_000;
+
+	/** Generador de los códigos. */
 	private static final SecureRandom RANDOM = new SecureRandom();
+
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(VerificacionCorreoService.class);
 
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Almacén de los códigos de verificación. */
 	private final CodigoVerificacionRepository codigoRepo;
+
+	/** Envía el correo con el código. */
 	private final CorreoUtil correoUtil;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param codigoRepo almacén de códigos
+	 * @param correoUtil utilidad de correo
+	 * @param auditoriaService servicio de auditoría
+	 */
 	public VerificacionCorreoService(UsuarioRepository usuarioRepo, CodigoVerificacionRepository codigoRepo,
 			CorreoUtil correoUtil, AuditoriaService auditoriaService) {
 		this.usuarioRepo = usuarioRepo;
@@ -190,6 +227,11 @@ public class VerificacionCorreoService {
 		return ENVIADO;
 	}
 
+	/**
+	 * Marca como usados los códigos anteriores del usuario.
+	 *
+	 * @param idUsuario usuario
+	 */
 	private void invalidarAnteriores(Long idUsuario) {
 		for (CodigoVerificacion anterior : codigoRepo.findByIdUsuarioAndUsadoFalse(idUsuario)) {
 			anterior.setUsado(true);
@@ -197,12 +239,28 @@ public class VerificacionCorreoService {
 		}
 	}
 
+	/**
+	 * Registra en la auditoría un intento de verificación rechazado.
+	 *
+	 * @param usuario usuario
+	 * @param codigo resultado a devolver
+	 * @param motivo causa del rechazo
+	 * @return el mismo resultado recibido
+	 */
 	private int rechazar(Usuario usuario, int codigo, String motivo) {
 		auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.CORREO_VERIFICADO,
 				AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.RECHAZADO, motivo);
 		return codigo;
 	}
 
+	/**
+	 * Arma el texto del correo con el código, de bienvenida o de reenvío.
+	 *
+	 * @param nombre nombre del usuario, para el saludo
+	 * @param codigo código de 6 dígitos
+	 * @param bienvenida {@code true} si es el correo de registro
+	 * @return cuerpo del correo
+	 */
 	private static String cuerpoCorreo(String nombre, String codigo, boolean bienvenida) {
 		String saludo = bienvenida
 				? "¡Bienvenido al Marketplace de Alojamientos de Inversiones LR!\n\n"
@@ -216,11 +274,22 @@ public class VerificacionCorreoService {
 				+ "Equipo Marketplace Inversiones LR", nombre, saludo, codigo, MINUTOS_VIGENCIA);
 	}
 
-	/** Código numérico de 6 dígitos, con ceros a la izquierda si hace falta. */
+	/**
+	 * Genera un código numérico de 6 dígitos, con ceros a la izquierda si hace
+	 * falta.
+	 *
+	 * @return código nuevo
+	 */
 	private static String generarCodigo() {
 		return String.format("%06d", RANDOM.nextInt(LIMITE_CODIGO));
 	}
 
+	/**
+	 * Indica si un texto es {@code null} o solo tiene espacios.
+	 *
+	 * @param texto texto a revisar
+	 * @return {@code true} si está vacío
+	 */
 	private static boolean esVacio(String texto) {
 		return texto == null || texto.isBlank();
 	}

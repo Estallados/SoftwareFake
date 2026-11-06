@@ -25,28 +25,58 @@ import co.edu.unbosque.marketplace.repository.UsuarioRepository;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Reseñas y calificaciones. Solo el huésped de una reserva completada puede
- * reseñar, una vez por reserva, con calificación de 1 a 5. La consulta pública
- * y la del anfitrión no incluyen las reseñas ocultas por un administrador; el
- * huésped ve todas las suyas con su estado y el administrador ve todas.
- *
- * @see "RF-004, RF-016, CA-016 a CA-020, CA-066, CA-067"
+ * Reseñas y calificaciones de los alojamientos.
+ * <p>
+ * Solo el huésped de una reserva completada puede reseñar, una vez por
+ * reserva, con una calificación de 1 a 5. La consulta pública y la del
+ * anfitrión no incluyen las reseñas que ocultó un administrador; el huésped ve
+ * todas las suyas con su estado y el administrador ve todas.
+ * </p>
  */
 @Service
 public class ResenaService {
 
+	/** Calificación mínima permitida. */
 	private static final int CALIFICACION_MINIMA = 1;
+
+	/** Calificación máxima permitida. */
 	private static final int CALIFICACION_MAXIMA = 5;
+
+	/** Largo máximo del comentario. */
 	private static final int LARGO_MAXIMO = 2000;
 
+	/** Repositorio de reseñas. */
 	private final ResenaRepository resenaRepo;
+
+	/** Repositorio de reservas. */
 	private final ReservaRepository reservaRepo;
+
+	/** Repositorio de alojamientos. */
 	private final AlojamientoRepository alojamientoRepo;
+
+	/** Repositorio de usuarios, para los nombres. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Avisa al anfitrión y al autor. */
 	private final NotificacionService notificacionService;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
+
+	/** Copia los datos de la entidad al DTO. */
 	private final ModelMapper modelMapper;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param resenaRepo repositorio de reseñas
+	 * @param reservaRepo repositorio de reservas
+	 * @param alojamientoRepo repositorio de alojamientos
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param notificacionService servicio de notificaciones
+	 * @param auditoriaService servicio de auditoría
+	 * @param modelMapper copiador de entidades a DTO
+	 */
 	public ResenaService(ResenaRepository resenaRepo, ReservaRepository reservaRepo,
 			AlojamientoRepository alojamientoRepo, UsuarioRepository usuarioRepo,
 			NotificacionService notificacionService, AuditoriaService auditoriaService, ModelMapper modelMapper) {
@@ -60,12 +90,15 @@ public class ResenaService {
 	}
 
 	/**
-	 * Registra la reseña del huésped sobre una reserva completada.
+	 * Registra la reseña del huésped sobre una reserva completada y avisa al
+	 * anfitrión.
 	 *
-	 * @return 0 con la reseña; 1 la reserva no existe o es de otro usuario; 2
-	 *         calificación o comentario inválidos; 4 la reserva no está completada
-	 *         o ya tiene reseña.
-	 * @see "CA-016, CA-017, CA-018"
+	 * @param datos reserva, calificación y comentario
+	 * @param idHuesped huésped autenticado
+	 * @return la reseña; NO_ENCONTRADO si la reserva no existe o es de otro
+	 *         usuario; DATOS_INVALIDOS si la calificación o el comentario no
+	 *         son válidos; ESTADO_INVALIDO si la reserva no está completada o
+	 *         ya tiene reseña
 	 */
 	@Transactional
 	public Resultado<ResenaDTO> crear(ResenaDTO datos, Long idHuesped) {
@@ -111,10 +144,11 @@ public class ResenaService {
 	}
 
 	/**
-	 * Reseñas visibles de un alojamiento con su promedio y cantidad.
+	 * Reseñas visibles de un alojamiento, con su promedio y cantidad.
 	 *
-	 * @return 0 con el resumen; 1 si el alojamiento no existe.
-	 * @see "CA-019, CA-020, CA-067"
+	 * @param idAlojamiento alojamiento
+	 * @param pagina página y orden
+	 * @return el resumen; o NO_ENCONTRADO si el alojamiento no existe
 	 */
 	public Resultado<ResumenResenasDTO> resumen(Long idAlojamiento, Pageable pagina) {
 		if (!alojamientoRepo.existsById(idAlojamiento)) {
@@ -132,10 +166,12 @@ public class ResenaService {
 	}
 
 	/**
-	 * Reseñas que escribió el huésped autenticado, incluidas las ocultas (con su
-	 * estado).
+	 * Reseñas que escribió el huésped autenticado, incluidas las ocultas (con
+	 * su estado).
 	 *
-	 * @see "RF-004"
+	 * @param idHuesped huésped
+	 * @param pagina página y orden
+	 * @return página de reseñas
 	 */
 	public PaginaDTO<ResenaDTO> listarMias(Long idHuesped, Pageable pagina) {
 		return PaginaDTO.de(resenaRepo.findByIdUsuario(idHuesped, pagina), this::convertirDTO);
@@ -143,12 +179,14 @@ public class ResenaService {
 
 	/**
 	 * Reseñas visibles de los alojamientos del anfitrión autenticado, con su
-	 * promedio y cantidad. Si se indica un alojamiento, solo las de ese (y debe ser
-	 * suyo).
+	 * promedio y cantidad. Si se indica un alojamiento, solo las de ese, y
+	 * debe ser suyo.
 	 *
-	 * @return 0 con el resumen; 1 si el alojamiento no existe o es de otro
-	 *         anfitrión.
-	 * @see "RF-004, CA-019"
+	 * @param idAnfitrion anfitrión
+	 * @param idAlojamiento alojamiento a filtrar; {@code null} para todos
+	 * @param pagina página y orden
+	 * @return el resumen; o NO_ENCONTRADO si el alojamiento no existe o es de
+	 *         otro anfitrión
 	 */
 	public Resultado<ResumenResenasDTO> resumenDeAnfitrion(Long idAnfitrion, Long idAlojamiento, Pageable pagina) {
 		if (idAlojamiento != null && alojamientoRepo.findById(idAlojamiento)
@@ -167,9 +205,12 @@ public class ResenaService {
 	}
 
 	/**
-	 * Todas las reseñas, o solo las de un estado (moderación del administrador).
+	 * Todas las reseñas, o solo las de un estado (moderación del
+	 * administrador).
 	 *
-	 * @see "RF-016, CA-066"
+	 * @param estado estado a filtrar; {@code null} para todas
+	 * @param pagina página y orden
+	 * @return página de reseñas
 	 */
 	public PaginaDTO<ResenaDTO> listarTodas(EstadoResena estado, Pageable pagina) {
 		return PaginaDTO.de(estado == null ? resenaRepo.findAll(pagina) : resenaRepo.findByEstado(estado, pagina),
@@ -180,10 +221,12 @@ public class ResenaService {
 	 * Oculta o vuelve a mostrar una reseña (administrador). No la borra. Al
 	 * ocultarla se notifica al autor con el motivo.
 	 *
-	 * @param oculta true para ocultar, false para mostrar.
-	 * @param motivo Motivo obligatorio al ocultar.
-	 * @return 0 con la reseña; 1 no existe; 2 falta el motivo.
-	 * @see "RF-016, CA-066, CA-067"
+	 * @param idResena reseña
+	 * @param oculta {@code true} para ocultar, {@code false} para mostrar
+	 * @param motivo motivo (obligatorio al ocultar)
+	 * @param idAdmin administrador que modera
+	 * @return la reseña; NO_ENCONTRADO si no existe; DATOS_INVALIDOS si falta
+	 *         el motivo
 	 */
 	@Transactional
 	public Resultado<ResenaDTO> moderar(Long idResena, boolean oculta, String motivo, Long idAdmin) {
@@ -209,6 +252,9 @@ public class ResenaService {
 	/**
 	 * Convierte la reseña a DTO con el nombre del huésped y el título del
 	 * alojamiento.
+	 *
+	 * @param resena reseña
+	 * @return reseña para la API
 	 */
 	public ResenaDTO convertirDTO(Resena resena) {
 		ResenaDTO dto = modelMapper.map(resena, ResenaDTO.class);
@@ -218,10 +264,23 @@ public class ResenaService {
 		return dto;
 	}
 
+	/**
+	 * Redondea el promedio a una cifra decimal.
+	 *
+	 * @param promedio promedio; puede ser {@code null}
+	 * @return promedio redondeado, o {@code null}
+	 */
 	private static Double redondear(Double promedio) {
 		return promedio == null ? null : BigDecimal.valueOf(promedio).setScale(1, RoundingMode.HALF_UP).doubleValue();
 	}
 
+	/**
+	 * Registra en la auditoría una reseña rechazada y arma el error.
+	 *
+	 * @param idHuesped huésped que intentó reseñar
+	 * @param mensaje causa del rechazo
+	 * @return resultado con ESTADO_INVALIDO
+	 */
 	private Resultado<ResenaDTO> rechazar(Long idHuesped, String mensaje) {
 		auditoriaService.registrar(idHuesped, AuditoriaService.RESENA_CREADA, AuditoriaService.ENTIDAD_RESENA, null,
 				ResultadoAuditoria.RECHAZADO, mensaje);

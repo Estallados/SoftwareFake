@@ -47,10 +47,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controlador REST de alojamientos (publicaciones). Ruta base:
- * {@code /alojamientos}. La búsqueda, el detalle de publicaciones ACTIVA y las
- * políticas son públicos; lo demás requiere token.
- *
- * @see "RF-017, RF-018, RF-019, RF-024, RF-027"
+ * {@code /alojamientos}. El catálogo, la búsqueda, el detalle de publicaciones
+ * ACTIVA, los tipos y las políticas son públicos; lo demás exige token.
  */
 @RestController
 @RequestMapping("/alojamientos")
@@ -59,11 +57,21 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class AlojamientoController {
 
+	/** Orden de los listados: los más recientes primero. */
 	private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();
 
+	/** Servicio de publicaciones. */
 	private final PublicacionService publicacionService;
+
+	/** Lee el JSON del alojamiento que llega como texto en el formulario. */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param publicacionService servicio de publicaciones
+	 * @param objectMapper conversor de JSON
+	 */
 	public AlojamientoController(PublicacionService publicacionService, ObjectMapper objectMapper) {
 		this.publicacionService = publicacionService;
 		this.objectMapper = objectMapper;
@@ -73,15 +81,28 @@ public class AlojamientoController {
 	@Schema(name = "FormularioAlojamiento")
 	static final class FormularioAlojamiento {
 
+		/** JSON del alojamiento. */
 		private AlojamientoDTO datos;
+
+		/** Imágenes del alojamiento. */
 		private List<MultipartFile> archivos;
 
+		/**
+		 * Devuelve JSON del alojamiento.
+		 *
+		 * @return JSON del alojamiento
+		 */
 		@Schema(description = "JSON del alojamiento (solo el título es obligatorio en el borrador). El id, el "
 				+ "estado y el anfitrión se ignoran.", requiredMode = Schema.RequiredMode.REQUIRED)
 		public AlojamientoDTO getDatos() {
 			return datos;
 		}
 
+		/**
+		 * Devuelve las imágenes del alojamiento.
+		 *
+		 * @return imágenes del alojamiento
+		 */
 		@ArraySchema(schema = @Schema(type = "string", format = "binary"), arraySchema = @Schema(description = "De 1 a "
 				+ "15 imágenes JPG, PNG o WEBP de hasta 5 MB; la primera queda como principal"))
 		public List<MultipartFile> getArchivos() {
@@ -89,6 +110,17 @@ public class AlojamientoController {
 		}
 	}
 
+	/**
+	 * Catálogo público: todos los alojamientos que se pueden reservar
+	 * (publicaciones ACTIVA con fechas abiertas desde hoy), para la página
+	 * Explorar o el inicio. Ruta: {@code GET /alojamientos/disponibles}.
+	 *
+	 * @param orden recomendados (por defecto), precio_menor, precio_mayor o
+	 *              mejor_calificados
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de alojamientos; 400 si el orden no existe
+	 */
 	@Operation(summary = "Catálogo: todos los alojamientos disponibles para reservar (público)", description = "Publicaciones ACTIVA con fechas abiertas desde hoy, para la página Explorar o el inicio. "
 			+ "orden: recomendados (por defecto), precio_menor, precio_mayor o mejor_calificados.")
 	@SecurityRequirements
@@ -102,6 +134,25 @@ public class AlojamientoController {
 				.desde(publicacionService.disponibles(orden, RespuestaUtil.pagina(pagina, tamanio, Sort.unsorted())));
 	}
 
+	/**
+	 * Búsqueda pública de alojamientos ACTIVA con filtros opcionales que se
+	 * pueden combinar. Sin orden, los más recientes primero. Ruta:
+	 * {@code GET /alojamientos}.
+	 *
+	 * @param ciudad ciudad
+	 * @param llegada día de llegada (yyyy-MM-dd)
+	 * @param salida día de salida (yyyy-MM-dd)
+	 * @param huespedes cantidad de huéspedes
+	 * @param tipo tipo de alojamiento
+	 * @param precioMinimo precio mínimo por noche
+	 * @param precioMaximo precio máximo por noche
+	 * @param amenidades amenidades que debe tener
+	 * @param orden los mismos valores de {@code /disponibles}
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de resultados; 400 si los filtros o el orden no
+	 *         son válidos
+	 */
 	@Operation(summary = "Buscar alojamientos ACTIVA (público)", description = "Filtros opcionales combinables: ciudad, fechas, huéspedes, tipo, rango de precio y "
 			+ "amenidades. orden opcional como en /disponibles; sin él, los más recientes primero.")
 	@SecurityRequirements
@@ -124,6 +175,12 @@ public class AlojamientoController {
 				precioMaximo, amenidades, orden, RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
+	/**
+	 * Cantidad de alojamientos por tipo, en cualquier estado, para los filtros
+	 * de la página de inicio. Ruta pública: {@code GET /alojamientos/tipos}.
+	 *
+	 * @return 200 con {"Apartamento": 5, "Casa": 7, ...}
+	 */
 	@Operation(summary = "Cantidad de alojamientos por tipo (público)", description = "Cuenta todos los alojamientos, en cualquier estado, agrupados por tipo: "
 			+ "{\"Apartamento\": 5, \"Casa\": 7, ...}.")
 	@SecurityRequirements
@@ -133,6 +190,12 @@ public class AlojamientoController {
 		return ResponseEntity.ok(publicacionService.cantidadPorTipo());
 	}
 
+	/**
+	 * Políticas de cancelación disponibles. Ruta pública:
+	 * {@code GET /alojamientos/politicas}.
+	 *
+	 * @return 200 con la lista de políticas
+	 */
 	@Operation(summary = "Políticas de cancelación disponibles (público)")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Políticas de cancelación")
@@ -141,6 +204,15 @@ public class AlojamientoController {
 		return ResponseEntity.ok(publicacionService.politicas());
 	}
 
+	/**
+	 * Mis alojamientos con su estado (solo anfitriones). Ruta:
+	 * {@code GET /alojamientos/mios}.
+	 *
+	 * @param authentication anfitrión autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de alojamientos
+	 */
 	@Operation(summary = "Mis alojamientos con su estado (ANFITRION)")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Página de alojamientos del anfitrión con su estado")
@@ -151,6 +223,16 @@ public class AlojamientoController {
 				RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
+	/**
+	 * Detalle de un alojamiento. Es público si está ACTIVA; en otro estado
+	 * solo lo ven su anfitrión o un administrador. Ruta:
+	 * {@code GET /alojamientos/{id}}.
+	 *
+	 * @param id alojamiento
+	 * @param authentication usuario autenticado; puede ser {@code null}
+	 * @return 200 con el alojamiento, sus imágenes, servicios, calificación y
+	 *         anfitrión; 404 si no existe o no se puede ver
+	 */
 	@Operation(summary = "Detalle de un alojamiento", description = "Público si está ACTIVA; en otro estado solo para su anfitrión o un administrador.")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "Alojamiento con imágenes, servicios, calificación y anfitrión")
@@ -161,6 +243,15 @@ public class AlojamientoController {
 				RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Historial de estados (dueño o administrador). Ruta:
+	 * {@code GET /alojamientos/{id}/historial}.
+	 *
+	 * @param id alojamiento
+	 * @param authentication usuario autenticado
+	 * @return 200 con los cambios de estado, del primero al último; 404 si no
+	 *         existe o no se puede ver
+	 */
 	@Operation(summary = "Historial de estados (propietario o ADMIN)")
 	@ApiResponse(responseCode = "200", description = "Cambios de estado, del primero al último")
 	@ApiResponse(responseCode = "404", description = "El alojamiento no existe.")
@@ -170,6 +261,20 @@ public class AlojamientoController {
 				RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Crea un alojamiento en BORRADOR con sus imágenes (solo anfitriones).
+	 * Llega como multipart/form-data con dos campos: {@code datos}, el JSON
+	 * del alojamiento (en el borrador solo el título es obligatorio), y
+	 * {@code archivos}, de 1 a 15 imágenes JPG, PNG o WEBP de hasta 5 MB. La
+	 * primera imagen queda como portada. Ruta: {@code POST /alojamientos}.
+	 *
+	 * @param datos JSON del alojamiento, como texto (el frontend lo manda en el
+	 *              FormData sin tipo de contenido)
+	 * @param archivos imágenes del alojamiento
+	 * @param authentication anfitrión autenticado
+	 * @return 201 con el alojamiento; 400 si los datos o las imágenes no son
+	 *         válidos; 413, 415 o 503 según el caso
+	 */
 	@Operation(summary = "Crear alojamiento en BORRADOR con sus imágenes (ANFITRION)", description = "multipart/form-data con dos campos: 'datos', el JSON del alojamiento (solo el título es "
 			+ "obligatorio en el borrador), y 'archivos', de 1 a 15 imágenes JPG, PNG o WEBP de hasta 5 MB. "
 			+ "La primera imagen queda como principal.")
@@ -201,6 +306,17 @@ public class AlojamientoController {
 				HttpStatus.CREATED);
 	}
 
+	/**
+	 * Edita un alojamiento (dueño o administrador). Los campos en {@code null}
+	 * no cambian y las amenidades enviadas reemplazan las anteriores; las
+	 * imágenes se manejan con las rutas de {@code /imagenes}. Ruta:
+	 * {@code PUT /alojamientos/{id}}.
+	 *
+	 * @param id alojamiento
+	 * @param datos datos nuevos
+	 * @param authentication usuario autenticado
+	 * @return 200 con el alojamiento; 400, 403 o 404 según el caso
+	 */
 	@Operation(summary = "Editar alojamiento (propietario o ADMIN)", description = "Los campos en null no cambian; las amenidades enviadas reemplazan las anteriores. Las "
 			+ "imágenes se gestionan con los endpoints de /imagenes.")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
@@ -218,6 +334,17 @@ public class AlojamientoController {
 				RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Sube una o varias imágenes (dueño o administrador): JPG, PNG o WEBP de
+	 * hasta 5 MB, máximo 15 por alojamiento. Si no había portada, la primera
+	 * queda como principal. Ruta: {@code POST /alojamientos/{id}/imagenes}.
+	 *
+	 * @param id alojamiento
+	 * @param archivos imágenes a subir (campo {@code archivos})
+	 * @param authentication usuario autenticado
+	 * @return 201 con todas las imágenes, la principal primero; 400, 403, 404,
+	 *         413, 415 o 503 según el caso
+	 */
 	@Operation(summary = "Subir imágenes (propietario o ADMIN)", description = "multipart/form-data con uno o varios archivos en el campo 'archivos'. JPG, PNG o WEBP de "
 			+ "hasta 5 MB, máximo 15 por alojamiento. Si no había portada, la primera queda como principal.")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
@@ -238,6 +365,17 @@ public class AlojamientoController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)), HttpStatus.CREATED);
 	}
 
+	/**
+	 * Elimina una imagen (dueño o administrador). Si era la portada, la
+	 * siguiente pasa a serlo; el alojamiento debe conservar al menos una
+	 * imagen. Ruta: {@code DELETE /alojamientos/{id}/imagenes/{idImagen}}.
+	 *
+	 * @param id alojamiento
+	 * @param idImagen imagen
+	 * @param authentication usuario autenticado
+	 * @return 200 con las imágenes restantes; 403; 404; 409 si es la última
+	 *         imagen
+	 */
 	@Operation(summary = "Eliminar una imagen (propietario o ADMIN)", description = "Si era la principal, la siguiente pasa a serlo. El alojamiento debe conservar al menos "
 			+ "una imagen (409 si es la última).")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
@@ -254,6 +392,15 @@ public class AlojamientoController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Marca una imagen como portada (dueño o administrador). Ruta:
+	 * {@code PATCH /alojamientos/{id}/imagenes/{idImagen}/principal}.
+	 *
+	 * @param id alojamiento
+	 * @param idImagen imagen
+	 * @param authentication usuario autenticado
+	 * @return 200 con las imágenes, la principal primero; 403 o 404
+	 */
 	@Operation(summary = "Marcar una imagen como principal (propietario o ADMIN)")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Imágenes, la principal primero")
@@ -267,6 +414,15 @@ public class AlojamientoController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Envía a revisión: BORRADOR → PENDIENTE_REVISION (solo anfitriones).
+	 * Ruta: {@code POST /alojamientos/{id}/enviarrevision}.
+	 *
+	 * @param id alojamiento
+	 * @param authentication anfitrión autenticado
+	 * @return 200 con el alojamiento; 403; 404; 409 si faltan datos o el estado
+	 *         no lo permite
+	 */
 	@Operation(summary = "Enviar a revisión: BORRADOR → PENDIENTE_REVISION (ANFITRION)")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Alojamiento PENDIENTE_REVISION")
@@ -280,6 +436,14 @@ public class AlojamientoController {
 		return RespuestaUtil.desde(publicacionService.enviarRevision(id, RespuestaUtil.idUsuario(authentication)));
 	}
 
+	/**
+	 * Pausa una publicación: ACTIVA → PAUSADA (solo anfitriones); deja de
+	 * recibir reservas nuevas. Ruta: {@code POST /alojamientos/{id}/pausar}.
+	 *
+	 * @param id alojamiento
+	 * @param authentication anfitrión autenticado
+	 * @return 200 con el alojamiento; 403, 404 o 409
+	 */
 	@Operation(summary = "Pausar: ACTIVA → PAUSADA (ANFITRION)")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Alojamiento PAUSADA: no recibe reservas nuevas")
@@ -292,6 +456,14 @@ public class AlojamientoController {
 		return RespuestaUtil.desde(publicacionService.pausar(id, RespuestaUtil.idUsuario(authentication)));
 	}
 
+	/**
+	 * Reanuda una publicación: PAUSADA → ACTIVA (solo anfitriones). Ruta:
+	 * {@code POST /alojamientos/{id}/reanudar}.
+	 *
+	 * @param id alojamiento
+	 * @param authentication anfitrión autenticado
+	 * @return 200 con el alojamiento; 403, 404 o 409
+	 */
 	@Operation(summary = "Reanudar: PAUSADA → ACTIVA (ANFITRION)")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Alojamiento ACTIVA")
@@ -304,6 +476,15 @@ public class AlojamientoController {
 		return RespuestaUtil.desde(publicacionService.reanudar(id, RespuestaUtil.idUsuario(authentication)));
 	}
 
+	/**
+	 * Agrega un servicio adicional con costo (dueño o administrador). Ruta:
+	 * {@code POST /alojamientos/{id}/servicios}.
+	 *
+	 * @param id alojamiento
+	 * @param datos nombre y costo
+	 * @param authentication usuario autenticado
+	 * @return 201 con el servicio; 400, 403 o 404
+	 */
 	@Operation(summary = "Agregar servicio adicional con costo (propietario o ADMIN)")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "201", description = "Servicio adicional creado")
@@ -318,6 +499,16 @@ public class AlojamientoController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)), HttpStatus.CREATED);
 	}
 
+	/**
+	 * Modifica un servicio adicional (dueño o administrador). Ruta:
+	 * {@code PUT /alojamientos/{id}/servicios/{idServicio}}.
+	 *
+	 * @param id alojamiento
+	 * @param idServicio servicio
+	 * @param datos nombre y costo nuevos
+	 * @param authentication usuario autenticado
+	 * @return 200 con el servicio; 400, 403 o 404
+	 */
 	@Operation(summary = "Modificar servicio adicional (propietario o ADMIN)")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Servicio adicional actualizado")
@@ -332,6 +523,15 @@ public class AlojamientoController {
 				RespuestaUtil.idUsuario(authentication), RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Elimina un servicio adicional (dueño o administrador). Ruta:
+	 * {@code DELETE /alojamientos/{id}/servicios/{idServicio}}.
+	 *
+	 * @param id alojamiento
+	 * @param idServicio servicio
+	 * @param authentication usuario autenticado
+	 * @return 200 si se eliminó; 403 o 404
+	 */
 	@Operation(summary = "Eliminar servicio adicional (propietario o ADMIN)")
 	@PreAuthorize("hasAnyRole('ANFITRION','ADMIN')")
 	@ApiResponse(responseCode = "200", description = "Servicio adicional eliminado.")

@@ -55,14 +55,29 @@ public class OpenApiConfig {
 	/** Separa los mensajes posibles dentro de la descripción de una respuesta. */
 	public static final String SEPARADOR = " | ";
 
+	/** Nombre del esquema de error que se registra en los componentes. */
 	private static final String ESQUEMA_ERROR = "MensajeError";
+
+	/** Tipo de contenido JSON. */
 	private static final String JSON = "application/json";
+
+	/** Mensaje del 401 (el mismo que responde {@code SecurityConfig}). */
 	private static final String NO_AUTENTICADO = "No autenticado: token ausente, inválido o expirado";
+
+	/** Mensaje del 403. */
 	private static final String SIN_PERMISO = "No tienes permisos para esta operación";
+
+	/** Mensaje del 400 por JSON mal formado. */
 	private static final String JSON_INVALIDO = "El cuerpo de la petición no es un JSON válido.";
+
+	/** Mensaje del 500. */
 	private static final String ERROR_INTERNO = "Ocurrió un error inesperado. Intenta de nuevo.";
 
-	/** Esquema de todos los errores: {"message": "..."}. */
+	/**
+	 * Registra el esquema de todos los errores: {@code {"message": "..."}}.
+	 *
+	 * @return personalizador que agrega el esquema a la documentación
+	 */
 	@Bean
 	public OpenApiCustomizer esquemaDeError() {
 		return openApi -> {
@@ -75,7 +90,13 @@ public class OpenApiConfig {
 		};
 	}
 
-	/** Respuestas comunes y ejemplos de error en cada operación. */
+	/**
+	 * Completa cada operación con las respuestas comunes (401, 403, 400 y 500
+	 * según corresponda), las ordena por código y les pone el cuerpo de error con
+	 * sus ejemplos.
+	 *
+	 * @return personalizador que se aplica a cada endpoint
+	 */
 	@Bean
 	public OperationCustomizer respuestasComunes() {
 		return (operacion, metodo) -> {
@@ -121,6 +142,9 @@ public class OpenApiConfig {
 	/**
 	 * springdoc agrega un "200" genérico; si el endpoint documenta otro éxito (por
 	 * ejemplo 201) y no un 200, ese genérico sobra.
+	 *
+	 * @param respuestas respuestas de la operación
+	 * @param metodo     método del controlador
 	 */
 	private static void quitarExitoGenerico(ApiResponses respuestas, HandlerMethod metodo) {
 		boolean declara200 = Arrays
@@ -133,7 +157,13 @@ public class OpenApiConfig {
 		}
 	}
 
-	/** Parámetros que Spring convierte (números, fechas, enums) y pueden fallar. */
+	/**
+	 * Indica si Spring tiene que convertir el parámetro (números, fechas, enums),
+	 * y por tanto la conversión puede fallar con un 400.
+	 *
+	 * @param parametro parámetro de la operación
+	 * @return {@code true} si no es un texto libre ni una lista
+	 */
 	private static boolean puedeSerInvalido(Parameter parametro) {
 		Schema<?> esquema = parametro.getSchema();
 		if (esquema == null || "array".equals(esquema.getType())) {
@@ -142,6 +172,13 @@ public class OpenApiConfig {
 		return !"string".equals(esquema.getType()) || esquema.getFormat() != null || esquema.getEnum() != null;
 	}
 
+	/**
+	 * Indica si el endpoint exige un rol con {@code @PreAuthorize}, en el método
+	 * o en la clase.
+	 *
+	 * @param metodo método del controlador
+	 * @return {@code true} si tiene {@code @PreAuthorize}
+	 */
 	private static boolean exigeRol(HandlerMethod metodo) {
 		return AnnotatedElementUtils.hasAnnotation(metodo.getMethod(), PreAuthorize.class)
 				|| AnnotatedElementUtils.hasAnnotation(metodo.getBeanType(), PreAuthorize.class);
@@ -149,7 +186,11 @@ public class OpenApiConfig {
 
 	/**
 	 * Agrega el mensaje a la respuesta del código, o crea la respuesta si no estaba
-	 * documentada.
+	 * documentada. Si el mensaje ya estaba, no lo repite.
+	 *
+	 * @param respuestas respuestas de la operación
+	 * @param codigo     código HTTP
+	 * @param mensaje    mensaje que se agrega
 	 */
 	private static void agregar(ApiResponses respuestas, String codigo, String mensaje) {
 		ApiResponse existente = respuestas.get(codigo);
@@ -163,7 +204,11 @@ public class OpenApiConfig {
 
 	/**
 	 * Errores (4xx y 5xx): esquema {"message"} y un ejemplo por cada mensaje
-	 * posible.
+	 * posible. Las respuestas de éxito se dejan como están.
+	 *
+	 * @param codigo    código HTTP de la respuesta
+	 * @param respuesta respuesta documentada
+	 * @return la misma respuesta con el cuerpo de error y los ejemplos
 	 */
 	private static ApiResponse conCuerpoDeError(String codigo, ApiResponse respuesta) {
 		if (codigo.isEmpty() || codigo.charAt(0) < '4' || respuesta.getDescription() == null) {

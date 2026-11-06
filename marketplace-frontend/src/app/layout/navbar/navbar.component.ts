@@ -20,15 +20,19 @@ import { filter, fromEvent, interval, map, merge, startWith } from 'rxjs';
 import {SessionService} from '../../services/session.service';
 import {NotificacionService} from '../../services/notificaciones.service';
 
+/** Roles como se muestran en la barra. */
 export type Role = 'Huésped' | 'Anfitrión' | 'Administrador';
+/** Pantallas de autenticación que puede abrir la barra. */
 export type AuthMode = 'login' | 'register' | 'recovery';
 
+/** Opción de la barra: [texto, ruta]. */
 type NavItem = [label: string, path: string];
 
 // ======================================
 // MENÚS SEGÚN ROL
 // ======================================
 
+/** Opciones del huésped. */
 const GUEST_ITEMS: NavItem[] = [
   ['Inicio', '/home'],
   ['Explorar', '/explorar'],
@@ -38,6 +42,7 @@ const GUEST_ITEMS: NavItem[] = [
   ['Mis reseñas', '/resenas']
 ];
 
+/** Opciones del anfitrión. */
 const HOST_ITEMS: NavItem[] = [
   ['Resumen', '/host/dashboard'],
   ['Mis alojamientos', '/host/alojamientos'],
@@ -46,6 +51,7 @@ const HOST_ITEMS: NavItem[] = [
   ['Reseñas', '/host/resenas']
 ];
 
+/** Opciones del administrador. */
 const ADMIN_ITEMS: NavItem[] = [
   ['Dashboard', '/admin/dashboard'],
   ['Usuarios', '/admin/usuarios'],
@@ -56,18 +62,24 @@ const ADMIN_ITEMS: NavItem[] = [
   ['Auditoría', '/admin/auditoria']
 ];
 
+/** Página de inicio de cada rol. */
 const ROLE_HOME: Record<Role, string> = {
   Huésped: '/home',
   Anfitrión: '/host/dashboard',
   Administrador: '/admin/dashboard'
 };
 
+/** Ruta de las notificaciones de cada rol. */
 const NOTIFICATIONS: Record<Role, string | null> = {
   Huésped: '/notificaciones',
   Anfitrión: '/notificaciones',
   Administrador: '/notificaciones'
 };
 
+/**
+ * Barra de navegación superior: opciones según el rol, contador de notificaciones sin leer, datos
+ * del usuario y cierre de sesión.
+ */
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -79,26 +91,42 @@ const NOTIFICATIONS: Record<Role, string | null> = {
 })
 export class NavbarComponent {
 
+  /** Router de Angular. */
   private readonly router = inject(Router);
+
+  /** Sesión del usuario. */
   protected readonly session = inject(SessionService);
+
+  /** Consulta las notificaciones sin leer. */
   private readonly notificacionService = inject(NotificacionService);
 
+  /** Contador que puede enviar la página padre. */
   unread = input(0);
   /** Notificaciones sin leer del usuario (se consulta al navegar, cada minuto y al marcar como leídas). */
   readonly sinLeer = signal(0);
+
+  /** Número que se muestra en la campana. */
   readonly contador = computed(() => Math.max(this.unread(), this.sinLeer()));
+
+  /** Avisa que se quiere abrir el login, el registro o la recuperación. */
   openAuth = output<AuthMode>();
 
+  /** Indica si el menú del usuario está abierto. */
   roleMenu = false;
 
   // Se conservan para compatibilidad con el HTML.
+
+  /** Se conserva por compatibilidad con la plantilla. */
   readonly roles: Role[] = [];
+
+  /** Página de inicio de cada rol. */
   readonly roleHome = ROLE_HOME;
 
   // ======================================
   // DETECTAR CAMBIOS DE RUTA
   // ======================================
 
+  /** URL actual; se actualiza en cada navegación. */
   private readonly url = toSignal(
     this.router.events.pipe(
       filter(
@@ -114,12 +142,15 @@ export class NavbarComponent {
   );
 
   // Permite actualizar la sesión al cerrar sesión.
+
+  /** Fuerza a recalcular la sesión al cerrarla. */
   private readonly sesionVersion = signal(0);
 
   // ======================================
   // OBTENER SESIÓN REAL
   // ======================================
 
+  /** Sesión guardada (token, correo y rol), o null. */
   readonly sesion = computed(() => {
 
     // Se consulta la URL para actualizar la sesión
@@ -142,6 +173,7 @@ export class NavbarComponent {
     };
   });
 
+  /** Indica si hay sesión. */
   readonly estaAutenticado = computed(
     () => this.sesion() !== null
   );
@@ -150,6 +182,12 @@ export class NavbarComponent {
   // IDENTIFICAR ROL REAL
   // ======================================
 
+  /**
+   * Convierte el rol del backend en el de la barra.
+   *
+   * @param valor rol como llega del backend
+   * @returns el rol, o null si no lo reconoce
+   */
   private normalizarRol(valor: string): Role | null {
 
     const rol = valor
@@ -184,6 +222,7 @@ export class NavbarComponent {
     return null;
   }
 
+  /** Rol del usuario; Huésped si no hay sesión. */
   readonly role = computed<Role>(() => {
 
     const sesion = this.sesion();
@@ -199,6 +238,10 @@ export class NavbarComponent {
   // DATOS DEL USUARIO
   // ======================================
 
+  /**
+   * Iniciales, nombre y correo que se muestran; sale del correo porque la sesión no guarda el
+   * nombre.
+   */
   readonly user = computed(() => {
 
     const sesion = this.sesion();
@@ -235,6 +278,7 @@ export class NavbarComponent {
   // NAVBAR SEGÚN ROL
   // ======================================
 
+  /** Opciones de la barra según el rol. */
   readonly items = computed<NavItem[]>(() => {
 
     if (!this.estaAutenticado()) {
@@ -257,6 +301,7 @@ export class NavbarComponent {
     }
   });
 
+  /** Página de inicio según el rol. */
   readonly homePath = computed(() => {
 
     if (!this.estaAutenticado()) {
@@ -266,6 +311,7 @@ export class NavbarComponent {
     return ROLE_HOME[this.role()];
   });
 
+  /** Ruta de las notificaciones; null sin sesión. */
   readonly notificationsPath = computed(() => {
 
     if (!this.estaAutenticado()) {
@@ -275,11 +321,16 @@ export class NavbarComponent {
     return NOTIFICATIONS[this.role()];
   });
 
+  /** Indica si se está en el login. */
   readonly isLoginPage = computed(() => {
 
     return this.url().split(/[?#]/)[0] === '/login';
   });
 
+  /**
+   * Actualiza el contador de notificaciones al navegar, cada minuto y cuando se marcan como
+   * leídas.
+   */
   constructor() {
     merge(
       toObservable(this.url),
@@ -290,6 +341,7 @@ export class NavbarComponent {
       .subscribe(() => this.actualizarSinLeer());
   }
 
+  /** Consulta cuántas notificaciones sin leer tiene el usuario. */
   private actualizarSinLeer(): void {
     if (!this.estaAutenticado()) {
       this.sinLeer.set(0);
@@ -305,11 +357,13 @@ export class NavbarComponent {
   // ESTILOS DE NAVEGACIÓN
   // ======================================
 
+  /** Clases de la opción activa. */
   readonly activeClass =
     'text-emerald-700 after:absolute after:bottom-0 ' +
     'after:left-4 after:right-4 after:h-0.5 ' +
     'after:bg-emerald-700';
 
+  /** Clases de las demás opciones. */
   readonly inactiveClass =
     'text-slate-500 hover:text-slate-900';
 
@@ -317,6 +371,12 @@ export class NavbarComponent {
   // COMPATIBILIDAD CON HTML EXISTENTE
   // ======================================
 
+  /**
+   * Clases de una opción del menú de roles.
+   *
+   * @param r rol
+   * @returns clases CSS
+   */
   roleItemClass(r: Role): string {
 
     return (
@@ -328,6 +388,12 @@ export class NavbarComponent {
     );
   }
 
+  /**
+   * Ícono de un rol.
+   *
+   * @param r rol
+   * @returns nombre del ícono
+   */
   roleIcon(r: Role): 'shield' | 'building' | 'users' {
 
     if (r === 'Administrador') {
@@ -342,6 +408,12 @@ export class NavbarComponent {
   }
 
   // No se permite cambiar de rol desde la navbar.
+
+  /**
+   * Cierra el menú; no se permite cambiar de rol desde la barra.
+   *
+   * @param _r rol elegido (no se usa)
+   */
   pickRole(_r: Role): void {
 
     this.roleMenu = false;
@@ -351,6 +423,11 @@ export class NavbarComponent {
   // AUTENTICACIÓN
   // ======================================
 
+  /**
+   * Abre la pantalla de autenticación pedida.
+   *
+   * @param mode login, registro o recuperación
+   */
   auth(mode: AuthMode): void {
 
     this.roleMenu = false;
@@ -361,6 +438,7 @@ export class NavbarComponent {
   // CERRAR SESIÓN
   // ======================================
 
+  /** Cierra la sesión y lleva al login. */
   cerrarSesion(): void {
     this.session.cerrarSesion();   // borra el storage y pone la señal en null
     this.roleMenu = false;
@@ -371,6 +449,7 @@ export class NavbarComponent {
   // CERRAR MENÚ
   // ======================================
 
+  /** Cierra el menú del usuario. */
   closeMenu(): void {
 
     this.roleMenu = false;

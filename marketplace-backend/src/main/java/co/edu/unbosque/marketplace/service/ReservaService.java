@@ -48,47 +48,101 @@ import co.edu.unbosque.marketplace.util.Resultado;
 /**
  * Reservas: creación con pago de prueba y consulta del historial.
  * <p>
- * Crear una reserva tiene tres pasos:
+ * Crear una reserva tiene tres pasos. Primero, en una transacción con bloqueo
+ * pesimista del alojamiento, se valida la cotización (vigente, del huésped y
+ * sin usar), que el alojamiento esté ACTIVA y no sea del propio huésped, se
+ * vuelve a revisar la disponibilidad y se crea la reserva en PENDIENTE_PAGO
+ * con el monto exacto de la cotización. Segundo, se hace el pago de prueba,
+ * fuera de la transacción para no retener el bloqueo. Tercero, si el pago se
+ * aprueba la reserva queda CONFIRMADA de inmediato, sin aprobación del
+ * anfitrión; si se rechaza o falla, queda CANCELADA y las fechas se liberan.
  * </p>
- * <ol>
- * <li>Transacción con bloqueo pesimista del alojamiento: valida la cotización
- * (vigente, del huésped, sin usar), que el alojamiento esté ACTIVA y no sea del
- * propio huésped, revalida la disponibilidad y crea la reserva en
- * PENDIENTE_PAGO con el monto exacto de la cotización.</li>
- * <li>Pago de prueba (fuera de la transacción, para no retener el bloqueo).</li>
- * <li>Si el pago se aprueba, la reserva queda CONFIRMADA de inmediato, sin
- * aprobación del anfitrión; si se rechaza o falla, queda CANCELADA y las fechas
- * se liberan.</li>
- * </ol>
- * La idempotencia (cabecera Idempotency-Key) la aplica el controller con
+ * <p>
+ * La idempotencia (cabecera Idempotency-Key) la aplica el controlador con
  * {@link IdempotenciaService}.
- *
- * @see "RF-020, RF-021, RF-022, RF-028, RNF-028, RNF-029, RNF-030, RNF-031"
+ * </p>
  */
 @Service
 public class ReservaService {
 
+    /** Log de la clase. */
     private static final Logger LOG = LoggerFactory.getLogger(ReservaService.class);
+
+    /** Mensaje cuando la reserva no existe. */
     private static final String NO_EXISTE = "La reserva no existe.";
 
+    /** Repositorio de alojamientos. */
     private final AlojamientoRepository alojamientoRepo;
+
+    /** Repositorio de cotizaciones. */
     private final CotizacionRepository cotizacionRepo;
+
+    /** Repositorio de reservas. */
     private final ReservaRepository reservaRepo;
+
+    /** Repositorio de pagos. */
     private final PagoRepository pagoRepo;
+
+    /** Repositorio de usuarios, para los nombres. */
     private final UsuarioRepository usuarioRepo;
+
+    /** Repositorio de políticas de cancelación. */
     private final PoliticaCancelacionRepository politicaRepo;
+
+    /** Repositorio de reseñas, para saber si ya se reseñó. */
     private final ResenaRepository resenaRepo;
+
+    /** Repositorio de cancelaciones. */
     private final CancelacionRepository cancelacionRepo;
+
+    /** Revisa la disponibilidad. */
     private final CalendarioService calendarioService;
+
+    /** Da la imagen principal del alojamiento. */
     private final PublicacionService publicacionService;
+
+    /** Convierte la cotización para congelar el desglose. */
     private final CotizacionService cotizacionService;
+
+    /** Hace el pago de prueba. */
     private final PagoService pagoService;
+
+    /** Avisa al huésped y al anfitrión. */
     private final NotificacionService notificacionService;
+
+    /** Servicio de auditoría. */
     private final AuditoriaService auditoriaService;
+
+    /** Copia los datos de la entidad al DTO. */
     private final ModelMapper modelMapper;
+
+    /** Guarda el desglose en JSON. */
     private final ObjectMapper objectMapper;
+
+    /** Plantilla para ejecutar los pasos 1 y 3 en transacciones separadas. */
     private final TransactionTemplate transaccion;
 
+    /**
+     * Crea el servicio.
+     *
+     * @param alojamientoRepo repositorio de alojamientos
+     * @param cotizacionRepo repositorio de cotizaciones
+     * @param reservaRepo repositorio de reservas
+     * @param pagoRepo repositorio de pagos
+     * @param usuarioRepo repositorio de usuarios
+     * @param politicaRepo repositorio de políticas
+     * @param resenaRepo repositorio de reseñas
+     * @param cancelacionRepo repositorio de cancelaciones
+     * @param calendarioService servicio de calendario
+     * @param publicacionService servicio de publicaciones
+     * @param cotizacionService servicio de cotizaciones
+     * @param pagoService servicio de pagos
+     * @param notificacionService servicio de notificaciones
+     * @param auditoriaService servicio de auditoría
+     * @param modelMapper copiador de entidades a DTO
+     * @param objectMapper conversor a JSON
+     * @param transactionManager administrador de transacciones de Spring
+     */
     public ReservaService(AlojamientoRepository alojamientoRepo, CotizacionRepository cotizacionRepo,
             ReservaRepository reservaRepo, PagoRepository pagoRepo, UsuarioRepository usuarioRepo,
             PoliticaCancelacionRepository politicaRepo, ResenaRepository resenaRepo,
@@ -117,7 +171,10 @@ public class ReservaService {
 
     /**
      * Una reserva está completada si está CONFIRMADA y su fecha de salida ya
-     * llegó.
+     * llegó. Solo las completadas se pueden reseñar.
+     *
+     * @param reserva reserva a revisar
+     * @return {@code true} si está completada
      */
     public static boolean esCompletada(Reserva reserva) {
         return reserva.getEstado() == EstadoReserva.CONFIRMADA && !reserva.getFechaSalida().isAfter(LocalDate.now());
@@ -126,12 +183,14 @@ public class ReservaService {
     /**
      * Crea una reserva desde una cotización vigente y la paga.
      *
-     * @return 0 con la reserva CONFIRMADA; 1 la cotización no existe; 2 datos
-     *         inválidos; 3 es su propio alojamiento; 4 cotización vencida o
-     *         alojamiento no ACTIVA; 5 fechas ya no disponibles; 6 pago
-     *         rechazado; 7 error en el pago (en 6 y 7 se devuelve la reserva
-     *         CANCELADA como dato).
-     * @see "CA-070 a CA-075, CA-086, CA-109, CA-123, CA-159 a CA-163"
+     * @param solicitud cotización y método de pago
+     * @param idHuesped huésped autenticado
+     * @return la reserva CONFIRMADA; NO_ENCONTRADO si la cotización no existe;
+     *         DATOS_INVALIDOS si los datos no son válidos; SIN_PERMISO si es su
+     *         propio alojamiento; ESTADO_INVALIDO si la cotización venció o el
+     *         alojamiento no está publicado; NO_DISPONIBLE si las fechas ya no
+     *         están libres; PAGO_RECHAZADO o PAGO_ERROR si el pago falló (en
+     *         esos dos casos se devuelve la reserva CANCELADA como dato)
      */
     public Resultado<ReservaDTO> crear(SolicitudReservaDTO solicitud, Long idHuesped) {
         if (solicitud == null || solicitud.getIdCotizacion() == null) {
@@ -159,7 +218,9 @@ public class ReservaService {
     /**
      * Reservas del huésped autenticado con su estado actual.
      *
-     * @see "RF-022, CA-078"
+     * @param idHuesped huésped
+     * @param pagina página y orden
+     * @return página de reservas
      */
     public PaginaDTO<ReservaDTO> listarMias(Long idHuesped, Pageable pagina) {
         return PaginaDTO.de(reservaRepo.findByIdHuesped(idHuesped, pagina), this::convertirDTO);
@@ -169,7 +230,9 @@ public class ReservaService {
      * Reservas de los alojamientos del anfitrión autenticado (nunca las de
      * otros).
      *
-     * @see "RF-022, CA-079"
+     * @param idAnfitrion anfitrión
+     * @param pagina página y orden
+     * @return página de reservas
      */
     public PaginaDTO<ReservaDTO> listarDeAnfitrion(Long idAnfitrion, Pageable pagina) {
         return PaginaDTO.de(reservaRepo.buscarDeAnfitrion(idAnfitrion, pagina), this::convertirDTO);
@@ -179,7 +242,9 @@ public class ReservaService {
      * Todas las reservas de la plataforma, o solo las de un estado (vista del
      * administrador), en forma resumida: una sola consulta por página.
      *
-     * @see "RF-005, RF-022"
+     * @param estado estado a filtrar; {@code null} para todas
+     * @param pagina página y orden
+     * @return página de reservas resumidas
      */
     public PaginaDTO<ReservaAdminDTO> listarTodas(EstadoReserva estado, Pageable pagina) {
         List<EstadoReserva> estados = estado == null ? List.of(EstadoReserva.values()) : List.of(estado);
@@ -187,11 +252,14 @@ public class ReservaService {
     }
 
     /**
-     * Detalle de una reserva: la ven su huésped, el anfitrión del alojamiento y
-     * los administradores.
+     * Detalle de una reserva. La ven su huésped, el anfitrión del alojamiento
+     * y los administradores.
      *
-     * @return 0 con la reserva; 1 si no existe o es de otro usuario.
-     * @see "RNF-006, CA-133"
+     * @param idReserva reserva
+     * @param idActor usuario que consulta
+     * @param esAdmin {@code true} si es administrador
+     * @return la reserva; o NO_ENCONTRADO si no existe o el usuario no puede
+     *         verla
      */
     public Resultado<ReservaDTO> obtener(Long idReserva, Long idActor, boolean esAdmin) {
         Optional<Reserva> reserva = reservaRepo.findById(idReserva);
@@ -208,8 +276,9 @@ public class ReservaService {
     }
 
     /**
-     * Cancela las reservas que quedaron PENDIENTE_PAGO más del tiempo
-     * permitido (por ejemplo, si el servidor se detuvo durante el pago).
+     * Tarea programada (cada minuto) que cancela las reservas que quedaron en
+     * PENDIENTE_PAGO más del tiempo permitido, por ejemplo si el servidor se
+     * detuvo durante el pago.
      */
     @Scheduled(fixedDelay = 60000)
     @Transactional
@@ -226,6 +295,9 @@ public class ReservaService {
      * Convierte la reserva a DTO con el último pago, los datos del alojamiento
      * (aunque esté pausado o bloqueado), los nombres del huésped y del
      * anfitrión, si ya tiene reseña y su cancelación, si la hubo.
+     *
+     * @param reserva reserva
+     * @return reserva para la API
      */
     public ReservaDTO convertirDTO(Reserva reserva) {
         ReservaDTO dto = modelMapper.map(reserva, ReservaDTO.class);
@@ -253,12 +325,25 @@ public class ReservaService {
         return dto;
     }
 
+    /**
+     * Nombre de un usuario.
+     *
+     * @param idUsuario usuario; puede ser {@code null}
+     * @return el nombre, o {@code null} si no existe
+     */
     private String nombreUsuario(Long idUsuario) {
         return idUsuario == null ? null
                 : usuarioRepo.findById(idUsuario).map(Usuario::getNombre).orElse(null);
     }
 
-    /** Paso 1: validaciones con bloqueo pesimista y reserva PENDIENTE_PAGO. */
+    /**
+     * Paso 1: valida todo con el alojamiento bloqueado y crea la reserva en
+     * PENDIENTE_PAGO.
+     *
+     * @param idCotizacion cotización a usar
+     * @param idHuesped huésped
+     * @return la reserva pendiente, o el error de la validación que falló
+     */
     private Resultado<Reserva> reservarPendiente(Long idCotizacion, Long idHuesped) {
         Optional<Cotizacion> cotizacionOpt = cotizacionRepo.findById(idCotizacion)
                 .filter(c -> c.getIdUsuario().equals(idHuesped));
@@ -288,7 +373,7 @@ public class ReservaService {
         if (errorFechas != null) {
             return Resultado.error(Resultado.DATOS_INVALIDOS, errorFechas);
         }
-        // Revalidación inmediatamente antes de confirmar (RNF-029)
+        // Revalidación inmediatamente antes de confirmar, por si otra reserva tomó las fechas
         if (!calendarioService.estaLibre(alojamiento.getIdAlojamiento(), cotizacion.getFechaEntrada(),
                 cotizacion.getFechaSalida())) {
             return Resultado.error(Resultado.NO_DISPONIBLE,
@@ -314,7 +399,15 @@ public class ReservaService {
         return Resultado.exito(reserva);
     }
 
-    /** Paso 3: confirma o cancela según el resultado del pago. */
+    /**
+     * Paso 3: confirma o cancela la reserva según el resultado del pago, y
+     * avisa al huésped y al anfitrión.
+     *
+     * @param idReserva reserva
+     * @param pago pago hecho
+     * @return la reserva confirmada, o el error del pago con la reserva
+     *         cancelada como dato
+     */
     private Resultado<ReservaDTO> cerrar(Long idReserva, Pago pago) {
         Reserva reserva = reservaRepo.findById(idReserva).orElseThrow();
         Long idAnfitrion = alojamientoRepo.findById(reserva.getIdAlojamiento()).map(Alojamiento::getIdAnfitrion)
@@ -358,6 +451,14 @@ public class ReservaService {
                 convertirDTO(reserva));
     }
 
+    /**
+     * Convierte la cotización a JSON para guardarla en la reserva, así los
+     * cambios posteriores de tarifas no la alteran.
+     *
+     * @param cotizacion cotización usada
+     * @return desglose en JSON
+     * @throws IllegalStateException si no se puede convertir
+     */
     private String desgloseCongelado(Cotizacion cotizacion) {
         try {
             return objectMapper.writeValueAsString(cotizacionService.convertirDTO(cotizacion));

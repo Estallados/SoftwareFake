@@ -19,10 +19,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST del segundo factor (TOTP). Ruta base:
- * {@code /usuarios/segundofactor}.
- *
- * @see "RNF-033"
+ * Controlador REST del segundo factor (códigos TOTP de una app autenticadora).
+ * Ruta base: {@code /usuarios/segundofactor}. Activarlo tiene dos pasos:
+ * generar el secreto y confirmarlo con un código.
  */
 @RestController
 @RequestMapping("/usuarios/segundofactor")
@@ -31,12 +30,26 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class SegundoFactorController {
 
+	/** Servicio del segundo factor. */
 	private final SegundoFactorService segundoFactorService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param segundoFactorService servicio del segundo factor
+	 */
 	public SegundoFactorController(SegundoFactorService segundoFactorService) {
 		this.segundoFactorService = segundoFactorService;
 	}
 
+	/**
+	 * Paso 1: genera el secreto TOTP. Ruta:
+	 * {@code POST /usuarios/segundofactor/activar}.
+	 *
+	 * @param authentication usuario autenticado
+	 * @return 200 con {secreto, uri} (la URI otpauth se muestra como código
+	 *         QR); 409 si ya está habilitado
+	 */
 	@Operation(summary = "Generar el secreto TOTP (paso 1)", description = "Devuelve el secreto y la URI otpauth para registrarlo en la app autenticadora.")
 	@ApiResponse(responseCode = "200", description = "{secreto, uri}: la URI otpauth se muestra como código QR")
 	@ApiResponse(responseCode = "409", description = "El segundo factor ya está habilitado.")
@@ -45,6 +58,15 @@ public class SegundoFactorController {
 		return RespuestaUtil.desde(segundoFactorService.activar(RespuestaUtil.idUsuario(authentication)));
 	}
 
+	/**
+	 * Paso 2: confirma la activación con un código de la app. Ruta:
+	 * {@code POST /usuarios/segundofactor/confirmar}.
+	 *
+	 * @param datos DTO con el {@code codigo}
+	 * @param authentication usuario autenticado
+	 * @return 200 si quedó habilitado; 400 si el código no es válido; 409 si no
+	 *         se pidió la activación
+	 */
 	@Operation(summary = "Confirmar la activación con un código (paso 2)")
 	@ApiResponse(responseCode = "200", description = "Segundo factor habilitado.")
 	@ApiResponse(responseCode = "400", description = "El código no es válido.")
@@ -57,6 +79,15 @@ public class SegundoFactorController {
 				: RespuestaUtil.desde(resultado);
 	}
 
+	/**
+	 * Deshabilita el segundo factor con un código actual. Ruta:
+	 * {@code POST /usuarios/segundofactor/desactivar}.
+	 *
+	 * @param datos DTO con el {@code codigo}
+	 * @param authentication usuario autenticado
+	 * @return 200 si se deshabilitó; 400 si el código no es válido; 409 si no
+	 *         estaba habilitado
+	 */
 	@Operation(summary = "Deshabilitar el segundo factor con un código actual")
 	@ApiResponse(responseCode = "200", description = "Segundo factor deshabilitado.")
 	@ApiResponse(responseCode = "400", description = "El código no es válido.")

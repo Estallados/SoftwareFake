@@ -41,14 +41,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de autenticación del marketplace. Ruta base: {@code /auth}.
- * Expone el registro con verificación del correo por código, el inicio de
- * sesión (devuelve un token JWT listo para usar), la recuperación de contraseña
- * por correo, la reactivación de una cuenta desactivada y el inicio de sesión con
+ * Controlador REST de autenticación. Ruta base: {@code /auth}. Expone el
+ * registro con verificación del correo por código, el inicio de sesión (que
+ * devuelve un token JWT listo para usar), la recuperación de contraseña por
+ * correo, la reactivación de una cuenta desactivada y el inicio de sesión con
  * Google. Todas sus rutas son públicas.
- *
- * @see "RF-001"
- * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
  */
 @RestController
 @RequestMapping("/auth")
@@ -56,6 +53,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
+	/** Mensaje cuando la contraseña no cumple las reglas. */
 	private static final String MENSAJE_CONTRASENIA_DEBIL = "La contraseña debe tener entre 8 y 64 caracteres, "
 			+ "una mayúscula, una minúscula, un número y un símbolo.";
 
@@ -146,7 +144,7 @@ public class AuthController {
 			UserDetails usuario = (UserDetails) authentication.getPrincipal();
 			Long idUsuario = usuario instanceof Usuario u ? u.getIdUsuario() : null;
 
-			// Correo sin verificar (RF-001): la contraseña es correcta pero aún no se
+			// Correo sin verificar: la contraseña es correcta pero aún no se
 			// entrega el token
 			if (usuario instanceof Usuario u && !u.esCorreoVerificado()) {
 				auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO,
@@ -157,7 +155,7 @@ public class AuthController {
 								"requiereVerificacion", true));
 			}
 
-			// Segundo factor (RNF-033): con las credenciales válidas aún no se entrega el
+			// Segundo factor: con las credenciales válidas aún no se entrega el
 			// token
 			if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
 				if (loginRequest.getCodigo() == null || loginRequest.getCodigo().isBlank()) {
@@ -189,18 +187,6 @@ public class AuthController {
 	}
 
 	/**
-	 * Inicia sesión con Google. Ruta: {@code POST /auth/google}. Si el correo no
-	 * tiene cuenta, la crea ya verificada con el rol pedido.
-	 *
-	 * @param datos DTO con {@code idToken} (el credential del botón de Google) y,
-	 *              opcionalmente, {@code rol} y {@code codigo}
-	 * @return 200 con {message, token, rol, correo, cuentaNueva=false}; 201 igual
-	 *         con cuentaNueva=true si se creó la cuenta; 401 si el token no es
-	 *         válido o falta el código del segundo factor (con
-	 *         requiereSegundoFactor=true); 403 si la cuenta está restringida o se
-	 *         pide el rol ADMIN; 503 si no está configurado GOOGLE_CLIENT_ID
-	 */
-	/**
 	 * Configuración del botón de Google para el front. Ruta:
 	 * {@code GET /auth/google/configuracion}. Así el client ID no se escribe a
 	 * mano en Angular.
@@ -220,6 +206,18 @@ public class AuthController {
 		return ResponseEntity.ok(respuesta);
 	}
 
+	/**
+	 * Inicia sesión con Google. Si el correo no tiene cuenta, la crea ya
+	 * verificada con el rol pedido. Ruta: {@code POST /auth/google}.
+	 *
+	 * @param datos DTO con {@code idToken} (el credential del botón de Google)
+	 *              y, opcionalmente, {@code rol} y {@code codigo}
+	 * @return 200 con {message, token, rol, correo, cuentaNueva=false}; 201
+	 *         igual con cuentaNueva=true si se creó la cuenta; 401 si el token
+	 *         no es válido o falta el código del segundo factor (con
+	 *         requiereSegundoFactor=true); 403 si la cuenta está restringida o
+	 *         se pide el rol ADMIN; 503 si no está configurado GOOGLE_CLIENT_ID
+	 */
 	@Operation(summary = "Iniciar sesión o registrarse con Google", description = "Recibe el credential (ID token) del botón de Google. Si el correo ya tiene cuenta inicia "
 			+ "sesión; si no, la crea verificada con rol HUESPED o el rol enviado (ANFITRION). Devuelve el "
 			+ "token igual que /auth/login, más cuentaNueva.")
@@ -363,13 +361,12 @@ public class AuthController {
 	}
 
 	/**
-	 * Solicita la recuperación de contraseña. Ruta: {@code POST /auth/recuperar}.
-	 * El token se envía por correo al usuario
-	 * y vence a los 30 minutos.
+	 * Solicita la recuperación de contraseña: el token se envía por correo al
+	 * usuario y vence a los 30 minutos. Ruta: {@code POST /auth/recuperar}.
 	 *
 	 * @param solicitud DTO con {@code correo}
-	 * @return 200 siempre que se envíe un correo (exista o no, para no revelar qué
-	 *         cuentas están registradas); 400 si falta el correo
+	 * @return 200 siempre que el correo venga (exista o no la cuenta, para no
+	 *         revelar qué cuentas están registradas); 400 si falta el correo
 	 */
 	@Operation(summary = "Solicitar recuperación de contraseña", description = "Envía al correo un código de recuperación válido por 30 minutos.")
 	@ApiResponse(responseCode = "200", description = "Si el correo está registrado, se generó un enlace de "
@@ -437,8 +434,13 @@ public class AuthController {
 	}
 
 	/**
-	 * Respuesta de una cuenta reactivada con su nuevo estado (CA-052). Con segundo
-	 * factor activo no se entrega token aquí: debe iniciar sesión con su código.
+	 * Respuesta de una cuenta reactivada, con su nuevo estado. Si la cuenta
+	 * tiene segundo factor no se entrega token aquí: debe iniciar sesión con
+	 * su código.
+	 *
+	 * @param usuario cuenta reactivada
+	 * @return 200 con {message, token, rol, correo, estado}, o sin token si
+	 *         tiene segundo factor
 	 */
 	private ResponseEntity<Object> respuestaReactivada(UserDetails usuario) {
 		if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
@@ -451,8 +453,12 @@ public class AuthController {
 	}
 
 	/**
-	 * Respuesta de un correo recién verificado. Con segundo factor activo no se
-	 * entrega token aquí: debe iniciar sesión con su código.
+	 * Respuesta de un correo recién verificado. Si la cuenta tiene segundo
+	 * factor no se entrega token aquí: debe iniciar sesión con su código.
+	 *
+	 * @param usuario cuenta verificada
+	 * @return 200 con {message, token, rol, correo}, o sin token si tiene
+	 *         segundo factor
 	 */
 	private ResponseEntity<Object> respuestaVerificada(UserDetails usuario) {
 		if (usuario instanceof Usuario u && SegundoFactorService.estaHabilitado(u)) {
@@ -462,13 +468,27 @@ public class AuthController {
 	}
 
 	/**
-	 * Respuesta de sesión iniciada: {message?, token, rol, correo}. La usan login,
-	 * verificación y reactivación para que el front guarde el token igual.
+	 * Respuesta de sesión iniciada: {message?, token, rol, correo}. La usan el
+	 * login, la verificación y la reactivación, para que el frontend guarde el
+	 * token siempre igual.
+	 *
+	 * @param status estado HTTP
+	 * @param userDetails usuario que inicia sesión
+	 * @param texto mensaje opcional
+	 * @return respuesta con el token
 	 */
 	private ResponseEntity<Object> respuestaConToken(HttpStatus status, UserDetails userDetails, String texto) {
 		return ResponseEntity.status(status).body(cuerpoConToken(userDetails, texto));
 	}
 
+	/**
+	 * Arma el cuerpo de la respuesta con el token: genera el JWT y agrega el
+	 * rol (sin el prefijo {@code ROLE_}) y el correo.
+	 *
+	 * @param userDetails usuario que inicia sesión
+	 * @param texto mensaje opcional; si es {@code null} no se incluye
+	 * @return cuerpo de la respuesta
+	 */
 	private Map<String, String> cuerpoConToken(UserDetails userDetails, String texto) {
 		String rol = userDetails.getAuthorities().stream().findFirst()
 				.map(a -> a.getAuthority().replaceFirst("^ROLE_", "")).orElse(null);
@@ -484,8 +504,12 @@ public class AuthController {
 	}
 
 	/**
-	 * Respuesta JSON uniforme: {"message": "..."} para que el front la lea siempre
-	 * igual.
+	 * Respuesta JSON uniforme {@code {"message": "..."}}, para que el frontend
+	 * la lea siempre igual.
+	 *
+	 * @param status estado HTTP
+	 * @param texto mensaje para el usuario
+	 * @return respuesta con el mensaje
 	 */
 	private static ResponseEntity<Object> mensaje(HttpStatus status, String texto) {
 		return RespuestaUtil.mensaje(status, texto);

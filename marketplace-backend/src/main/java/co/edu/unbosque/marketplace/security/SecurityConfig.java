@@ -44,8 +44,10 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+	/** Filtro que lee el JWT de cada petición y autentica al usuario. */
 	private final JwtAuthenticationFilter jwtAuthFilter;
 
+	/** Carga los usuarios por correo para el inicio de sesión. */
 	private final UserDetailsService userDetailsService;
 
 	/**
@@ -54,6 +56,14 @@ public class SecurityConfig {
 	 */
 	private final List<String> origenesPermitidos;
 
+	/**
+	 * Crea la configuración de seguridad.
+	 *
+	 * @param jwtAuthFilter      filtro de autenticación por JWT
+	 * @param userDetailsService servicio que carga los usuarios
+	 * @param origenesPermitidos orígenes permitidos para CORS; por defecto
+	 *                           {@code http://localhost:4200}
+	 */
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService,
 			@Value("${app.cors.allowed-origins:http://localhost:4200}") List<String> origenesPermitidos) {
 		this.jwtAuthFilter = jwtAuthFilter;
@@ -61,6 +71,24 @@ public class SecurityConfig {
 		this.origenesPermitidos = origenesPermitidos;
 	}
 
+	/**
+	 * Cadena de filtros de seguridad. Define:
+	 * <ul>
+	 * <li>sin CSRF ni sesión de servidor (cada petición trae su JWT);</li>
+	 * <li>las rutas públicas: documentación, autenticación, salud, configuración
+	 * de pagos, el handshake del WebSocket y las consultas públicas de
+	 * alojamientos;</li>
+	 * <li>{@code /admin/**} solo para administradores y {@code /alojamientos/mios}
+	 * solo para anfitriones;</li>
+	 * <li>respuestas JSON para el 401 (sin token o token inválido) y el 403 (sin
+	 * permisos);</li>
+	 * <li>el filtro JWT antes del filtro de usuario y contraseña.</li>
+	 * </ul>
+	 *
+	 * @param http configuración de seguridad HTTP de Spring
+	 * @return cadena de filtros armada
+	 * @throws Exception si Spring no puede construir la configuración
+	 */
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http.csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults())
@@ -70,7 +98,7 @@ public class SecurityConfig {
 						// Spring reenvía los errores (400, 500...) a /error; si se protege,
 						// cualquier error en una ruta pública se convierte en un 401 engañoso
 						.requestMatchers("/error").permitAll()
-						// Endpoint de salud para monitoreo y reinicio automático (RNF-001..003)
+						// Endpoint de salud para el monitoreo y el reinicio automático del servidor
 						.requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
 						// Configuración de pagos (modo y clave publicable de Stripe) para el front
 						.requestMatchers(HttpMethod.GET, "/pagos/configuracion").permitAll()
@@ -95,6 +123,15 @@ public class SecurityConfig {
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class).build();
 	}
 
+	/**
+	 * Escribe la respuesta de error de seguridad en JSON, con el mismo formato que
+	 * el resto de la API.
+	 *
+	 * @param res     respuesta HTTP
+	 * @param status  código HTTP (401 o 403)
+	 * @param message mensaje para el usuario
+	 * @throws IOException si no se puede escribir la respuesta
+	 */
 	private static void writeError(HttpServletResponse res, int status, String message) throws IOException {
 		res.setStatus(status);
 		res.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -106,6 +143,8 @@ public class SecurityConfig {
 	 * CORS para el front (Angular). Lo usa
 	 * {@code .cors(Customizer.withDefaults())}. El token viaja en el encabezado
 	 * Authorization, no en cookies, por eso no se habilitan credenciales.
+	 *
+	 * @return configuración de CORS para todas las rutas
 	 */
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -120,6 +159,12 @@ public class SecurityConfig {
 		return source;
 	}
 
+	/**
+	 * Proveedor que autentica con correo y contraseña: carga el usuario con
+	 * {@link UserDetailsService} y compara la contraseña con BCrypt.
+	 *
+	 * @return proveedor de autenticación
+	 */
 	@Bean
 	public AuthenticationProvider authenticationProvider() {
 		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -128,11 +173,25 @@ public class SecurityConfig {
 		return authProvider;
 	}
 
+	/**
+	 * Codificador de contraseñas. Las contraseñas se guardan con BCrypt, nunca en
+	 * claro.
+	 *
+	 * @return codificador BCrypt
+	 */
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
+	/**
+	 * Expone el {@link AuthenticationManager} para que el controlador de
+	 * autenticación pueda validar el correo y la contraseña en el login.
+	 *
+	 * @param config configuración de autenticación de Spring
+	 * @return administrador de autenticación
+	 * @throws Exception si Spring no puede crearlo
+	 */
 	@Bean
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();

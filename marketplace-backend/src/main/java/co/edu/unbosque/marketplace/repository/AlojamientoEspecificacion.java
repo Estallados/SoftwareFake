@@ -20,48 +20,97 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 
 /**
- * Filtros de la búsqueda pública de alojamientos. Cada método devuelve una
- * condición; los que reciben null no filtran.
- *
- * @see "RF-024, CA-087 a CA-092, CA-190"
+ * Filtros de la búsqueda pública de alojamientos, como especificaciones de
+ * JPA.
+ * <p>
+ * Cada método devuelve una condición que se combina con las demás. Los que
+ * reciben un valor vacío o {@code null} devuelven {@code null}, que JPA
+ * interpreta como "sin filtro"; así el usuario puede buscar solo por los
+ * campos que le interesen.
+ * </p>
  */
 public final class AlojamientoEspecificacion {
 
+	/** Nombre del atributo del id, que se repite en las subconsultas. */
 	private static final String ID_ALOJAMIENTO = "idAlojamiento";
 
+	/**
+	 * Clase utilitaria: no se instancia.
+	 */
 	private AlojamientoEspecificacion() {
 		throw new IllegalStateException("Clase utilitaria");
 	}
 
-	/** Solo publicaciones en el estado indicado (la búsqueda usa ACTIVA). */
+	/**
+	 * Solo publicaciones en el estado indicado (la búsqueda pública usa
+	 * ACTIVA).
+	 *
+	 * @param estado estado requerido
+	 * @return condición
+	 */
 	public static Specification<Alojamiento> conEstado(EstadoAlojamiento estado) {
 		return (root, query, cb) -> cb.equal(root.get("estado"), estado);
 	}
 
+	/**
+	 * Solo alojamientos de una ciudad, sin distinguir mayúsculas.
+	 *
+	 * @param ciudad ciudad a buscar; vacía no filtra
+	 * @return condición, o {@code null} si no filtra
+	 */
 	public static Specification<Alojamiento> enCiudad(String ciudad) {
 		return (root, query, cb) -> ciudad == null || ciudad.isBlank() ? null
 				: cb.equal(cb.lower(root.get("ciudad")), ciudad.trim().toLowerCase());
 	}
 
+	/**
+	 * Solo alojamientos de un tipo, sin distinguir mayúsculas.
+	 *
+	 * @param tipo tipo a buscar; vacío no filtra
+	 * @return condición, o {@code null} si no filtra
+	 */
 	public static Specification<Alojamiento> deTipo(String tipo) {
 		return (root, query, cb) -> tipo == null || tipo.isBlank() ? null
 				: cb.equal(cb.lower(root.get("tipo")), tipo.trim().toLowerCase());
 	}
 
+	/**
+	 * Solo alojamientos con capacidad para la cantidad de huéspedes.
+	 *
+	 * @param huespedes cantidad de huéspedes; {@code null} no filtra
+	 * @return condición, o {@code null} si no filtra
+	 */
 	public static Specification<Alojamiento> conCapacidadPara(Integer huespedes) {
 		return (root, query, cb) -> huespedes == null ? null
 				: cb.greaterThanOrEqualTo(root.get("capacidad"), huespedes);
 	}
 
+	/**
+	 * Solo alojamientos con precio por noche igual o mayor al mínimo.
+	 *
+	 * @param minimo precio mínimo; {@code null} no filtra
+	 * @return condición, o {@code null} si no filtra
+	 */
 	public static Specification<Alojamiento> precioDesde(BigDecimal minimo) {
 		return (root, query, cb) -> minimo == null ? null : cb.greaterThanOrEqualTo(root.get("precioNoche"), minimo);
 	}
 
+	/**
+	 * Solo alojamientos con precio por noche igual o menor al máximo.
+	 *
+	 * @param maximo precio máximo; {@code null} no filtra
+	 * @return condición, o {@code null} si no filtra
+	 */
 	public static Specification<Alojamiento> precioHasta(BigDecimal maximo) {
 		return (root, query, cb) -> maximo == null ? null : cb.lessThanOrEqualTo(root.get("precioNoche"), maximo);
 	}
 
-	/** El alojamiento debe tener todas las amenidades indicadas. */
+	/**
+	 * Solo alojamientos que tengan todas las amenidades indicadas.
+	 *
+	 * @param amenidades amenidades requeridas; vacía no filtra
+	 * @return condición, o {@code null} si no filtra
+	 */
 	public static Specification<Alojamiento> conAmenidades(Collection<String> amenidades) {
 		return (root, query, cb) -> {
 			if (amenidades == null || amenidades.isEmpty()) {
@@ -74,9 +123,12 @@ public final class AlojamientoEspecificacion {
 	}
 
 	/**
-	 * Con fechas para reservar: tiene un período ofrecido con al menos una noche
-	 * desde {@code desde}. Así el catálogo no muestra publicaciones activas sin
-	 * calendario o con todos sus períodos vencidos.
+	 * Solo alojamientos con fechas para reservar: tienen un período ofrecido
+	 * con al menos una noche desde {@code desde}. Así el catálogo no muestra
+	 * publicaciones activas sin calendario o con todos sus períodos vencidos.
+	 *
+	 * @param desde fecha de referencia (normalmente hoy)
+	 * @return condición
 	 */
 	public static Specification<Alojamiento> conFechasDesde(LocalDate desde) {
 		return (root, query, cb) -> {
@@ -90,10 +142,14 @@ public final class AlojamientoEspecificacion {
 
 	/**
 	 * Ordena por las reseñas publicadas: por cantidad y luego por promedio
-	 * ({@code primeroCantidad}, los más recomendados) o por promedio y luego por
-	 * cantidad (los mejor calificados). Los empates quedan del más reciente al más
-	 * antiguo. No filtra nada; tampoco ordena la consulta que cuenta el total de la
+	 * (los más recomendados) o por promedio y luego por cantidad (los mejor
+	 * calificados). Los empates quedan del más reciente al más antiguo. No
+	 * filtra nada, y no ordena la consulta que cuenta el total de la
 	 * paginación.
+	 *
+	 * @param primeroCantidad {@code true} para ordenar primero por cantidad de
+	 *                        reseñas
+	 * @return especificación que solo ordena
 	 */
 	public static Specification<Alojamiento> ordenadoPorResenas(boolean primeroCantidad) {
 		return (root, query, cb) -> {
@@ -120,8 +176,16 @@ public final class AlojamientoEspecificacion {
 	}
 
 	/**
-	 * Libre en [llegada, salida): existe un período ofrecido que contiene las
-	 * fechas y no hay reservas activas que se crucen.
+	 * Solo alojamientos libres en [llegada, salida): existe un período
+	 * ofrecido que contiene las fechas y ninguna reserva que ocupa fechas se
+	 * cruza con ellas.
+	 *
+	 * @param llegada día de llegada; {@code null} no filtra
+	 * @param salida día de salida; {@code null} no filtra
+	 * @param estadosActivos estados de reserva que ocupan fechas
+	 * @param limitePendiente fecha de creación mínima para que una reserva
+	 *                        pendiente cuente
+	 * @return condición, o {@code null} si no filtra
 	 */
 	public static Specification<Alojamiento> libreEntre(LocalDate llegada, LocalDate salida,
 			List<EstadoReserva> estadosActivos, LocalDateTime limitePendiente) {

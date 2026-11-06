@@ -21,20 +21,18 @@ import co.edu.unbosque.marketplace.service.CloudinaryService.MetadatosImagen;
 
 /**
  * Valida las imágenes que suben los usuarios y las guarda en Cloudinary (ver
- * {@link CloudinaryService}); la base solo guarda su id y su URL.
+ * {@link CloudinaryService}).
  * <p>
  * El tipo de imagen se reconoce por los primeros bytes del archivo y no por la
- * extensión ni por el Content-Type que manda el cliente, que se pueden
- * falsificar. Solo se aceptan JPEG, PNG y WEBP de hasta 5 MB. El nombre es un
- * UUID, así que el nombre original nunca se usa como ruta.
+ * extensión ni por el Content-Type que manda el cliente, porque esos se pueden
+ * falsificar. Solo se aceptan JPEG, PNG y WEBP de hasta 5 MB. El nombre del
+ * archivo es un UUID, así que el nombre original nunca se usa como ruta.
  * </p>
  * <p>
  * Cloudinary no participa de la transacción de la base: si la transacción se
  * revierte, las imágenes que alcanzaron a subirse se borran, y una imagen
  * eliminada solo se borra de Cloudinary cuando la transacción se confirma.
  * </p>
- *
- * @see "RF-017"
  */
 @Service
 public class AlmacenamientoService {
@@ -42,17 +40,36 @@ public class AlmacenamientoService {
 	/** Tamaño máximo de una imagen (5 MB). */
 	public static final long TAMANIO_MAXIMO = 5L * 1024 * 1024;
 
+	/** Bytes que se leen del inicio del archivo para reconocer el tipo. */
 	private static final int BYTES_CABECERA = 12;
+
+	/** Firma de un archivo JPEG. */
 	private static final byte[] JPEG = { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF };
+
+	/** Firma de un archivo PNG. */
 	private static final byte[] PNG = { (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
+
+	/** Firma del contenedor RIFF, con el que empiezan los WEBP. */
 	private static final byte[] RIFF = { 'R', 'I', 'F', 'F' };
+
+	/** Marca WEBP dentro del contenedor RIFF. */
 	private static final byte[] WEBP = { 'W', 'E', 'B', 'P' };
+
+	/** Posición donde está la marca WEBP. */
 	private static final int INICIO_WEBP = 8;
 
+	/** Cliente de Cloudinary. */
 	private final CloudinaryService cloudinaryService;
 	/** Carpeta raíz en Cloudinary; permite separar ambientes (dev, prod). */
 	private final String carpetaRaiz;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param cloudinaryService cliente de Cloudinary
+	 * @param carpetaRaiz carpeta raíz en Cloudinary
+	 *                    ({@code CLOUDINARY_CARPETA})
+	 */
 	public AlmacenamientoService(CloudinaryService cloudinaryService,
 			@Value("${app.cloudinary.carpeta:marketplace}") String carpetaRaiz) {
 		this.cloudinaryService = cloudinaryService;
@@ -60,9 +77,12 @@ public class AlmacenamientoService {
 	}
 
 	/**
-	 * Revisa que el archivo sea una imagen aceptada.
+	 * Revisa que el archivo sea una imagen aceptada: que no esté vacío, que no
+	 * pase de 5 MB y que sus primeros bytes sean de un JPEG, PNG o WEBP.
 	 *
-	 * @return el mensaje para el usuario si no sirve, o null si es válida.
+	 * @param archivo archivo recibido
+	 * @return el mensaje para el usuario si no sirve, o {@code null} si es
+	 *         válida
 	 */
 	public String errorImagen(MultipartFile archivo) {
 		if (archivo == null || archivo.isEmpty()) {
@@ -101,12 +121,21 @@ public class AlmacenamientoService {
 		return subida;
 	}
 
-	/** @return Las imágenes de alojamientos guardadas en Cloudinary para este ambiente. */
+	/**
+	 * Imágenes de alojamientos guardadas en Cloudinary para este ambiente.
+	 *
+	 * @return imágenes con sus datos
+	 */
 	public List<ImagenGuardada> listarImagenes() {
 		return cloudinaryService.listar(etiqueta());
 	}
 
-	/** Actualiza en Cloudinary los datos de una imagen; si falla, solo queda en el log. */
+	/**
+	 * Actualiza en Cloudinary los datos de una imagen (por ejemplo, si es la
+	 * portada). Si falla, solo queda en el log.
+	 *
+	 * @param imagen imagen con los datos nuevos
+	 */
 	public void actualizarImagen(Imagen imagen) {
 		cloudinaryService.actualizarMetadatos(imagen.getRutaArchivo(), new MetadatosImagen(etiqueta(),
 				imagen.getIdAlojamiento(), Boolean.TRUE.equals(imagen.getPrincipal()), imagen.getOrden()));
@@ -114,10 +143,15 @@ public class AlmacenamientoService {
 
 	/**
 	 * Pasa a Cloudinary una imagen de la antigua tabla {@code imagen}. Una URL
-	 * externa (ruta vacía) se sube como archivo, porque Cloudinary es ahora la
+	 * externa (ruta vacía) se sube como archivo, porque ahora Cloudinary es la
 	 * única fuente.
 	 *
-	 * @return {@code true} si quedó migrada.
+	 * @param idImagen id de la imagen en la tabla vieja
+	 * @param idAlojamiento alojamiento dueño
+	 * @param url URL de la imagen
+	 * @param ruta id en Cloudinary; vacío si era una URL externa
+	 * @param principal si es la portada
+	 * @return {@code true} si quedó migrada
 	 */
 	public boolean migrarImagen(Long idImagen, Long idAlojamiento, String url, String ruta, boolean principal) {
 		MetadatosImagen metadatos = new MetadatosImagen(etiqueta(), idAlojamiento, principal, idImagen);
@@ -132,18 +166,31 @@ public class AlmacenamientoService {
 		}
 	}
 
+	/**
+	 * Carpeta de Cloudinary de un alojamiento.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @return ruta de la carpeta
+	 */
 	private String carpetaDe(Long idAlojamiento) {
 		return carpetaRaiz + "/alojamientos/" + idAlojamiento;
 	}
 
-	/** Etiqueta común de las imágenes; depende de la carpeta para separar ambientes. */
+	/**
+	 * Etiqueta común de las imágenes de este ambiente; depende de la carpeta
+	 * raíz para separar ambientes.
+	 *
+	 * @return etiqueta
+	 */
 	private String etiqueta() {
 		return carpetaRaiz.replace('/', '-') + "-alojamientos";
 	}
 
 	/**
-	 * Borra una imagen guardada cuando se confirme la transacción; una ruta null
-	 * (URL externa) no hace nada.
+	 * Borra una imagen guardada cuando se confirme la transacción. Una ruta
+	 * {@code null} (URL externa) no hace nada.
+	 *
+	 * @param ruta id de la imagen en Cloudinary
 	 */
 	public void eliminar(String ruta) {
 		if (ruta != null && !ruta.isBlank()) {
@@ -153,7 +200,11 @@ public class AlmacenamientoService {
 
 	/**
 	 * Borra la imagen de Cloudinary si la transacción termina con el estado
-	 * indicado; sin transacción activa, solo la borra cuando se pide eliminar.
+	 * indicado; sin transacción activa, la borra de una vez.
+	 *
+	 * @param estado estado de la transacción con el que se borra (confirmada o
+	 *               revertida)
+	 * @param publicId id de la imagen en Cloudinary
 	 */
 	private void alTerminarTransaccion(int estado, String publicId) {
 		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -172,6 +223,12 @@ public class AlmacenamientoService {
 		});
 	}
 
+	/**
+	 * Lee los primeros bytes del archivo.
+	 *
+	 * @param archivo archivo recibido
+	 * @return los primeros bytes, o un arreglo vacío si no se puede leer
+	 */
 	private static byte[] cabecera(MultipartFile archivo) {
 		try (InputStream entrada = archivo.getInputStream()) {
 			return entrada.readNBytes(BYTES_CABECERA);
@@ -180,12 +237,25 @@ public class AlmacenamientoService {
 		}
 	}
 
-	/** Si los primeros bytes son de un JPEG, PNG o WEBP. */
+	/**
+	 * Indica si los primeros bytes son de un JPEG, PNG o WEBP.
+	 *
+	 * @param datos primeros bytes del archivo
+	 * @return {@code true} si es una imagen aceptada
+	 */
 	private static boolean esImagen(byte[] datos) {
 		return empiezaCon(datos, JPEG, 0) || empiezaCon(datos, PNG, 0)
 				|| (empiezaCon(datos, RIFF, 0) && empiezaCon(datos, WEBP, INICIO_WEBP));
 	}
 
+	/**
+	 * Indica si los datos tienen la firma en la posición indicada.
+	 *
+	 * @param datos bytes del archivo
+	 * @param firma firma a buscar
+	 * @param desde posición donde debe empezar la firma
+	 * @return {@code true} si coincide
+	 */
 	private static boolean empiezaCon(byte[] datos, byte[] firma, int desde) {
 		return datos.length >= desde + firma.length
 				&& Arrays.equals(datos, desde, desde + firma.length, firma, 0, firma.length);

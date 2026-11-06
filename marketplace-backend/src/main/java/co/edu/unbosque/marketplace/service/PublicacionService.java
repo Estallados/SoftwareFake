@@ -58,65 +58,135 @@ import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
  * Publicaciones de alojamiento: creación, edición, imágenes, ciclo de estados,
- * servicios adicionales y búsqueda pública.
+ * servicios adicionales, catálogo y búsqueda pública.
  * <p>
- * Transiciones permitidas (cualquier otra se rechaza y queda en la auditoría):
+ * Transiciones de estado permitidas (cualquier otra se rechaza y queda en la
+ * auditoría): BORRADOR → PENDIENTE_REVISION, la hace el anfitrión con la
+ * información mínima completa; PENDIENTE_REVISION → ACTIVA, el administrador
+ * aprueba; PENDIENTE_REVISION → BORRADOR, el administrador rechaza con motivo
+ * y se le avisa al anfitrión; ACTIVA → PAUSADA y PAUSADA → ACTIVA, las hace el
+ * anfitrión; cualquier estado → BLOQUEADA, el administrador con motivo, y las
+ * reservas futuras pasan a EN_REVISION; BLOQUEADA → PAUSADA, el administrador.
  * </p>
- * <ul>
- * <li>BORRADOR → PENDIENTE_REVISION: anfitrión, con la información mínima completa.</li>
- * <li>PENDIENTE_REVISION → ACTIVA: administrador aprueba.</li>
- * <li>PENDIENTE_REVISION → BORRADOR: administrador rechaza con motivo (se notifica).</li>
- * <li>ACTIVA → PAUSADA y PAUSADA → ACTIVA: anfitrión.</li>
- * <li>cualquiera → BLOQUEADA: administrador con motivo; las reservas futuras pasan a EN_REVISION.</li>
- * <li>BLOQUEADA → PAUSADA: administrador.</li>
- * </ul>
- * Cada cambio guarda {@link HistorialEstadoAlojamiento} y auditoría.
- *
- * @see "RF-013, RF-017, RF-018, RF-019, RF-024, RF-027, RNF-005"
+ * <p>
+ * Cada cambio de estado guarda un {@link HistorialEstadoAlojamiento} y un
+ * evento de auditoría.
+ * </p>
  */
 @Service
 public class PublicacionService {
 
+    /** Mensaje cuando el alojamiento no existe. */
     private static final String NO_EXISTE = "El alojamiento no existe.";
+
+    /** Mensaje cuando el usuario no es el dueño ni administrador. */
     private static final String SIN_PERMISO = "Solo el anfitrión propietario o un administrador puede modificar "
             + "este alojamiento.";
+
+    /** Mensaje cuando se intenta publicar sin fechas de disponibilidad. */
     private static final String SIN_FECHAS = "El alojamiento no tiene fechas de disponibilidad desde hoy; "
             + "el anfitrión debe agregarlas antes de publicarlo.";
+
+    /** Valor absoluto máximo de la latitud. */
     private static final int LATITUD_MAXIMA = 90;
+
+    /** Valor absoluto máximo de la longitud. */
     private static final int LONGITUD_MAXIMA = 180;
     /** Tope del precio por noche y de cada servicio adicional (columnas NUMERIC). */
     private static final BigDecimal MONTO_MAXIMO = new BigDecimal("1000000000");
+
+    /** Mensaje cuando un servicio adicional no es válido. */
     private static final String SERVICIO_INVALIDO = "El servicio adicional necesita un nombre (máximo 255 "
             + "caracteres) y un costo positivo de máximo 1.000.000.000.";
     /** Máximo de imágenes por alojamiento. */
     public static final int MAXIMO_IMAGENES = 15;
+
+    /** Estados de las reservas que se cuentan en la tarjeta del alojamiento. */
     private static final List<EstadoReserva> RESERVAS_VIGENTES = List.of(EstadoReserva.CONFIRMADA,
             EstadoReserva.EN_REVISION);
 
-    /** Órdenes del catálogo y la búsqueda; son los de la página Explorar. */
+    /**
+     * Orden del catálogo: más reseñas y mejor promedio primero (es el de por
+     * defecto).
+     */
     public static final String ORDEN_RECOMENDADOS = "recomendados";
+
+    /** Orden del catálogo: del precio más bajo al más alto. */
     public static final String ORDEN_PRECIO_MENOR = "precio_menor";
+
+    /** Orden del catálogo: del precio más alto al más bajo. */
     public static final String ORDEN_PRECIO_MAYOR = "precio_mayor";
+
+    /** Orden del catálogo: mejor promedio primero. */
     public static final String ORDEN_MEJOR_CALIFICADOS = "mejor_calificados";
+
+    /** Lista de los órdenes válidos, para el mensaje de error. */
     private static final String ORDENES = String.join(", ", ORDEN_RECOMENDADOS, ORDEN_PRECIO_MENOR,
             ORDEN_PRECIO_MAYOR, ORDEN_MEJOR_CALIFICADOS);
+
+    /** Nombre del atributo del precio, para ordenar. */
     private static final String PRECIO_NOCHE = "precioNoche";
 
+    /** Repositorio de alojamientos. */
     private final AlojamientoRepository alojamientoRepo;
+
+    /** Almacén de imágenes. */
     private final ImagenRepository imagenRepo;
+
+    /** Repositorio de períodos de disponibilidad. */
     private final PeriodoDisponibilidadRepository periodoRepo;
+
+    /** Repositorio de servicios adicionales. */
     private final ServicioAdicionalRepository servicioRepo;
+
+    /** Repositorio de políticas de cancelación. */
     private final PoliticaCancelacionRepository politicaRepo;
+
+    /** Historial de estados. */
     private final HistorialEstadoAlojamientoRepository historialRepo;
+
+    /** Repositorio de reservas. */
     private final ReservaRepository reservaRepo;
+
+    /** Repositorio de reseñas. */
     private final ResenaRepository resenaRepo;
+
+    /** Repositorio de usuarios. */
     private final UsuarioRepository usuarioRepo;
+
+    /** Valida y guarda las imágenes en Cloudinary. */
     private final AlmacenamientoService almacenamientoService;
+
+    /** Servicio de auditoría. */
     private final AuditoriaService auditoriaService;
+
+    /** Avisa al anfitrión y a los huéspedes afectados. */
     private final NotificacionService notificacionService;
+
+    /** Busca las coordenadas de la dirección. */
     private final GeocodingService geocodingService;
+
+    /** Copia los datos de la entidad al DTO. */
     private final ModelMapper modelMapper;
 
+    /**
+     * Crea el servicio.
+     *
+     * @param alojamientoRepo repositorio de alojamientos
+     * @param imagenRepo almacén de imágenes
+     * @param periodoRepo repositorio de períodos
+     * @param servicioRepo repositorio de servicios adicionales
+     * @param politicaRepo repositorio de políticas
+     * @param historialRepo historial de estados
+     * @param reservaRepo repositorio de reservas
+     * @param resenaRepo repositorio de reseñas
+     * @param usuarioRepo repositorio de usuarios
+     * @param almacenamientoService servicio de almacenamiento de imágenes
+     * @param auditoriaService servicio de auditoría
+     * @param notificacionService servicio de notificaciones
+     * @param geocodingService servicio de coordenadas
+     * @param modelMapper copiador de entidades a DTO
+     */
     public PublicacionService(AlojamientoRepository alojamientoRepo, ImagenRepository imagenRepo,
             PeriodoDisponibilidadRepository periodoRepo,
             ServicioAdicionalRepository servicioRepo, PoliticaCancelacionRepository politicaRepo,
@@ -143,8 +213,10 @@ public class PublicacionService {
 
 
     /**
-     * Cantidad de alojamientos de cada tipo, en todos los estados: {"Apartamento": 5,
-     * "Casa": 7, ...}, en orden alfabético.
+     * Cantidad de alojamientos de cada tipo, en todos los estados, en orden
+     * alfabético. Por ejemplo {"Apartamento": 5, "Casa": 7}.
+     *
+     * @return cantidad por tipo
      */
     public Map<String, Long> cantidadPorTipo() {
         Map<String, Long> cantidades = new LinkedHashMap<>();
@@ -154,7 +226,11 @@ public class PublicacionService {
         return cantidades;
     }
 
-    /** Políticas de cancelación disponibles para asignar a un alojamiento. */
+    /**
+     * Políticas de cancelación disponibles para asignar a un alojamiento.
+     *
+     * @return lista de políticas
+     */
     public List<PoliticaCancelacionDTO> politicas() {
         return politicaRepo.findAll().stream().map(p -> modelMapper.map(p, PoliticaCancelacionDTO.class)).toList();
     }
@@ -163,8 +239,11 @@ public class PublicacionService {
      * Detalle de un alojamiento. Si está ACTIVA lo ve cualquiera; en otro
      * estado solo su anfitrión o un administrador.
      *
-     * @return 0 con el alojamiento; 1 si no existe o no es visible.
-     * @see "RF-019, CA-093, CA-102"
+     * @param idAlojamiento alojamiento
+     * @param idActor usuario que consulta; {@code null} si no hay sesión
+     * @param esAdmin {@code true} si es administrador
+     * @return el alojamiento; o NO_ENCONTRADO si no existe o el usuario no
+     *         puede verlo
      */
     public Resultado<AlojamientoDTO> obtener(Long idAlojamiento, Long idActor, boolean esAdmin) {
         Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
@@ -175,23 +254,36 @@ public class PublicacionService {
     }
 
     /**
-     * Publicaciones del anfitrión con el estado de cada una.
+     * Publicaciones del anfitrión, con el estado de cada una.
      *
-     * @see "RF-019, CA-103"
+     * @param idAnfitrion anfitrión
+     * @param pagina página y orden
+     * @return página de alojamientos
      */
     public PaginaDTO<AlojamientoDTO> mios(Long idAnfitrion, Pageable pagina) {
         return PaginaDTO.de(alojamientoRepo.findByIdAnfitrion(idAnfitrion, pagina), this::convertirDTO);
     }
 
-    /** Publicaciones en un estado, o todas si es null (vista del administrador). */
+    /**
+     * Publicaciones en un estado, o todas si es {@code null} (vista del
+     * administrador).
+     *
+     * @param estado estado a filtrar
+     * @param pagina página y orden
+     * @return página de alojamientos
+     */
     public PaginaDTO<AlojamientoDTO> listarPorEstado(EstadoAlojamiento estado, Pageable pagina) {
         return PaginaDTO.de(estado == null ? alojamientoRepo.findAll(pagina)
                 : alojamientoRepo.findByEstado(estado, pagina), this::convertirDTOAdmin);
     }
 
     /**
-     * Publicaciones de un anfitrión en cualquier estado (detalle de usuario del
-     * administrador).
+     * Publicaciones de un anfitrión en cualquier estado (detalle de usuario
+     * del administrador).
+     *
+     * @param idAnfitrion anfitrión
+     * @param pagina página y orden
+     * @return página de alojamientos
      */
     public PaginaDTO<AlojamientoDTO> listarDeAnfitrion(Long idAnfitrion, Pageable pagina) {
         return PaginaDTO.de(alojamientoRepo.findByIdAnfitrion(idAnfitrion, pagina), this::convertirDTOAdmin);
@@ -199,14 +291,16 @@ public class PublicacionService {
 
     /**
      * Catálogo público: todos los alojamientos que un visitante puede
-     * reservar, es decir, publicaciones ACTIVA con al menos una noche ofrecida
-     * desde hoy. Sin filtros; para filtrar se usa {@link #buscar}.
+     * reservar, es decir, las publicaciones ACTIVA con al menos una noche
+     * ofrecida desde hoy. No tiene filtros; para filtrar se usa
+     * {@link #buscar}.
      *
-     * @param orden {@link #ORDEN_RECOMENDADOS} (por defecto: más reseñas y
-     *              mejor promedio), {@link #ORDEN_PRECIO_MENOR},
-     *              {@link #ORDEN_PRECIO_MAYOR} o {@link #ORDEN_MEJOR_CALIFICADOS}.
-     * @return 0 con la página de alojamientos; 2 si el orden no existe.
-     * @see "RF-019, RF-024, CA-087"
+     * @param orden {@link #ORDEN_RECOMENDADOS} (por defecto),
+     *              {@link #ORDEN_PRECIO_MENOR}, {@link #ORDEN_PRECIO_MAYOR} o
+     *              {@link #ORDEN_MEJOR_CALIFICADOS}
+     * @param pagina página
+     * @return la página de alojamientos; o DATOS_INVALIDOS si el orden no
+     *         existe
      */
     public Resultado<PaginaDTO<AlojamientoDTO>> disponibles(String orden, Pageable pagina) {
         return listarOrdenado(AlojamientoEspecificacion.conEstado(EstadoAlojamiento.ACTIVA)
@@ -215,14 +309,22 @@ public class PublicacionService {
     }
 
     /**
-     * Búsqueda pública: solo publicaciones ACTIVA que cumplan todos los filtros
-     * enviados. Con fechas, excluye las que no estén libres en ese período.
-     * Sin orden, las más recientes primero.
+     * Búsqueda pública: solo publicaciones ACTIVA que cumplan todos los
+     * filtros enviados (los vacíos no filtran). Con fechas, excluye las que no
+     * estén libres en ese período. Sin orden, las más recientes primero.
      *
-     * @param orden Opcional; los mismos valores de {@link #disponibles}.
-     * @return 0 con la página de resultados; 2 si los filtros o el orden no son
-     *         válidos.
-     * @see "RF-024, CA-087 a CA-092, CA-055, CA-077, CA-190"
+     * @param ciudad ciudad
+     * @param llegada día de llegada
+     * @param salida día de salida
+     * @param huespedes cantidad de huéspedes
+     * @param tipo tipo de alojamiento
+     * @param precioMinimo precio mínimo por noche
+     * @param precioMaximo precio máximo por noche
+     * @param amenidades amenidades que debe tener
+     * @param orden los mismos valores de {@link #disponibles}
+     * @param pagina página
+     * @return la página de resultados; o DATOS_INVALIDOS si los filtros o el
+     *         orden no son válidos
      */
     public Resultado<PaginaDTO<AlojamientoDTO>> buscar(String ciudad, LocalDate llegada, LocalDate salida,
             Integer huespedes, String tipo, BigDecimal precioMinimo, BigDecimal precioMaximo,
@@ -257,8 +359,13 @@ public class PublicacionService {
 
     /**
      * Aplica uno de los órdenes del catálogo. El precio lo ordena la base de
-     * datos con la página; las reseñas, con subconsultas de
+     * datos junto con la página; las reseñas, con subconsultas de
      * {@link AlojamientoEspecificacion#ordenadoPorResenas}.
+     *
+     * @param filtro condiciones de la consulta
+     * @param orden orden pedido
+     * @param pagina página
+     * @return la página ordenada; o DATOS_INVALIDOS si el orden no existe
      */
     private Resultado<PaginaDTO<AlojamientoDTO>> listarOrdenado(Specification<Alojamiento> filtro, String orden,
             Pageable pagina) {
@@ -292,9 +399,14 @@ public class PublicacionService {
     }
 
     /**
-     * Historial de estados de un alojamiento (propietario o administrador).
+     * Historial de estados de un alojamiento (lo ven el dueño o un
+     * administrador).
      *
-     * @see "RNF-026, CA-153"
+     * @param idAlojamiento alojamiento
+     * @param idActor usuario que consulta
+     * @param esAdmin {@code true} si es administrador
+     * @return los cambios de estado; o NO_ENCONTRADO si no existe o el usuario
+     *         no puede verlo
      */
     public Resultado<List<HistorialEstadoAlojamientoDTO>> historial(Long idAlojamiento, Long idActor,
             boolean esAdmin) {
@@ -309,17 +421,19 @@ public class PublicacionService {
     // ----- creación y edición -----
 
     /**
-     * Crea una publicación en BORRADOR para el anfitrión autenticado con al
-     * menos una imagen: el borrador puede guardarse con otros datos
-     * incompletos, pero nunca sin imagen, la misma regla que se exige al
-     * enviarlo a revisión. La primera imagen queda como principal. El id, el
-     * estado y el propietario enviados se ignoran. Si no llegan coordenadas,
-     * se buscan con la dirección y la ciudad ({@link GeocodingService}).
+     * Crea una publicación en BORRADOR para el anfitrión autenticado, con al
+     * menos una imagen. El borrador puede guardarse con otros datos
+     * incompletos, pero nunca sin imagen. La primera imagen queda como
+     * portada. El id, el estado y el dueño enviados se ignoran. Si no llegan
+     * coordenadas, se buscan con la dirección y la ciudad
+     * ({@link GeocodingService}).
      *
-     * @param archivos Imágenes (JPG, PNG o WEBP de hasta 5 MB), entre 1 y
-     *                 {@link #MAXIMO_IMAGENES}.
-     * @return 0 con la publicación; 2 si los datos o las imágenes no son válidos.
-     * @see "RF-017, CA-094, CA-095, CA-096, CA-098, CA-099"
+     * @param datos datos del alojamiento
+     * @param archivos imágenes (JPG, PNG o WEBP de hasta 5 MB), entre 1 y
+     *                 {@link #MAXIMO_IMAGENES}
+     * @param idAnfitrion anfitrión autenticado
+     * @return la publicación; o DATOS_INVALIDOS si los datos o las imágenes no
+     *         son válidos
      */
     @Transactional
     public Resultado<AlojamientoDTO> crear(AlojamientoDTO datos, List<MultipartFile> archivos, Long idAnfitrion) {
@@ -353,15 +467,18 @@ public class PublicacionService {
     }
 
     /**
-     * Edita una publicación (propietario o administrador). Los campos en null
-     * se dejan como están; las amenidades enviadas reemplazan a las
-     * anteriores. El estado, el propietario y las imágenes no se cambian por
-     * esta vía: las imágenes se gestionan con {@link #subirImagenes},
+     * Edita una publicación (dueño o administrador). Los campos en
+     * {@code null} se dejan como están y las amenidades enviadas reemplazan a
+     * las anteriores. El estado, el dueño y las imágenes no se cambian por
+     * esta vía: las imágenes se manejan con {@link #subirImagenes},
      * {@link #eliminarImagen} y {@link #marcarPrincipal}. Si cambian la
      * dirección o la ciudad y no llegan coordenadas, se vuelven a buscar.
      *
-     * @return 0 con la publicación; 1 no existe; 2 datos inválidos; 3 sin permiso.
-     * @see "RF-018, CA-100, CA-101, CA-113, CA-114"
+     * @param idAlojamiento alojamiento
+     * @param datos datos nuevos
+     * @param idActor usuario que edita
+     * @param esAdmin {@code true} si es administrador
+     * @return la publicación; NO_ENCONTRADO, DATOS_INVALIDOS o SIN_PERMISO
      */
     @Transactional
     public Resultado<AlojamientoDTO> actualizar(Long idAlojamiento, AlojamientoDTO datos, Long idActor,
@@ -400,10 +517,13 @@ public class PublicacionService {
      * alojamiento. Se validan todas antes de guardar alguna. Si el alojamiento
      * no tenía portada, la primera imagen subida queda como principal.
      *
-     * @return 0 con todas las imágenes del alojamiento (la principal primero);
-     *         1 no existe; 2 archivos inválidos o se supera el máximo; 3 sin
-     *         permiso.
-     * @see "RF-017, RF-018"
+     * @param idAlojamiento alojamiento
+     * @param archivos imágenes a subir
+     * @param idActor usuario que sube
+     * @param esAdmin {@code true} si es administrador
+     * @return todas las imágenes del alojamiento (la principal primero);
+     *         NO_ENCONTRADO; DATOS_INVALIDOS si los archivos no sirven o se
+     *         supera el máximo; SIN_PERMISO
      */
     @Transactional
     public Resultado<List<ImagenDTO>> subirImagenes(Long idAlojamiento, List<MultipartFile> archivos, Long idActor,
@@ -428,13 +548,16 @@ public class PublicacionService {
     }
 
     /**
-     * Elimina una imagen (y su archivo, si fue subido). Si era la principal,
-     * la siguiente pasa a serlo. Todo alojamiento, también en BORRADOR, debe
+     * Elimina una imagen (y su archivo, si fue subido). Si era la portada, la
+     * siguiente pasa a serlo. Todo alojamiento, también en BORRADOR, debe
      * conservar al menos una imagen.
      *
-     * @return 0 con las imágenes restantes; 1 no existe; 3 sin permiso;
-     *         4 es la última imagen.
-     * @see "RF-018"
+     * @param idAlojamiento alojamiento
+     * @param idImagen imagen a eliminar
+     * @param idActor usuario que elimina
+     * @param esAdmin {@code true} si es administrador
+     * @return las imágenes restantes; NO_ENCONTRADO; SIN_PERMISO;
+     *         ESTADO_INVALIDO si es la última imagen
      */
     @Transactional
     public Resultado<List<ImagenDTO>> eliminarImagen(Long idAlojamiento, Long idImagen, Long idActor,
@@ -469,10 +592,13 @@ public class PublicacionService {
     }
 
     /**
-     * Marca una imagen como principal (portada); las demás dejan de serlo.
+     * Marca una imagen como portada; las demás dejan de serlo.
      *
-     * @return 0 con las imágenes (la principal primero); 1 no existe; 3 sin permiso.
-     * @see "RF-018"
+     * @param idAlojamiento alojamiento
+     * @param idImagen imagen a marcar
+     * @param idActor usuario que la marca
+     * @param esAdmin {@code true} si es administrador
+     * @return las imágenes (la principal primero); NO_ENCONTRADO o SIN_PERMISO
      */
     @Transactional
     public Resultado<List<ImagenDTO>> marcarPrincipal(Long idAlojamiento, Long idImagen, Long idActor,
@@ -499,13 +625,14 @@ public class PublicacionService {
 
     /**
      * BORRADOR → PENDIENTE_REVISION (anfitrión). Exige la información mínima
-     * completa e indica los datos faltantes. Que falten datos es un conflicto
+     * completa e indica los datos que faltan. Que falten datos es un conflicto
      * con el estado del borrador, no un error de la petición (que no trae
      * cuerpo).
      *
-     * @return 0 enviada; 1 no existe; 3 sin permiso; 4 estado no permitido o
-     *         faltan datos.
-     * @see "RF-017, RF-027, CA-097, CA-157"
+     * @param idAlojamiento alojamiento
+     * @param idActor anfitrión
+     * @return la publicación; NO_ENCONTRADO; SIN_PERMISO; ESTADO_INVALIDO si el
+     *         estado no lo permite o faltan datos
      */
     @Transactional
     public Resultado<AlojamientoDTO> enviarRevision(Long idAlojamiento, Long idActor) {
@@ -530,16 +657,25 @@ public class PublicacionService {
     }
 
     /**
-     * ACTIVA → PAUSADA (anfitrión). Una publicación pausada no recibe reservas.
+     * ACTIVA → PAUSADA (anfitrión). Una publicación pausada no recibe
+     * reservas.
      *
-     * @see "RF-018, CA-108, CA-109"
+     * @param idAlojamiento alojamiento
+     * @param idActor anfitrión
+     * @return la publicación; NO_ENCONTRADO, SIN_PERMISO o ESTADO_INVALIDO
      */
     @Transactional
     public Resultado<AlojamientoDTO> pausar(Long idAlojamiento, Long idActor) {
         return transicionDelAnfitrion(idAlojamiento, idActor, EstadoAlojamiento.ACTIVA, EstadoAlojamiento.PAUSADA);
     }
 
-    /** PAUSADA → ACTIVA (anfitrión). */
+    /**
+     * PAUSADA → ACTIVA (anfitrión).
+     *
+     * @param idAlojamiento alojamiento
+     * @param idActor anfitrión
+     * @return la publicación; NO_ENCONTRADO, SIN_PERMISO o ESTADO_INVALIDO
+     */
     @Transactional
     public Resultado<AlojamientoDTO> reanudar(Long idAlojamiento, Long idActor) {
         return transicionDelAnfitrion(idAlojamiento, idActor, EstadoAlojamiento.PAUSADA, EstadoAlojamiento.ACTIVA);
@@ -547,11 +683,12 @@ public class PublicacionService {
 
     /**
      * PENDIENTE_REVISION → ACTIVA (administrador): queda disponible para
-     * reservas y visible en búsquedas.
+     * reservas y visible en las búsquedas.
      *
-     * @return 0 aprobada; 1 no existe; 4 estado no permitido o sin fechas de
-     *         disponibilidad desde hoy.
-     * @see "RF-027, CA-158, CA-194, CA-196"
+     * @param idAlojamiento alojamiento
+     * @param idAdmin administrador
+     * @return la publicación; NO_ENCONTRADO; ESTADO_INVALIDO si el estado no lo
+     *         permite o no tiene fechas de disponibilidad desde hoy
      */
     @Transactional
     public Resultado<AlojamientoDTO> aprobar(Long idAlojamiento, Long idAdmin) {
@@ -573,10 +710,13 @@ public class PublicacionService {
     }
 
     /**
-     * PENDIENTE_REVISION → BORRADOR (administrador) con motivo obligatorio. Se
-     * notifica al anfitrión para que corrija y vuelva a enviarla.
+     * PENDIENTE_REVISION → BORRADOR (administrador), con motivo obligatorio.
+     * Se le avisa al anfitrión para que corrija y la vuelva a enviar.
      *
-     * @see "RF-027, CA-195, CA-196"
+     * @param idAlojamiento alojamiento
+     * @param idAdmin administrador
+     * @param motivo motivo del rechazo
+     * @return la publicación; NO_ENCONTRADO, DATOS_INVALIDOS o ESTADO_INVALIDO
      */
     @Transactional
     public Resultado<AlojamientoDTO> rechazar(Long idAlojamiento, Long idAdmin, String motivo) {
@@ -602,11 +742,14 @@ public class PublicacionService {
     }
 
     /**
-     * Cualquier estado → BLOQUEADA (administrador) con motivo. Las reservas
-     * futuras se conservan y pasan a EN_REVISION; se notifica al anfitrión y a
+     * Cualquier estado → BLOQUEADA (administrador), con motivo. Las reservas
+     * futuras se conservan y pasan a EN_REVISION; se le avisa al anfitrión y a
      * cada huésped afectado.
      *
-     * @see "RF-013, CA-054, CA-111, CA-112"
+     * @param idAlojamiento alojamiento
+     * @param idAdmin administrador
+     * @param motivo motivo del bloqueo
+     * @return la publicación; NO_ENCONTRADO, DATOS_INVALIDOS o ESTADO_INVALIDO
      */
     @Transactional
     public Resultado<AlojamientoDTO> bloquear(Long idAlojamiento, Long idAdmin, String motivo) {
@@ -642,7 +785,14 @@ public class PublicacionService {
         return Resultado.exito(dto);
     }
 
-    /** BLOQUEADA → PAUSADA (administrador). */
+    /**
+     * BLOQUEADA → PAUSADA (administrador). Queda pausada para que el anfitrión
+     * decida cuándo reanudarla.
+     *
+     * @param idAlojamiento alojamiento
+     * @param idAdmin administrador
+     * @return la publicación; NO_ENCONTRADO o ESTADO_INVALIDO
+     */
     @Transactional
     public Resultado<AlojamientoDTO> desbloquear(Long idAlojamiento, Long idAdmin) {
         Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
@@ -660,7 +810,11 @@ public class PublicacionService {
     /**
      * Agrega un servicio adicional con nombre y costo positivo.
      *
-     * @see "RF-018, CA-185, CA-187"
+     * @param idAlojamiento alojamiento
+     * @param datos nombre y costo
+     * @param idActor usuario que lo agrega
+     * @param esAdmin {@code true} si es administrador
+     * @return el servicio; NO_ENCONTRADO, DATOS_INVALIDOS o SIN_PERMISO
      */
     @Transactional
     public Resultado<ServicioAdicionalDTO> agregarServicio(Long idAlojamiento, ServicioAdicionalDTO datos,
@@ -684,10 +838,15 @@ public class PublicacionService {
     }
 
     /**
-     * Modifica un servicio adicional. Aplica a cotizaciones nuevas; las
-     * reservas ya confirmadas conservan su desglose congelado.
+     * Modifica un servicio adicional. El cambio aplica a las cotizaciones
+     * nuevas; las reservas ya confirmadas conservan su desglose congelado.
      *
-     * @see "RF-018, CA-186, CA-187"
+     * @param idAlojamiento alojamiento
+     * @param idServicio servicio
+     * @param datos nombre y costo nuevos
+     * @param idActor usuario que lo modifica
+     * @param esAdmin {@code true} si es administrador
+     * @return el servicio; NO_ENCONTRADO, DATOS_INVALIDOS o SIN_PERMISO
      */
     @Transactional
     public Resultado<ServicioAdicionalDTO> actualizarServicio(Long idAlojamiento, Long idServicio,
@@ -716,7 +875,11 @@ public class PublicacionService {
     /**
      * Elimina un servicio adicional; las reservas confirmadas no cambian.
      *
-     * @see "RF-018, CA-186, CA-187"
+     * @param idAlojamiento alojamiento
+     * @param idServicio servicio
+     * @param idActor usuario que lo elimina
+     * @param esAdmin {@code true} si es administrador
+     * @return éxito; NO_ENCONTRADO o SIN_PERMISO
      */
     @Transactional
     public Resultado<Void> eliminarServicio(Long idAlojamiento, Long idServicio, Long idActor, boolean esAdmin) {
@@ -744,8 +907,8 @@ public class PublicacionService {
      * precio, reglas, política de cancelación, al menos una imagen y fechas de
      * disponibilidad desde hoy (sin ellas no saldría en el catálogo).
      *
-     * @return nombres de los datos que faltan (vacía si está completa).
-     * @see "CA-096, CA-097"
+     * @param alojamiento alojamiento a revisar
+     * @return nombres de los datos que faltan (vacía si está completo)
      */
     public List<String> camposFaltantes(Alojamiento alojamiento) {
         List<String> faltantes = new ArrayList<>();
@@ -785,16 +948,25 @@ public class PublicacionService {
         return faltantes;
     }
 
-    /** Mismo criterio que el catálogo ({@link AlojamientoEspecificacion#conFechasDesde}). */
+    /**
+     * Indica si tiene fechas para reservar, con el mismo criterio del catálogo
+     * ({@link AlojamientoEspecificacion#conFechasDesde}).
+     *
+     * @param alojamiento alojamiento
+     * @return {@code true} si tiene al menos una noche ofrecida desde hoy
+     */
     private boolean tieneFechas(Alojamiento alojamiento) {
         return periodoRepo.existsByIdAlojamientoAndFechaFinAfter(alojamiento.getIdAlojamiento(), LocalDate.now());
     }
 
     /**
-     * Convierte la entidad a DTO con imágenes (la principal primero),
-     * servicios adicionales, nombre de la política, calificación, cantidad de
-     * reseñas y reservas, y nombre del anfitrión. Así el front arma tarjetas y
-     * detalle con una sola llamada.
+     * Convierte la entidad a DTO con las imágenes (la principal primero), los
+     * servicios adicionales, el nombre de la política, la calificación, la
+     * cantidad de reseñas y de reservas y el nombre del anfitrión. Así el
+     * frontend arma las tarjetas y el detalle con una sola llamada.
+     *
+     * @param alojamiento alojamiento
+     * @return alojamiento para la API
      */
     public AlojamientoDTO convertirDTO(Alojamiento alojamiento) {
         Long id = alojamiento.getIdAlojamiento();
@@ -818,7 +990,13 @@ public class PublicacionService {
         return dto;
     }
 
-    /** Igual que {@link #convertirDTO(Alojamiento)} más el correo y el estado del anfitrión (solo ADMIN). */
+    /**
+     * Igual que {@link #convertirDTO(Alojamiento)}, más el correo y el estado
+     * del anfitrión (solo para el administrador).
+     *
+     * @param alojamiento alojamiento
+     * @return alojamiento para la API con datos del anfitrión
+     */
     public AlojamientoDTO convertirDTOAdmin(Alojamiento alojamiento) {
         AlojamientoDTO dto = convertirDTO(alojamiento);
         Optional<Usuario> anfitrion = usuarioRepo.findById(alojamiento.getIdAnfitrion());
@@ -829,22 +1007,53 @@ public class PublicacionService {
         return dto;
     }
 
-    /** Imágenes del alojamiento con la principal primero y luego en orden de carga. */
+    /**
+     * Imágenes del alojamiento con la principal primero y luego en orden de
+     * carga.
+     *
+     * @param idAlojamiento alojamiento
+     * @return lista de imágenes
+     */
     public List<ImagenDTO> imagenesDTO(Long idAlojamiento) {
         return imagenRepo.findByIdAlojamiento(idAlojamiento).stream()
                 .sorted(Comparator.comparing((Imagen i) -> !Boolean.TRUE.equals(i.getPrincipal())))
                 .map(i -> modelMapper.map(i, ImagenDTO.class)).toList();
     }
 
+    /**
+     * Indica si el usuario puede ver el alojamiento: si está ACTIVA, si es
+     * administrador o si es el dueño.
+     *
+     * @param alojamiento alojamiento
+     * @param idActor usuario; puede ser {@code null}
+     * @param esAdmin {@code true} si es administrador
+     * @return {@code true} si lo puede ver
+     */
     private static boolean esVisible(Alojamiento alojamiento, Long idActor, boolean esAdmin) {
         return alojamiento.getEstado() == EstadoAlojamiento.ACTIVA || esAdmin || esPropietario(alojamiento, idActor);
     }
 
+    /**
+     * Indica si el usuario es el dueño del alojamiento.
+     *
+     * @param alojamiento alojamiento
+     * @param idActor usuario; puede ser {@code null}
+     * @return {@code true} si es el dueño
+     */
     private static boolean esPropietario(Alojamiento alojamiento, Long idActor) {
         return idActor != null && idActor.equals(alojamiento.getIdAnfitrion());
     }
 
-    /** Carga el alojamiento si el actor puede modificarlo; si no, audita el intento (CA-152). */
+    /**
+     * Carga el alojamiento si el usuario puede modificarlo; si no, registra el
+     * intento en la auditoría.
+     *
+     * @param idAlojamiento alojamiento
+     * @param idActor usuario
+     * @param esAdmin {@code true} si es administrador
+     * @param accion acción que se audita si se rechaza
+     * @return el alojamiento; NO_ENCONTRADO o SIN_PERMISO
+     */
     private Resultado<Alojamiento> cargarModificable(Long idAlojamiento, Long idActor, boolean esAdmin,
             String accion) {
         Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
@@ -859,6 +1068,16 @@ public class PublicacionService {
         return Resultado.exito(alojamiento.get());
     }
 
+    /**
+     * Cambio de estado que hace el anfitrión: verifica que sea el dueño y que
+     * el estado actual sea el esperado.
+     *
+     * @param idAlojamiento alojamiento
+     * @param idActor anfitrión
+     * @param desde estado en que debe estar
+     * @param hacia estado al que pasa
+     * @return la publicación; o el error correspondiente
+     */
     private Resultado<AlojamientoDTO> transicionDelAnfitrion(Long idAlojamiento, Long idActor,
             EstadoAlojamiento desde, EstadoAlojamiento hacia) {
         Resultado<Alojamiento> carga = cargarModificable(idAlojamiento, idActor, false,
@@ -872,6 +1091,16 @@ public class PublicacionService {
         return Resultado.exito(cambiarEstado(carga.getDato(), hacia, idActor, null));
     }
 
+    /**
+     * Cambia el estado del alojamiento, guarda el historial y lo registra en
+     * la auditoría.
+     *
+     * @param alojamiento alojamiento
+     * @param nuevo estado nuevo
+     * @param idActor usuario que hace el cambio
+     * @param motivo motivo; puede ser {@code null}
+     * @return la publicación con el estado nuevo
+     */
     private AlojamientoDTO cambiarEstado(Alojamiento alojamiento, EstadoAlojamiento nuevo, Long idActor,
             String motivo) {
         EstadoAlojamiento anterior = alojamiento.getEstado();
@@ -884,6 +1113,15 @@ public class PublicacionService {
         return convertirDTO(guardado);
     }
 
+    /**
+     * Registra en la auditoría un cambio de estado no permitido y arma el
+     * error.
+     *
+     * @param alojamiento alojamiento
+     * @param destino estado pedido
+     * @param idActor usuario que lo pidió
+     * @return resultado con ESTADO_INVALIDO
+     */
     private Resultado<AlojamientoDTO> rechazarTransicion(Alojamiento alojamiento, EstadoAlojamiento destino,
             Long idActor) {
         String mensaje = "No se puede pasar de " + alojamiento.getEstado() + " a " + destino + ".";
@@ -893,6 +1131,15 @@ public class PublicacionService {
         return Resultado.error(Resultado.ESTADO_INVALIDO, mensaje);
     }
 
+    /**
+     * Guarda un cambio de estado en el historial.
+     *
+     * @param idAlojamiento alojamiento
+     * @param anterior estado anterior
+     * @param nuevo estado nuevo
+     * @param idActor usuario que hizo el cambio
+     * @param motivo motivo; puede ser {@code null}
+     */
     private void registrarHistorial(Long idAlojamiento, EstadoAlojamiento anterior, EstadoAlojamiento nuevo,
             Long idActor, String motivo) {
         HistorialEstadoAlojamiento historial = new HistorialEstadoAlojamiento();
@@ -905,7 +1152,14 @@ public class PublicacionService {
         historialRepo.save(historial);
     }
 
-    /** Valida los datos enviados; devuelve el mensaje de error o null si son válidos. */
+    /**
+     * Valida los datos enviados del alojamiento (largos, números positivos,
+     * coordenadas en rango, política existente).
+     *
+     * @param datos datos a validar
+     * @param creacion {@code true} al crear, {@code false} al editar
+     * @return el mensaje de error, o {@code null} si son válidos
+     */
     private String validar(AlojamientoDTO datos, boolean creacion) {
         if (datos == null) {
             return "Debes enviar los datos del alojamiento.";
@@ -955,14 +1209,22 @@ public class PublicacionService {
         return null;
     }
 
+    /**
+     * Indica si los datos no traen ni latitud ni longitud.
+     *
+     * @param datos datos enviados
+     * @return {@code true} si no traen coordenadas
+     */
     private static boolean sinCoordenadas(AlojamientoDTO datos) {
         return datos.getLatitud() == null && datos.getLongitud() == null;
     }
 
     /**
-     * Guarda las coordenadas de la dirección y la ciudad; si no se encuentran,
-     * las deja en null (el front muestra entonces la zona de la ciudad) para no
-     * conservar las de una dirección anterior.
+     * Guarda las coordenadas que corresponden a la dirección y la ciudad. Si
+     * no se encuentran, las deja en {@code null} (el frontend muestra entonces
+     * la zona de la ciudad) para no conservar las de una dirección anterior.
+     *
+     * @param alojamiento alojamiento a ubicar
      */
     private void ubicarEnMapa(Alojamiento alojamiento) {
         Optional<Coordenadas> coordenadas = geocodingService.ubicar(alojamiento.getUbicacion(),
@@ -971,6 +1233,13 @@ public class PublicacionService {
         alojamiento.setLongitud(coordenadas.map(Coordenadas::longitud).orElse(null));
     }
 
+    /**
+     * Copia al alojamiento los campos que no vengan en {@code null}. Las
+     * amenidades se guardan en minúsculas y sin repetir.
+     *
+     * @param datos datos enviados
+     * @param alojamiento alojamiento a modificar
+     */
     private static void aplicar(AlojamientoDTO datos, Alojamiento alojamiento) {
         if (datos.getTitulo() != null) {
             alojamiento.setTitulo(datos.getTitulo().trim());
@@ -1042,8 +1311,9 @@ public class PublicacionService {
      * una, que no se supere {@link #MAXIMO_IMAGENES} y que cada archivo sea
      * una imagen válida.
      *
-     * @param actuales Imágenes que ya tiene el alojamiento.
-     * @return el mensaje de error o null si el lote es válido.
+     * @param archivos imágenes recibidas
+     * @param actuales imágenes que ya tiene el alojamiento
+     * @return el mensaje de error, o {@code null} si el lote es válido
      */
     private String errorArchivos(List<MultipartFile> archivos, int actuales) {
         if (archivos == null || archivos.isEmpty()) {
@@ -1061,7 +1331,14 @@ public class PublicacionService {
         return null;
     }
 
-    /** Guarda los archivos ya validados; si el alojamiento no tenía portada, el primero queda como principal. */
+    /**
+     * Guarda los archivos ya validados; si el alojamiento no tenía portada, el
+     * primero queda como principal.
+     *
+     * @param idAlojamiento alojamiento
+     * @param archivos imágenes a guardar
+     * @param tienePrincipal {@code true} si el alojamiento ya tiene portada
+     */
     private void guardarArchivos(Long idAlojamiento, List<MultipartFile> archivos, boolean tienePrincipal) {
         for (MultipartFile archivo : archivos) {
             long orden = imagenRepo.siguienteOrden();
@@ -1077,17 +1354,38 @@ public class PublicacionService {
         }
     }
 
+    /**
+     * Pone la fecha de actualización del alojamiento en este momento y lo
+     * guarda.
+     *
+     * @param alojamiento alojamiento
+     */
     private void marcarActualizado(Alojamiento alojamiento) {
         alojamiento.setFechaActualizacion(LocalDateTime.now());
         alojamientoRepo.save(alojamiento);
     }
 
+    /**
+     * Indica si un servicio adicional tiene nombre (máximo 255 caracteres) y
+     * un costo positivo dentro del máximo.
+     *
+     * @param datos servicio a revisar
+     * @return {@code true} si es válido
+     */
     private static boolean servicioValido(ServicioAdicionalDTO datos) {
         return datos != null && datos.getNombre() != null && !datos.getNombre().isBlank()
                 && !LimitesTexto.excede(datos.getNombre(), LimitesTexto.CORTO) && datos.getCosto() != null
                 && datos.getCosto().signum() > 0 && datos.getCosto().compareTo(MONTO_MAXIMO) <= 0;
     }
 
+    /**
+     * Agrega el nombre del dato a la lista de faltantes si el valor está
+     * vacío.
+     *
+     * @param faltantes lista de datos faltantes
+     * @param valor valor a revisar
+     * @param nombre nombre del dato para el usuario
+     */
     private static void agregarSiFalta(List<String> faltantes, String valor, String nombre) {
         if (valor == null || valor.isBlank()) {
             faltantes.add(nombre);

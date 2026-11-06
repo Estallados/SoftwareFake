@@ -19,32 +19,46 @@ import co.edu.unbosque.marketplace.security.GoogleTokenVerificador.CuentaGoogle;
 import co.edu.unbosque.marketplace.util.AESUtil;
 
 /**
- * Inicio de sesión con Google. El front muestra el botón de Google y envía el
- * ID token; si es válido:
- * <ul>
- * <li>si el correo ya tiene cuenta, se inicia sesión con ella (aunque se haya
+ * Inicio de sesión con Google. El frontend muestra el botón de Google y envía
+ * el ID token; si es válido:
+ * <p>
+ * Si el correo ya tiene cuenta, se inicia sesión con ella (aunque se haya
  * creado con contraseña). Como Google ya comprobó el correo, la cuenta queda
- * verificada, y si su dueño la había desactivado se reactiva;</li>
- * <li>si no, se crea la cuenta con el nombre y el correo de Google y el rol
+ * verificada, y si su dueño la había desactivado se reactiva.
+ * </p>
+ * <p>
+ * Si no tiene cuenta, se crea con el nombre y el correo de Google y el rol
  * pedido (HUESPED por defecto o ANFITRION, nunca ADMIN). No se le pide código
  * de verificación ni contraseña; si después quiere entrar con contraseña, la
- * define con "Olvidé mi contraseña".</li>
- * </ul>
+ * define con "Olvidé mi contraseña".
+ * </p>
+ * <p>
  * Una cuenta restringida por un administrador no puede entrar, y una con
  * segundo factor debe enviar también su código.
- *
- * @see "RF-001, RF-008"
+ * </p>
  */
 @Service
 public class InicioGoogleService {
 
-	/** Resultados de {@link #iniciar}. */
+	/** Resultado de {@link #iniciar}: se inició sesión. */
 	public static final int INICIADA = 0;
+
+	/** El inicio con Google no está configurado. */
 	public static final int NO_CONFIGURADO = 1;
+
+	/** El ID token no es válido. */
 	public static final int TOKEN_INVALIDO = 2;
+
+	/** La cuenta está restringida por un administrador. */
 	public static final int CUENTA_RESTRINGIDA = 3;
+
+	/** Se pidió un rol que no se puede elegir (ADMIN). */
 	public static final int ROL_NO_PERMITIDO = 4;
+
+	/** La cuenta tiene segundo factor y no se envió el código. */
 	public static final int REQUIERE_SEGUNDO_FACTOR = 5;
+
+	/** El código del segundo factor no es válido. */
 	public static final int SEGUNDO_FACTOR_INVALIDO = 6;
 
 	/**
@@ -57,12 +71,30 @@ public class InicioGoogleService {
 	public record Inicio(int codigo, Usuario usuario, boolean cuentaNueva) {
 	}
 
+	/** Verifica el ID token de Google. */
 	private final GoogleTokenVerificador verificador;
+
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Verifica el código del segundo factor. */
 	private final SegundoFactorService segundoFactorService;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
+
+	/** Codifica la contraseña aleatoria de las cuentas nuevas. */
 	private final PasswordEncoder passwordEncoder;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param verificador verificador de tokens de Google
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param segundoFactorService servicio del segundo factor
+	 * @param auditoriaService servicio de auditoría
+	 * @param passwordEncoder codificador de contraseñas
+	 */
 	public InicioGoogleService(GoogleTokenVerificador verificador, UsuarioRepository usuarioRepo,
 			SegundoFactorService segundoFactorService, AuditoriaService auditoriaService,
 			PasswordEncoder passwordEncoder) {
@@ -74,8 +106,10 @@ public class InicioGoogleService {
 	}
 
 	/**
-	 * Client ID de Google para el botón del front, o null si el inicio con Google
-	 * no está configurado.
+	 * Client ID de Google para el botón del frontend.
+	 *
+	 * @return el client ID, o {@code null} si el inicio con Google no está
+	 *         configurado
 	 */
 	public String clientId() {
 		return verificador.getClientId();
@@ -114,6 +148,15 @@ public class InicioGoogleService {
 		return crear(cuenta.get(), correo, rol == null ? Role.HUESPED : rol);
 	}
 
+	/**
+	 * Inicia sesión con una cuenta que ya existe: revisa la restricción y el
+	 * segundo factor, la marca como verificada y la reactiva si estaba
+	 * inactiva.
+	 *
+	 * @param usuario cuenta existente
+	 * @param codigo código del segundo factor; puede ser {@code null}
+	 * @return resultado del inicio
+	 */
 	private Inicio iniciarExistente(Usuario usuario, String codigo) {
 		Long id = usuario.getIdUsuario();
 		if (usuario.getEstado() == EstadoUsuario.RESTRINGIDO) {
@@ -148,6 +191,16 @@ public class InicioGoogleService {
 		return new Inicio(INICIADA, usuario, false);
 	}
 
+	/**
+	 * Crea la cuenta con los datos de Google. Le pone una contraseña aleatoria
+	 * que nadie conoce; para entrar con contraseña, el usuario la define con
+	 * la recuperación.
+	 *
+	 * @param cuenta datos de la cuenta de Google
+	 * @param correo correo normalizado
+	 * @param rol rol de la cuenta
+	 * @return resultado del inicio, con la cuenta nueva
+	 */
 	private Inicio crear(CuentaGoogle cuenta, String correo, Role rol) {
 		String nombre = cuenta.nombre() == null || cuenta.nombre().isBlank() ? correo.substring(0, correo.indexOf('@'))
 				: cuenta.nombre().trim();

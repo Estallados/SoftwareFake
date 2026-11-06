@@ -1,10 +1,10 @@
-// OJO: los nombres de campo son una suposición; ajústalos a los DTO de Java
-// (PeriodoDisponibilidadDTO y las respuestas de calendario/consultar).
-
 /** Período en el que el anfitrión ofrece el alojamiento. Fechas ISO: "2026-12-01". */
 export interface PeriodoDisponibilidad {
+  /** Identificador del período. */
   idPeriodo?: number;
+  /** Primer día en que se puede llegar. */
   fechaLlegada: string;
+  /** Último día en que se puede salir. */
   fechaSalida: string;
 }
 
@@ -13,18 +13,24 @@ export type PeriodoDisponibilidadEntrada = Omit<PeriodoDisponibilidad, 'idPeriod
 
 /** Rango de fechas ya reservado. */
 export interface RangoReservado {
+  /** Día de llegada de la reserva. */
   fechaLlegada: string;
+  /** Día de salida de la reserva (no ocupa noche). */
   fechaSalida: string;
 }
 
 /** Respuesta de GET /alojamientos/{id}/disponibilidad. */
 export interface CalendarioDisponibilidad {
+  /** Períodos ofrecidos por el anfitrión. */
   periodos: PeriodoDisponibilidad[];
+  /** Rangos ya ocupados por reservas activas. */
   reservas: RangoReservado[];
 }
 
 /** Respuesta de GET /alojamientos/{id}/disponibilidad/consultar. */
 export interface ConsultaDisponibilidad {
+  /** Indica si se puede reservar en esas fechas. */
   disponible: boolean;
+  /** Por qué no está disponible; null si sí lo está. */
   motivo?: string | null;
 }

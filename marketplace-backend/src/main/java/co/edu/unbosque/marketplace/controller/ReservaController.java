@@ -28,10 +28,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST de cotizaciones, reservas y cancelaciones. Crear y cancelar
- * son idempotentes con la cabecera {@code Idempotency-Key}.
- *
- * @see "RF-002, RF-021, RF-022, RF-028, RNF-013, RNF-014"
+ * Controlador REST de cotizaciones, reservas y cancelaciones. Crear una
+ * reserva y cancelarla son operaciones idempotentes con la cabecera
+ * {@code Idempotency-Key}: si el cliente repite la petición, no se reserva ni
+ * se cobra dos veces.
  */
 @RestController
 @SecurityRequirement(name = "bearerAuth")
@@ -39,13 +39,29 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class ReservaController {
 
+	/** Orden de las reservas: las más recientes primero. */
 	private static final Sort RECIENTES = Sort.by("fechaCreacion").descending();
 
+	/** Servicio de cotizaciones. */
 	private final CotizacionService cotizacionService;
+
+	/** Servicio de reservas. */
 	private final ReservaService reservaService;
+
+	/** Servicio de cancelaciones. */
 	private final CancelacionService cancelacionService;
+
+	/** Aplica la cabecera Idempotency-Key. */
 	private final IdempotenciaService idempotenciaService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param cotizacionService servicio de cotizaciones
+	 * @param reservaService servicio de reservas
+	 * @param cancelacionService servicio de cancelaciones
+	 * @param idempotenciaService servicio de idempotencia
+	 */
 	public ReservaController(CotizacionService cotizacionService, ReservaService reservaService,
 			CancelacionService cancelacionService, IdempotenciaService idempotenciaService) {
 		this.cotizacionService = cotizacionService;
@@ -54,6 +70,17 @@ public class ReservaController {
 		this.idempotenciaService = idempotenciaService;
 	}
 
+	/**
+	 * Cotiza una estancia: noches, precio base, descuento, limpieza, servicio,
+	 * adicionales y total. La cotización sirve 30 minutos para reservar. Ruta:
+	 * {@code POST /cotizaciones}.
+	 *
+	 * @param solicitud alojamiento, fechas, huéspedes y servicios elegidos
+	 * @param authentication usuario autenticado
+	 * @return 201 con la cotización; 400 si los datos no son válidos; 404 si el
+	 *         alojamiento no existe; 409 si no está publicado o las fechas no
+	 *         están libres
+	 */
 	@Operation(summary = "Cotizar una estancia", description = "Devuelve noches, precio base, descuento, limpieza, servicio, adicionales y total. "
 			+ "La cotización sirve 30 minutos para reservar.")
 	@ApiResponse(responseCode = "201", description = "Cotización con el desglose; sirve 30 minutos para reservar")
@@ -70,6 +97,17 @@ public class ReservaController {
 				HttpStatus.CREATED);
 	}
 
+	/**
+	 * Crea y paga una reserva (solo huéspedes). Exige la cabecera
+	 * Idempotency-Key. Ruta: {@code POST /reservas}.
+	 *
+	 * @param solicitud cotización y método de pago de prueba
+	 * @param clave valor de la cabecera Idempotency-Key
+	 * @param authentication huésped autenticado
+	 * @return 201 con la reserva CONFIRMADA y su pago; 400, 402 (pago
+	 *         rechazado), 403, 404, 409 o 502 (pago no confirmado) según el
+	 *         caso
+	 */
 	@Operation(summary = "Crear y pagar una reserva (HUESPED)", description = "Requiere la cabecera Idempotency-Key. metodoPago es un PaymentMethod de Stripe: uno de "
 			+ "prueba (pm_card_visa aprueba, pm_card_chargeDeclinedInsufficientFunds rechaza; la lista está "
 			+ "en GET /pagos/configuracion) o el que crea Stripe Elements con una tarjeta de prueba. Con "
@@ -97,6 +135,14 @@ public class ReservaController {
 				() -> RespuestaUtil.desde(reservaService.crear(solicitud, idHuesped), HttpStatus.CREATED));
 	}
 
+	/**
+	 * Mis reservas como huésped. Ruta: {@code GET /reservas/mias}.
+	 *
+	 * @param authentication huésped autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de reservas
+	 */
 	@Operation(summary = "Mis reservas como huésped")
 	@ApiResponse(responseCode = "200", description = "Página de reservas del huésped")
 	@GetMapping("/reservas/mias")
@@ -106,6 +152,15 @@ public class ReservaController {
 				RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
+	/**
+	 * Reservas de mis alojamientos (solo anfitriones). Ruta:
+	 * {@code GET /reservas/anfitrion}.
+	 *
+	 * @param authentication anfitrión autenticado
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de reservas
+	 */
 	@Operation(summary = "Reservas de mis alojamientos (ANFITRION)")
 	@PreAuthorize("hasRole('ANFITRION')")
 	@ApiResponse(responseCode = "200", description = "Página de reservas de los alojamientos del anfitrión")
@@ -116,6 +171,15 @@ public class ReservaController {
 				RespuestaUtil.pagina(pagina, tamanio, RECIENTES)));
 	}
 
+	/**
+	 * Detalle de una reserva; lo ven el huésped, el anfitrión del alojamiento
+	 * y los administradores. Ruta: {@code GET /reservas/{id}}.
+	 *
+	 * @param id reserva
+	 * @param authentication usuario autenticado
+	 * @return 200 con la reserva, su pago, el alojamiento y la cancelación; 404
+	 *         si no existe o no se puede ver
+	 */
 	@Operation(summary = "Detalle de una reserva (huésped, anfitrión o ADMIN)")
 	@ApiResponse(responseCode = "200", description = "Reserva con pago, alojamiento y cancelación")
 	@ApiResponse(responseCode = "404", description = "La reserva no existe.")
@@ -125,6 +189,17 @@ public class ReservaController {
 				RespuestaUtil.esAdmin(authentication)));
 	}
 
+	/**
+	 * Simula la cancelación de una reserva (solo huéspedes): devuelve la
+	 * política, los días de anticipación, el porcentaje y el valor que se
+	 * devolvería si se cancelara hoy. No cancela nada. Ruta:
+	 * {@code GET /reservas/{id}/simularcancelacion}.
+	 *
+	 * @param id reserva
+	 * @param authentication huésped autenticado
+	 * @return 200 con la estimación; 404 si no existe; 409 si no se puede
+	 *         cancelar
+	 */
 	@Operation(summary = "Simular la cancelación de una reserva (HUESPED)", description = "Devuelve la política, los días de anticipación, el porcentaje y el valor que se "
 			+ "devolvería si se cancelara hoy. No cancela nada.")
 	@PreAuthorize("hasRole('HUESPED')")
@@ -137,6 +212,18 @@ public class ReservaController {
 		return RespuestaUtil.desde(cancelacionService.simular(id, RespuestaUtil.idUsuario(authentication)));
 	}
 
+	/**
+	 * Cancela una reserva futura (solo huéspedes), aplicando la política de
+	 * cancelación del alojamiento. Exige la cabecera Idempotency-Key y un
+	 * motivo. Ruta: {@code POST /reservas/{id}/cancelar}.
+	 *
+	 * @param id reserva
+	 * @param datos DTO con el {@code motivo}
+	 * @param clave valor de la cabecera Idempotency-Key
+	 * @param authentication huésped autenticado
+	 * @return 200 con la cancelación y la devolución; 400, 404 o 409 según el
+	 *         caso
+	 */
 	@Operation(summary = "Cancelar una reserva futura (HUESPED)", description = "Aplica la política de cancelación del alojamiento. Requiere Idempotency-Key y motivo.")
 	@PreAuthorize("hasRole('HUESPED')")
 	@ApiResponse(responseCode = "200", description = "Cancelación con la devolución según la política")

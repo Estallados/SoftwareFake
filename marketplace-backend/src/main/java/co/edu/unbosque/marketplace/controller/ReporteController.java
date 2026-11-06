@@ -24,9 +24,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controlador REST del dashboard y los reportes (solo ADMIN).
- *
- * @see "RF-005, RF-006"
+ * Controlador REST del dashboard y los reportes. Ruta base: {@code /admin}.
+ * Solo para administradores.
  */
 @RestController
 @RequestMapping("/admin")
@@ -36,12 +35,25 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "*")
 public class ReporteController {
 
+	/** Servicio de reportes. */
 	private final ReporteService reporteService;
 
+	/**
+	 * Crea el controlador.
+	 *
+	 * @param reporteService servicio de reportes
+	 */
 	public ReporteController(ReporteService reporteService) {
 		this.reporteService = reporteService;
 	}
 
+	/**
+	 * Indicadores del dashboard: usuarios, alojamientos y reservas por estado,
+	 * y las ciudades con más reservas. Ruta: {@code GET /admin/dashboard}.
+	 *
+	 * @param topCiudades cantidad de ciudades del ranking
+	 * @return 200 con los indicadores
+	 */
 	@Operation(summary = "Indicadores: usuarios, alojamientos y reservas por estado, y ciudades con más reservas")
 	@ApiResponse(responseCode = "200", description = "Indicadores del dashboard")
 	@GetMapping("/dashboard")
@@ -50,6 +62,14 @@ public class ReporteController {
 		return ResponseEntity.ok(reporteService.dashboard(topCiudades));
 	}
 
+	/**
+	 * Historial de exportaciones: quién exportó, qué, en qué formato y cuándo.
+	 * Ruta: {@code GET /admin/reportes/historial}.
+	 *
+	 * @param pagina número de página (desde 0)
+	 * @param tamanio elementos por página
+	 * @return 200 con la página de exportaciones
+	 */
 	@Operation(summary = "Historial de exportaciones (quién, qué, formato y cuándo)")
 	@ApiResponse(responseCode = "200", description = "Página de exportaciones con quién las hizo")
 	@GetMapping("/reportes/historial")
@@ -59,6 +79,16 @@ public class ReporteController {
 				Sort.by("fecha").descending().and(Sort.by("idRegistro").descending()))));
 	}
 
+	/**
+	 * Exporta un reporte en PDF o Excel. Ruta:
+	 * {@code GET /admin/reportes/{tipo}?formato=pdf|excel}.
+	 *
+	 * @param tipo usuarios, alojamientos, reservas, ingresos o demanda
+	 * @param formato pdf o excel
+	 * @param authentication administrador autenticado
+	 * @return 200 con el archivo para descargar; 400 si el tipo o el formato no
+	 *         existen
+	 */
 	@Operation(summary = "Exportar un reporte", description = "tipo: usuarios, alojamientos, reservas, ingresos o demanda; formato: pdf o excel.")
 	@ApiResponse(responseCode = "200", description = "Archivo PDF o Excel")
 	@ApiResponse(responseCode = "400", description = "Reporte no válido. Tipos: usuarios, alojamientos, reservas, "

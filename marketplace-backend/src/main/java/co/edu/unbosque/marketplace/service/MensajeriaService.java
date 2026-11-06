@@ -27,23 +27,48 @@ import co.edu.unbosque.marketplace.util.Resultado;
 /**
  * Mensajería entre un huésped y el anfitrión de un alojamiento. Solo los dos
  * participantes pueden ver la conversación y escribir en ella.
- *
- * @see "RF-029, CA-165 a CA-169"
  */
 @Service
 public class MensajeriaService {
 
+	/** Largo máximo de un mensaje. */
 	private static final int LARGO_MAXIMO = 2000;
+
+	/** Mensaje cuando la conversación no existe. */
 	private static final String NO_EXISTE = "La conversación no existe.";
 
+	/** Repositorio de conversaciones. */
 	private final ConversacionRepository conversacionRepo;
+
+	/** Repositorio de mensajes. */
 	private final MensajeRepository mensajeRepo;
+
+	/** Repositorio de alojamientos. */
 	private final AlojamientoRepository alojamientoRepo;
+
+	/** Repositorio de usuarios, para los nombres. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Avisa al destinatario de un mensaje nuevo. */
 	private final NotificacionService notificacionService;
+
+	/** Envía los mensajes por WebSocket. */
 	private final TiempoRealService tiempoReal;
+
+	/** Copia los datos de las entidades a los DTO. */
 	private final ModelMapper modelMapper;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param conversacionRepo repositorio de conversaciones
+	 * @param mensajeRepo repositorio de mensajes
+	 * @param alojamientoRepo repositorio de alojamientos
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param notificacionService servicio de notificaciones
+	 * @param tiempoReal servicio de envíos en tiempo real
+	 * @param modelMapper copiador de entidades a DTO
+	 */
 	public MensajeriaService(ConversacionRepository conversacionRepo, MensajeRepository mensajeRepo,
 			AlojamientoRepository alojamientoRepo, UsuarioRepository usuarioRepo,
 			NotificacionService notificacionService,
@@ -58,12 +83,14 @@ public class MensajeriaService {
 	}
 
 	/**
-	 * Inicia (o retoma) la conversación del usuario con el anfitrión de un
-	 * alojamiento, con un primer mensaje opcional.
+	 * Inicia (o retoma, si ya existe) la conversación del usuario con el
+	 * anfitrión de un alojamiento, con un primer mensaje opcional.
 	 *
-	 * @return 0 con la conversación; 1 el alojamiento no existe; 2 el mensaje es
-	 *         inválido; 3 es su propio alojamiento.
-	 * @see "CA-169"
+	 * @param datos alojamiento y primer mensaje
+	 * @param idUsuario huésped que inicia la conversación
+	 * @return la conversación; NO_ENCONTRADO si el alojamiento no existe;
+	 *         DATOS_INVALIDOS si el mensaje no es válido; SIN_PERMISO si es su
+	 *         propio alojamiento
 	 */
 	@Transactional
 	public Resultado<ConversacionDTO> iniciar(ConversacionDTO datos, Long idUsuario) {
@@ -98,22 +125,38 @@ public class MensajeriaService {
 		return Resultado.exito(convertirDTO(conversacion));
 	}
 
-	/** Indica si el usuario ya tiene una conversación sobre el alojamiento. */
+	/**
+	 * Indica si el usuario ya tiene una conversación sobre el alojamiento.
+	 *
+	 * @param idUsuario usuario
+	 * @param idAlojamiento alojamiento
+	 * @return {@code true} si ya existe
+	 */
 	public boolean tieneConversacion(Long idUsuario, Long idAlojamiento) {
 		return idAlojamiento != null
 				&& conversacionRepo.findByIdUsuarioAndIdAlojamiento(idUsuario, idAlojamiento).isPresent();
 	}
 
-	/** Conversaciones en las que participa el usuario. */
+	/**
+	 * Conversaciones en las que participa el usuario, como huésped o como
+	 * anfitrión.
+	 *
+	 * @param idUsuario usuario
+	 * @param pagina página y orden
+	 * @return página de conversaciones
+	 */
 	public PaginaDTO<ConversacionDTO> listar(Long idUsuario, Pageable pagina) {
 		return PaginaDTO.de(conversacionRepo.buscarDeParticipante(idUsuario, pagina), this::convertirDTO);
 	}
 
 	/**
-	 * Mensajes de una conversación, solo para sus participantes.
+	 * Mensajes de una conversación; solo para sus participantes.
 	 *
-	 * @return 0 con los mensajes; 1 no existe; 3 no participa.
-	 * @see "CA-167"
+	 * @param idConversacion conversación
+	 * @param idUsuario usuario que consulta
+	 * @param pagina página y orden
+	 * @return los mensajes; NO_ENCONTRADO si no existe; SIN_PERMISO si no
+	 *         participa
 	 */
 	public Resultado<PaginaDTO<MensajeDTO>> mensajes(Long idConversacion, Long idUsuario, Pageable pagina) {
 		Resultado<Conversacion> carga = cargarComoParticipante(idConversacion, idUsuario);
@@ -126,11 +169,14 @@ public class MensajeriaService {
 	}
 
 	/**
-	 * Envía un mensaje en una conversación propia y notifica al otro participante.
+	 * Envía un mensaje en una conversación propia y notifica al otro
+	 * participante.
 	 *
-	 * @return 0 con el mensaje; 1 no existe; 2 mensaje vacío o muy largo; 3 no
-	 *         participa.
-	 * @see "CA-165, CA-166, CA-168"
+	 * @param idConversacion conversación
+	 * @param contenido texto del mensaje
+	 * @param idUsuario remitente
+	 * @return el mensaje; NO_ENCONTRADO si no existe; DATOS_INVALIDOS si está
+	 *         vacío o es muy largo; SIN_PERMISO si no participa
 	 */
 	@Transactional
 	public Resultado<MensajeDTO> enviar(Long idConversacion, String contenido, Long idUsuario) {
@@ -146,8 +192,13 @@ public class MensajeriaService {
 
 	/**
 	 * Guarda el mensaje, lo envía en tiempo real a los dos participantes
-	 * ({@code /user/queue/mensajes}; al remitente le sirve para sus otras
-	 * pestañas) y notifica al destinatario.
+	 * ({@code /user/queue/mensajes}; al remitente le sirve para sincronizar
+	 * sus otras pestañas) y notifica al destinatario.
+	 *
+	 * @param conversacion conversación
+	 * @param contenido texto del mensaje
+	 * @param idRemitente usuario que lo envía
+	 * @return mensaje guardado
 	 */
 	private MensajeDTO guardarMensaje(Conversacion conversacion, String contenido, Long idRemitente) {
 		Mensaje mensaje = new Mensaje();
@@ -166,6 +217,12 @@ public class MensajeriaService {
 		return guardado;
 	}
 
+	/**
+	 * Convierte una conversación a DTO con los nombres de los participantes.
+	 *
+	 * @param conversacion conversación
+	 * @return conversación para la API
+	 */
 	private ConversacionDTO convertirDTO(Conversacion conversacion) {
 		ConversacionDTO dto = modelMapper.map(conversacion, ConversacionDTO.class);
 		Map<Long, String> nombres = nombres(conversacion);
@@ -174,13 +231,25 @@ public class MensajeriaService {
 		return dto;
 	}
 
+	/**
+	 * Convierte un mensaje a DTO con el nombre del remitente.
+	 *
+	 * @param mensaje mensaje
+	 * @param nombres nombres de los participantes por id
+	 * @return mensaje para la API
+	 */
 	private MensajeDTO convertirDTO(Mensaje mensaje, Map<Long, String> nombres) {
 		MensajeDTO dto = modelMapper.map(mensaje, MensajeDTO.class);
 		dto.setNombreUsuario(nombres.get(mensaje.getIdUsuario()));
 		return dto;
 	}
 
-	/** Nombres de los dos participantes, por id (una consulta). */
+	/**
+	 * Nombres de los dos participantes, por id (en una sola consulta).
+	 *
+	 * @param conversacion conversación
+	 * @return mapa de id a nombre
+	 */
 	private Map<Long, String> nombres(Conversacion conversacion) {
 		Map<Long, String> nombres = new HashMap<>();
 		usuarioRepo.findAllById(List.of(conversacion.getIdUsuario(), conversacion.getIdAnfitrion()))
@@ -188,6 +257,14 @@ public class MensajeriaService {
 		return nombres;
 	}
 
+	/**
+	 * Carga la conversación verificando que el usuario participe en ella.
+	 *
+	 * @param idConversacion conversación
+	 * @param idUsuario usuario
+	 * @return la conversación; NO_ENCONTRADO si no existe; SIN_PERMISO si no
+	 *         participa
+	 */
 	private Resultado<Conversacion> cargarComoParticipante(Long idConversacion, Long idUsuario) {
 		Optional<Conversacion> conversacion = conversacionRepo.findById(idConversacion);
 		if (conversacion.isEmpty()) {

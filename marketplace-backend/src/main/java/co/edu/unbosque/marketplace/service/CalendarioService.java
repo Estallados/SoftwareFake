@@ -25,17 +25,16 @@ import co.edu.unbosque.marketplace.repository.ReservaRepository;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Calendario de disponibilidad. El anfitrión registra los períodos en que
- * ofrece su alojamiento; las fechas reservadas no se guardan aparte: se derivan
- * de las reservas activas, así el bloqueo es automático (RF-020).
+ * Calendario de disponibilidad de los alojamientos. El anfitrión registra los
+ * períodos en que ofrece su alojamiento; las fechas reservadas no se guardan
+ * aparte, sino que se calculan a partir de las reservas activas, así el
+ * bloqueo de fechas es automático.
  * <p>
  * Una estancia [llegada, salida) está libre si la publicación está ACTIVA, un
  * período ofrecido la contiene y ninguna reserva activa se cruza con ella. Las
  * reservas PENDIENTE_PAGO ocupan las fechas solo durante
  * {@value #MINUTOS_PENDIENTE} minutos.
  * </p>
- *
- * @see "RF-020, RF-025, RF-026, RNF-027"
  */
 @Service
 public class CalendarioService {
@@ -47,14 +46,33 @@ public class CalendarioService {
 	/** Minutos que una reserva sin pagar retiene las fechas. */
 	public static final int MINUTOS_PENDIENTE = 15;
 
+	/** Mensaje cuando el alojamiento no existe. */
 	private static final String NO_EXISTE = "El alojamiento no existe.";
 
+	/** Repositorio de alojamientos. */
 	private final AlojamientoRepository alojamientoRepo;
+
+	/** Repositorio de períodos de disponibilidad. */
 	private final PeriodoDisponibilidadRepository periodoRepo;
+
+	/** Repositorio de reservas. */
 	private final ReservaRepository reservaRepo;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
+
+	/** Copia los datos de la entidad al DTO. */
 	private final ModelMapper modelMapper;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param alojamientoRepo repositorio de alojamientos
+	 * @param periodoRepo repositorio de períodos
+	 * @param reservaRepo repositorio de reservas
+	 * @param auditoriaService servicio de auditoría
+	 * @param modelMapper copiador de entidades a DTO
+	 */
 	public CalendarioService(AlojamientoRepository alojamientoRepo, PeriodoDisponibilidadRepository periodoRepo,
 			ReservaRepository reservaRepo, AuditoriaService auditoriaService, ModelMapper modelMapper) {
 		this.alojamientoRepo = alojamientoRepo;
@@ -67,17 +85,20 @@ public class CalendarioService {
 	/**
 	 * Las reservas PENDIENTE_PAGO creadas antes de este instante ya no ocupan
 	 * fechas.
+	 *
+	 * @return instante límite (ahora menos {@value #MINUTOS_PENDIENTE} minutos)
 	 */
 	public static LocalDateTime limitePendiente() {
 		return LocalDateTime.now().minusMinutes(MINUTOS_PENDIENTE);
 	}
 
 	/**
-	 * Valida un rango de estancia: ambas fechas presentes, llegada no pasada y
-	 * salida posterior a la llegada.
+	 * Valida un rango de estancia: las dos fechas presentes, la llegada no en
+	 * el pasado y la salida después de la llegada.
 	 *
-	 * @return el mensaje de error, o null si las fechas son válidas.
-	 * @see "RNF-027, CA-082, CA-121, CA-122"
+	 * @param llegada día de llegada
+	 * @param salida día de salida
+	 * @return el mensaje de error, o {@code null} si las fechas son válidas
 	 */
 	public static String validarFechas(LocalDate llegada, LocalDate salida) {
 		if (llegada == null || salida == null) {
@@ -93,8 +114,13 @@ public class CalendarioService {
 	}
 
 	/**
-	 * Indica si [llegada, salida) está dentro de un período ofrecido y sin reservas
-	 * que se crucen.
+	 * Indica si [llegada, salida) está dentro de un período ofrecido y sin
+	 * reservas que se crucen.
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param llegada día de llegada
+	 * @param salida día de salida
+	 * @return {@code true} si se puede reservar
 	 */
 	public boolean estaLibre(Long idAlojamiento, LocalDate llegada, LocalDate salida) {
 		return periodoRepo.contiene(idAlojamiento, llegada, salida)
@@ -104,9 +130,12 @@ public class CalendarioService {
 	/**
 	 * Consulta si un alojamiento está disponible en unas fechas.
 	 *
-	 * @return 0 con la respuesta (disponible o no, con el motivo); 1 si no existe;
-	 *         2 si las fechas no son válidas.
-	 * @see "RF-026, CA-119, CA-120, CA-121, CA-122, CA-159"
+	 * @param idAlojamiento alojamiento
+	 * @param llegada día de llegada
+	 * @param salida día de salida
+	 * @return la respuesta (disponible o no, con el motivo); NO_ENCONTRADO si
+	 *         el alojamiento no existe; DATOS_INVALIDOS si las fechas no son
+	 *         válidas
 	 */
 	public Resultado<ConsultaDisponibilidadDTO> consultar(Long idAlojamiento, LocalDate llegada, LocalDate salida) {
 		String errorFechas = validarFechas(llegada, salida);
@@ -139,11 +168,15 @@ public class CalendarioService {
 	}
 
 	/**
-	 * Calendario del alojamiento: períodos ofrecidos y rangos reservados. Es
-	 * público si está ACTIVA; en otro estado solo lo ven su anfitrión o un
-	 * administrador.
+	 * Calendario del alojamiento: los períodos ofrecidos y los rangos
+	 * reservados. Es público si está ACTIVA; en otro estado solo lo ven su
+	 * anfitrión o un administrador.
 	 *
-	 * @see "RF-026, CA-076, CA-148"
+	 * @param idAlojamiento alojamiento
+	 * @param idActor usuario que consulta; {@code null} si no hay sesión
+	 * @param esAdmin {@code true} si es administrador
+	 * @return el calendario; o NO_ENCONTRADO si no existe o el usuario no puede
+	 *         verlo
 	 */
 	public Resultado<DisponibilidadDTO> calendario(Long idAlojamiento, Long idActor, boolean esAdmin) {
 		Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
@@ -162,12 +195,17 @@ public class CalendarioService {
 	}
 
 	/**
-	 * Registra un período disponible (anfitrión propietario o administrador). No
-	 * puede cruzarse con otro período del mismo alojamiento.
+	 * Registra un período disponible (lo puede hacer el anfitrión dueño o un
+	 * administrador). No puede cruzarse con otro período del mismo
+	 * alojamiento.
 	 *
-	 * @return 0 con el período; 1 no existe; 2 fechas inválidas; 3 sin permiso; 4
-	 *         se cruza con otro período.
-	 * @see "RF-025, CA-115, CA-116"
+	 * @param idAlojamiento alojamiento
+	 * @param datos fechas del período
+	 * @param idActor usuario que lo registra
+	 * @param esAdmin {@code true} si es administrador
+	 * @return el período; NO_ENCONTRADO si el alojamiento no existe;
+	 *         DATOS_INVALIDOS si las fechas no son válidas; SIN_PERMISO si no
+	 *         es el dueño; ESTADO_INVALIDO si se cruza con otro período
 	 */
 	@Transactional
 	public Resultado<PeriodoDisponibilidadDTO> agregarPeriodo(Long idAlojamiento, PeriodoDisponibilidadDTO datos,
@@ -198,9 +236,14 @@ public class CalendarioService {
 	 * Modifica un período. Se rechaza si deja por fuera una reserva activa que
 	 * estaba dentro del período.
 	 *
-	 * @return 0 con el período; 1 no existe; 2 fechas inválidas; 3 sin permiso; 4
-	 *         afecta una reserva o se cruza con otro período.
-	 * @see "RF-025, CA-117, CA-118"
+	 * @param idAlojamiento alojamiento
+	 * @param idPeriodo período a modificar
+	 * @param datos fechas nuevas
+	 * @param idActor usuario que lo modifica
+	 * @param esAdmin {@code true} si es administrador
+	 * @return el período; NO_ENCONTRADO si no existe; DATOS_INVALIDOS si las
+	 *         fechas no son válidas; SIN_PERMISO si no es el dueño;
+	 *         ESTADO_INVALIDO si afecta una reserva o se cruza con otro período
 	 */
 	@Transactional
 	public Resultado<PeriodoDisponibilidadDTO> actualizarPeriodo(Long idAlojamiento, Long idPeriodo,
@@ -240,10 +283,14 @@ public class CalendarioService {
 	}
 
 	/**
-	 * Elimina un período sin reservas activas dentro.
+	 * Elimina un período que no tenga reservas activas dentro.
 	 *
-	 * @return 0 eliminado; 1 no existe; 3 sin permiso; 4 tiene reservas.
-	 * @see "RF-025, CA-118"
+	 * @param idAlojamiento alojamiento
+	 * @param idPeriodo período a eliminar
+	 * @param idActor usuario que lo elimina
+	 * @param esAdmin {@code true} si es administrador
+	 * @return éxito; NO_ENCONTRADO si no existe; SIN_PERMISO si no es el dueño;
+	 *         ESTADO_INVALIDO si tiene reservas
 	 */
 	@Transactional
 	public Resultado<Void> eliminarPeriodo(Long idAlojamiento, Long idPeriodo, Long idActor, boolean esAdmin) {
@@ -265,6 +312,12 @@ public class CalendarioService {
 		return Resultado.exito(null);
 	}
 
+	/**
+	 * Reservas activas que caen dentro de un período.
+	 *
+	 * @param periodo período a revisar
+	 * @return reservas que se cruzan con el período
+	 */
 	private List<Reserva> reservasDentro(PeriodoDisponibilidad periodo) {
 		return reservaRepo
 				.buscarOcupadas(periodo.getIdAlojamiento(), periodo.getFechaInicio(), ESTADOS_OCUPAN, limitePendiente())
@@ -273,6 +326,15 @@ public class CalendarioService {
 				.toList();
 	}
 
+	/**
+	 * Carga el alojamiento verificando que el usuario pueda modificar su
+	 * disponibilidad (dueño o administrador).
+	 *
+	 * @param idAlojamiento alojamiento
+	 * @param idActor usuario
+	 * @param esAdmin {@code true} si es administrador
+	 * @return el alojamiento; NO_ENCONTRADO o SIN_PERMISO
+	 */
 	private Resultado<Alojamiento> cargarModificable(Long idAlojamiento, Long idActor, boolean esAdmin) {
 		Optional<Alojamiento> alojamiento = alojamientoRepo.findById(idAlojamiento);
 		if (alojamiento.isEmpty()) {
@@ -287,6 +349,13 @@ public class CalendarioService {
 		return Resultado.exito(alojamiento.get());
 	}
 
+	/**
+	 * Valida las fechas de un período: las dos presentes, el fin después del
+	 * inicio y el fin no en el pasado.
+	 *
+	 * @param datos período a validar
+	 * @return el mensaje de error, o {@code null} si es válido
+	 */
 	private static String validarPeriodo(PeriodoDisponibilidadDTO datos) {
 		if (datos == null || datos.getFechaInicio() == null || datos.getFechaFin() == null) {
 			return "Debes indicar la fecha de inicio y la de fin del período.";
@@ -300,11 +369,25 @@ public class CalendarioService {
 		return null;
 	}
 
+	/**
+	 * Registra en la auditoría una operación sobre la disponibilidad.
+	 *
+	 * @param idActor usuario
+	 * @param idPeriodo período afectado; puede ser {@code null}
+	 * @param resultado resultado de la operación
+	 * @param detalle detalle para la auditoría
+	 */
 	private void auditar(Long idActor, Long idPeriodo, ResultadoAuditoria resultado, String detalle) {
 		auditoriaService.registrar(idActor, AuditoriaService.DISPONIBILIDAD, AuditoriaService.ENTIDAD_PERIODO,
 				idPeriodo, resultado, detalle);
 	}
 
+	/**
+	 * Convierte una reserva en el rango de fechas que ocupa.
+	 *
+	 * @param reserva reserva
+	 * @return rango ocupado
+	 */
 	private static RangoReservadoDTO rango(Reserva reserva) {
 		RangoReservadoDTO rango = new RangoReservadoDTO();
 		rango.setFechaEntrada(reserva.getFechaEntrada());

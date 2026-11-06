@@ -35,25 +35,38 @@ import co.edu.unbosque.marketplace.util.LimitesTexto;
 import co.edu.unbosque.marketplace.util.Resultado;
 
 /**
- * Reglas de negocio de usuarios: registro, creación de administradores, perfil
- * y desactivación de la cuenta propia. Cada operación queda en la auditoría.
- *
- * @see "RF-001"
- * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
+ * Reglas de negocio de los usuarios: registro, creación de administradores,
+ * perfil, desactivación de la cuenta propia y la restricción de cuentas por
+ * parte del administrador. Cada operación queda en la auditoría.
  */
 @Service
 public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
-	/** Resultados de {@link #create(UsuarioDTO)}. */
+	/** Resultado de {@link #create(UsuarioDTO)}: el usuario se creó. */
 	public static final int CREADO = 0;
+
+	/** El correo ya está registrado. */
 	public static final int CORREO_DUPLICADO = 1;
+
+	/** Faltan datos o no son válidos. */
 	public static final int DATOS_INVALIDOS = 2;
+
+	/** La contraseña no cumple las reglas. */
 	public static final int CONTRASENIA_DEBIL = 3;
+
+	/** Se pidió un rol que no se puede elegir (ADMIN). */
 	public static final int ROL_NO_PERMITIDO = 4;
+
+	/** Falló el guardado. */
 	public static final int ERROR_INTERNO = 5;
 
+	/** Log de la clase. */
 	private static final Logger LOG = LoggerFactory.getLogger(UsuarioService.class);
 
+	/**
+	 * Forma válida de un teléfono ya sin separadores: 7 a 15 dígitos, con +
+	 * opcional.
+	 */
 	private static final Pattern PATRON_TELEFONO = Pattern.compile("^\\+?\\d{7,15}$");
 
 	/**
@@ -62,13 +75,34 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	 */
 	private static final Pattern SEPARADORES_TELEFONO = Pattern.compile("[\\s().-]");
 
+	/** Repositorio de usuarios. */
 	private final UsuarioRepository usuarioRepo;
+
+	/** Servicio de auditoría. */
 	private final AuditoriaService auditoriaService;
+
+	/** Avisa al usuario cuando lo restringen o lo habilitan. */
 	private final NotificacionService notificacionService;
+
+	/** Envía el código de verificación al registrarse. */
 	private final VerificacionCorreoService verificacionCorreoService;
+
+	/** Codificador de contraseñas. */
 	private final PasswordEncoder passwordEncoder;
+
+	/** Copia los datos de la entidad al DTO. */
 	private final ModelMapper modelMapper;
 
+	/**
+	 * Crea el servicio.
+	 *
+	 * @param usuarioRepo repositorio de usuarios
+	 * @param auditoriaService servicio de auditoría
+	 * @param notificacionService servicio de notificaciones
+	 * @param verificacionCorreoService servicio de verificación del correo
+	 * @param passwordEncoder codificador de contraseñas
+	 * @param modelMapper copiador de entidades a DTO
+	 */
 	public UsuarioService(UsuarioRepository usuarioRepo, AuditoriaService auditoriaService,
 			NotificacionService notificacionService, VerificacionCorreoService verificacionCorreoService,
 			PasswordEncoder passwordEncoder, ModelMapper modelMapper) {
@@ -81,10 +115,11 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	}
 
 	/**
-	 * Forma única de guardar teléfonos: sin espacios, guiones, puntos ni
+	 * Forma única de guardar los teléfonos: sin espacios, guiones, puntos ni
 	 * paréntesis. Así "+57 300 000 0000" queda "+573000000000".
 	 *
-	 * @return el teléfono normalizado, o null si viene vacío.
+	 * @param telefono teléfono como lo escribió el usuario
+	 * @return el teléfono normalizado, o {@code null} si viene vacío
 	 */
 	public static String normalizarTelefono(String telefono) {
 		if (esVacio(telefono)) {
@@ -94,34 +129,43 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	}
 
 	/**
-	 * Forma única de comparar correos en todo el sistema: sin espacios y en
-	 * minúsculas. Se usa al registrar, al iniciar sesión y al buscar.
+	 * Forma única de comparar correos en todo el sistema: sin espacios a los
+	 * lados y en minúsculas. Se usa al registrar, al iniciar sesión y al
+	 * buscar.
+	 *
+	 * @param correo correo como lo escribió el usuario
+	 * @return correo normalizado
 	 */
 	public static String normalizarCorreo(String correo) {
 		return correo == null ? null : correo.trim().toLowerCase();
 	}
 
-	/** Hash con el que se busca un correo en la base de datos. */
+	/**
+	 * Hash con el que se busca un correo en la base de datos (el correo se
+	 * guarda cifrado y no se puede buscar directamente).
+	 *
+	 * @param correo correo; se normaliza antes de calcular el hash
+	 * @return hash del correo
+	 */
 	public static String hashCorreo(String correo) {
 		return AESUtil.hash(normalizarCorreo(correo));
 	}
 
 	/**
 	 * Registra un usuario nuevo. La cuenta queda ACTIVA pero con el correo sin
-	 * verificar: se le envía un código de verificación en el correo de bienvenida y
-	 * no puede iniciar sesión hasta confirmarlo. Solo se permiten los roles HUESPED
-	 * (por defecto) y ANFITRION; nunca ADMIN.
+	 * verificar: se le envía un código de verificación en el correo de
+	 * bienvenida y no puede iniciar sesión hasta confirmarlo. Solo se permiten
+	 * los roles HUESPED (por defecto) y ANFITRION, nunca ADMIN.
 	 * <p>
-	 * DECISIÓN (contradice el literal de RF-001): el registro público no crea
-	 * administradores. El primer ADMIN lo crea {@code AdminInicializador} al
-	 * arrancar y los siguientes los crea otro administrador con
-	 * {@link #crearAdministrador(UsuarioDTO, Long)}.
+	 * Decisión: el registro público no crea administradores. El primer ADMIN
+	 * lo crea {@code AdminInicializador} al arrancar y los siguientes los crea
+	 * otro administrador con {@link #crearAdministrador(UsuarioDTO, Long)}.
 	 * </p>
 	 *
-	 * @return {@link #CREADO}, {@link #CORREO_DUPLICADO}, {@link #DATOS_INVALIDOS},
-	 *         {@link #CONTRASENIA_DEBIL}, {@link #ROL_NO_PERMITIDO} o
-	 *         {@link #ERROR_INTERNO}
-	 * @see "RF-001"
+	 * @param data datos del usuario nuevo
+	 * @return {@link #CREADO}, {@link #CORREO_DUPLICADO},
+	 *         {@link #DATOS_INVALIDOS}, {@link #CONTRASENIA_DEBIL},
+	 *         {@link #ROL_NO_PERMITIDO} o {@link #ERROR_INTERNO}
 	 */
 	@Override
 	public int create(UsuarioDTO data) {
@@ -135,14 +179,13 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	}
 
 	/**
-	 * Crea otro administrador. Solo lo puede invocar un ADMIN (lo controla
+	 * Crea otro administrador. Solo lo puede pedir un ADMIN (lo controla
 	 * {@code UsuarioController} con {@code @PreAuthorize}).
 	 *
-	 * @param data    Datos del nuevo administrador; el rol enviado se ignora.
-	 * @param idActor Administrador que hace la creación (sale del token JWT).
+	 * @param data datos del nuevo administrador; el rol enviado se ignora
+	 * @param idActor administrador que lo crea
 	 * @return los mismos códigos de {@link #create(UsuarioDTO)}, excepto
-	 *         {@link #ROL_NO_PERMITIDO}.
-	 * @see "RF-001"
+	 *         {@link #ROL_NO_PERMITIDO}
 	 */
 	public int crearAdministrador(UsuarioDTO data, Long idActor) {
 		return registrar(data, Role.ADMIN, idActor, AuditoriaService.CREACION_ADMINISTRADOR);
@@ -151,6 +194,12 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	/**
 	 * Validaciones y guardado comunes a {@link #create(UsuarioDTO)} y
 	 * {@link #crearAdministrador(UsuarioDTO, Long)}.
+	 *
+	 * @param data datos del usuario
+	 * @param rol rol con el que se crea
+	 * @param idActor usuario que lo crea; {@code null} en el registro público
+	 * @param accion acción que se registra en la auditoría
+	 * @return código del resultado
 	 */
 	private int registrar(UsuarioDTO data, Role rol, Long idActor, String accion) {
 		if (data == null || esVacio(data.getNombre()) || esVacio(data.getCorreo()) || esVacio(data.getContrasenia())
@@ -213,12 +262,17 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		auditoriaService.registrar(idActor == null ? usuario.getIdUsuario() : idActor, accion,
 				AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(), ResultadoAuditoria.EXITOSO, "Rol " + rol);
 
-		// Correo de bienvenida con el código de verificación (RF-001)
+		// Correo de bienvenida con el código de verificación
 		verificacionCorreoService.enviarCodigo(usuario, correo, data.getNombre().trim(), true);
 
 		return CREADO;
 	}
 
+	/**
+	 * Todos los usuarios, sin paginar.
+	 *
+	 * @return lista de usuarios
+	 */
 	@Override
 	public List<UsuarioDTO> getAll() {
 		List<Usuario> usuarios = usuarioRepo.findAll();
@@ -231,11 +285,22 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		return resultado;
 	}
 
-	/** Indica si existe un usuario con ese id. */
+	/**
+	 * Indica si existe un usuario con ese id.
+	 *
+	 * @param id identificador
+	 * @return {@code true} si existe
+	 */
 	public boolean existe(Long id) {
 		return usuarioRepo.existsById(id);
 	}
 
+	/**
+	 * Busca un usuario por su id.
+	 *
+	 * @param id identificador
+	 * @return el usuario, o {@code null} si no existe
+	 */
 	@Override
 	public UsuarioDTO getById(Long id) {
 		Optional<Usuario> usuario = usuarioRepo.findById(id);
@@ -247,6 +312,13 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		return convertirDTO(usuario.get());
 	}
 
+	/**
+	 * Convierte un usuario a DTO: descifra el correo y quita la contraseña, el
+	 * hash del correo y el secreto del segundo factor.
+	 *
+	 * @param usuario usuario
+	 * @return usuario para la API
+	 */
 	private UsuarioDTO convertirDTO(Usuario usuario) {
 		UsuarioDTO dto = modelMapper.map(usuario, UsuarioDTO.class);
 		dto.setIdUsuario(usuario.getIdUsuario());
@@ -259,6 +331,12 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		return dto;
 	}
 
+	/**
+	 * Borra un usuario.
+	 *
+	 * @param id identificador
+	 * @return 0 si se borró; 1 si no existe
+	 */
 	@Override
 	public int deleteById(Long id) {
 		if (!usuarioRepo.existsById(id)) {
@@ -269,6 +347,16 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		return 0;
 	}
 
+	/**
+	 * Actualiza nombre, correo, contraseña o rol de un usuario; los campos
+	 * vacíos no se tocan. Si el correo nuevo ya es de otro usuario, no se
+	 * cambia.
+	 *
+	 * @param id identificador
+	 * @param newData datos nuevos
+	 * @return 0 si se actualizó; 1 si no existe; 2 si el correo está ocupado o
+	 *         falló el guardado
+	 */
 	@Override
 	public int updateById(Long id, UsuarioDTO newData) {
 		Optional<Usuario> usuarioOpt = usuarioRepo.findById(id);
@@ -315,26 +403,56 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 		}
 	}
 
+	/**
+	 * Cantidad de usuarios.
+	 *
+	 * @return cantidad
+	 */
 	@Override
 	public long count() {
 		return usuarioRepo.count();
 	}
 
+	/**
+	 * Indica si existe un usuario con ese id.
+	 *
+	 * @param id identificador
+	 * @return {@code true} si existe
+	 */
 	@Override
 	public boolean exist(Long id) {
 		return usuarioRepo.existsById(id);
 	}
 
+	/**
+	 * Indica si el correo del usuario ya está registrado (compara por el
+	 * hash).
+	 *
+	 * @param newUser usuario con el hash del correo
+	 * @return {@code true} si el correo ya está registrado
+	 */
 	@Override
 	public boolean findUsernameAlreadyTaken(Usuario newUser) {
 		return newUser.getCorreoHash() != null && usuarioRepo.existsByCorreoHash(newUser.getCorreoHash());
 	}
 
+	/**
+	 * Indica si un correo ya está registrado.
+	 *
+	 * @param username correo a buscar
+	 * @return {@code true} si existe
+	 */
 	@Override
 	public boolean encontrarCorreoExitente(String username) {
 		return !esVacio(username) && usuarioRepo.existsByCorreoHash(hashCorreo(username));
 	}
 
+	/**
+	 * Busca un usuario por su correo.
+	 *
+	 * @param correo correo a buscar
+	 * @return el usuario, o {@code null} si no existe o el correo está vacío
+	 */
 	public UsuarioDTO obtenerUsuarioPorCorreo(String correo) {
 		if (esVacio(correo)) {
 			return null;
@@ -347,10 +465,9 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	 * Desactiva la cuenta propia (queda INACTIVO). Se reactiva con
 	 * {@code POST /auth/reactivar}. Un administrador no puede desactivarse.
 	 *
-	 * @param correo Correo del usuario autenticado (sale del token JWT).
-	 * @return 0 desactivada; 1 usuario no encontrado; 2 es ADMIN o la cuenta no
-	 *         está ACTIVO.
-	 * @see "RF-012, CA-050, CA-052"
+	 * @param correo correo del usuario autenticado (sale del token)
+	 * @return 0 si se desactivó; 1 si el usuario no existe; 2 si es ADMIN o la
+	 *         cuenta no está ACTIVO
 	 */
 	public int desactivarCuenta(String correo) {
 		if (esVacio(correo)) {
@@ -376,17 +493,16 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	}
 
 	/**
-	 * Actualiza el perfil propio. Solo se pueden cambiar el nombre y el teléfono;
-	 * correo, rol, estado y contraseña no se tocan por esta vía. Los campos que
-	 * lleguen en null se dejan como están.
+	 * Actualiza el perfil propio. Solo se pueden cambiar el nombre y el
+	 * teléfono; el correo, el rol, el estado y la contraseña no se tocan por
+	 * esta vía. Los campos que lleguen en {@code null} se dejan como están.
 	 *
-	 * @param correo   Correo del usuario autenticado (sale del token JWT).
-	 * @param nombre   Nombre nuevo; si se envía no puede estar vacío.
-	 * @param telefono Teléfono nuevo: 7 a 15 dígitos, opcionalmente con + y
-	 *                 separadores (espacios, guiones, puntos o paréntesis).
-	 * @return 0 actualizado; 1 usuario no encontrado; 2 datos inválidos o ningún
-	 *         campo para actualizar.
-	 * @see "Módulo 1: identidad y perfil (RF-008 a RF-012)"
+	 * @param correo correo del usuario autenticado (sale del token)
+	 * @param nombre nombre nuevo; si se envía no puede estar vacío
+	 * @param telefono teléfono nuevo: 7 a 15 dígitos, opcionalmente con + y
+	 *                 separadores (espacios, guiones, puntos o paréntesis)
+	 * @return 0 si se actualizó; 1 si el usuario no existe; 2 si los datos no
+	 *         son válidos o no hay nada que actualizar
 	 */
 	public int actualizarPerfil(String correo, String nombre, String telefono) {
 		if ((nombre == null && telefono == null) || (nombre != null && nombre.isBlank())
@@ -422,19 +538,23 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	/**
 	 * Usuarios de forma paginada (vista del administrador).
 	 *
-	 * @see "RF-014"
+	 * @param pagina página y orden
+	 * @return página de usuarios
 	 */
 	public PaginaDTO<UsuarioDTO> listarPaginado(Pageable pagina) {
 		return PaginaDTO.de(usuarioRepo.findAll(pagina), this::convertirDTO);
 	}
 
 	/**
-	 * Restringe una cuenta con un motivo (administrador). Una cuenta restringida no
-	 * puede iniciar sesión, sus tokens dejan de funcionar y no puede reactivarse
-	 * sola. No se puede restringir a un administrador.
+	 * Restringe una cuenta con un motivo (administrador). Una cuenta
+	 * restringida no puede iniciar sesión, sus tokens dejan de funcionar y no
+	 * puede reactivarse sola. No se puede restringir a un administrador.
 	 *
-	 * @return 0 con el usuario; 1 no existe; 2 falta el motivo; 3 es administrador.
-	 * @see "RF-014, CA-058, CA-059, CA-060"
+	 * @param idUsuario usuario a restringir
+	 * @param motivo motivo (obligatorio); se le notifica al usuario
+	 * @param idAdmin administrador que restringe
+	 * @return el usuario; NO_ENCONTRADO si no existe; DATOS_INVALIDOS si falta
+	 *         el motivo; SIN_PERMISO si es administrador
 	 */
 	@Transactional
 	public Resultado<UsuarioDTO> restringir(Long idUsuario, String motivo, Long idAdmin) {
@@ -465,21 +585,24 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 	}
 
 	/**
-	 * Activa una cuenta restringida o inactiva (administrador). Queda ACTIVA.
+	 * Activa una cuenta restringida o inactiva (administrador). La cuenta
+	 * queda ACTIVA.
 	 * <p>
-	 * DECISIÓN: el administrador también puede activar una cuenta que su dueño
+	 * Decisión: el administrador también puede activar una cuenta que su dueño
 	 * desactivó (INACTIVO), además de levantar una restricción.
 	 * </p>
 	 * <p>
-	 * DECISIÓN: el motivo es opcional. Las acciones que castigan (restringir,
-	 * bloquear, rechazar, ocultar) exigen motivo porque se le comunica al afectado
-	 * y respalda la decisión en la auditoría; devolver el acceso no perjudica a
-	 * nadie, así que el motivo solo se guarda si se envía.
+	 * Decisión: el motivo es opcional. Las acciones que castigan (restringir,
+	 * bloquear, rechazar, ocultar) exigen motivo porque se le comunica al
+	 * afectado y respalda la decisión en la auditoría; devolver el acceso no
+	 * perjudica a nadie, así que el motivo solo se guarda si se envía.
 	 * </p>
 	 *
-	 * @param motivo Motivo opcional; si se envía queda en la auditoría.
-	 * @return 0 con el usuario; 1 no existe; 4 la cuenta ya estaba activa.
-	 * @see "RF-014"
+	 * @param idUsuario usuario a activar
+	 * @param motivo motivo opcional; si se envía queda en la auditoría
+	 * @param idAdmin administrador que la activa
+	 * @return el usuario; NO_ENCONTRADO si no existe; ESTADO_INVALIDO si ya
+	 *         estaba activa
 	 */
 	@Transactional
 	public Resultado<UsuarioDTO> liberar(Long idUsuario, String motivo, Long idAdmin) {
@@ -503,18 +626,34 @@ public class UsuarioService implements CRUDOperation<UsuarioDTO> {
 
 	/**
 	 * El teléfono es opcional; si se envía debe tener de 7 a 15 dígitos,
-	 * opcionalmente precedidos de + y con separadores (espacios, guiones, puntos o
-	 * paréntesis). Vacío equivale a no enviarlo.
+	 * opcionalmente con + al inicio y con separadores (espacios, guiones,
+	 * puntos o paréntesis). Vacío equivale a no enviarlo.
+	 *
+	 * @param telefono teléfono a revisar
+	 * @return {@code true} si es válido o está vacío
 	 */
 	private static boolean telefonoValido(String telefono) {
 		return esVacio(telefono) || PATRON_TELEFONO.matcher(normalizarTelefono(telefono)).matches();
 	}
 
+	/**
+	 * Registra en la auditoría una operación de usuario rechazada.
+	 *
+	 * @param idActor usuario que la intentó
+	 * @param accion acción auditada
+	 * @param motivo causa del rechazo
+	 */
 	private void auditarRechazo(Long idActor, String accion, String motivo) {
 		auditoriaService.registrar(idActor, accion, AuditoriaService.ENTIDAD_USUARIO, null,
 				ResultadoAuditoria.RECHAZADO, motivo);
 	}
 
+	/**
+	 * Indica si un texto es {@code null} o solo tiene espacios.
+	 *
+	 * @param texto texto a revisar
+	 * @return {@code true} si está vacío
+	 */
 	private static boolean esVacio(String texto) {
 		return texto == null || texto.isBlank();
 	}
