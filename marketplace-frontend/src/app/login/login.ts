@@ -3,20 +3,17 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   ElementRef,
   ViewChild,
   inject
 } from '@angular/core';
 
-import { FormsModule, NgForm } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-
-import {
-  finalize,
-  switchMap,
-  timeout
-} from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize, switchMap, tap, timeout } from 'rxjs';
 
 import {
   Auth,
@@ -27,16 +24,31 @@ import {
 import { SessionService } from '../services/session.service';
 
 // ======================================
-// INTERFAZ DE ERRORES DEL BACKEND
+// RESPUESTA DE AUTENTICACIÓN
 // ======================================
+// El backend (8) todavía usa TOTP.
+// Cuando se implemente 2FA por correo,
+// deberá responder inicialmente con:
+// {
+//   requiereSegundoFactor: true,
+//   metodoSegundoFactor: 'CORREO',
+//   message: 'Código enviado al correo.'
+// }
+// Sin entregar todavía el JWT.
 
-interface ErrorBackend {
+interface RespuestaAutenticacion {
+  token?: string;
+  rol?: string;
+  correo?: string;
   message?: string;
   mensaje?: string;
   detalle?: string;
   error?: string;
   requiereVerificacion?: boolean;
   requiereSegundoFactor?: boolean;
+  requiereCodigoCorreo?: boolean;
+  metodoSegundoFactor?: string;
+  tipoSegundoFactor?: string;
 }
 
 // ======================================
@@ -50,7 +62,7 @@ interface CredencialGoogle {
 interface GoogleSdk {
   accounts: {
     id: {
-      initialize(config: {
+      initialize(options: {
         client_id: string;
         callback: (
           response: CredencialGoogle
@@ -60,7 +72,7 @@ interface GoogleSdk {
 
       renderButton(
         element: HTMLElement,
-        config: {
+        options: {
           type?: 'standard' | 'icon';
           theme?: 'outline' | 'filled_black';
           shape?: 'pill' | 'circle';
@@ -89,8 +101,8 @@ declare global {
   selector: 'app-login',
   standalone: true,
   imports: [
-    RouterLink,
-    FormsModule
+    FormsModule,
+    RouterLink
   ],
   templateUrl: './login.html'
 })
@@ -102,21 +114,23 @@ export class Login implements AfterViewInit {
 
   private readonly auth = inject(Auth);
 
+  private readonly sesion = inject(SessionService);
+
   private readonly router = inject(Router);
 
   private readonly cdr = inject(ChangeDetectorRef);
 
-  private readonly sesion = inject(SessionService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // ======================================
-  // CONTENEDOR DEL BOTÓN GOOGLE
+  // BOTÓN GOOGLE
   // ======================================
 
   @ViewChild('googleButton')
   googleButton?: ElementRef<HTMLDivElement>;
 
   // ======================================
-  // FORMULARIO DE LOGIN
+  // LOGIN TRADICIONAL
   // ======================================
 
   correo = '';
@@ -139,12 +153,17 @@ export class Login implements AfterViewInit {
 
   mensaje = '';
 
+  // Código de verificación del registro
+
   requiereVerificacion = false;
+
+  // Código por correo en cada inicio de sesión
+  // Pendiente de implementar en el backend
 
   requiereSegundoFactor = false;
 
   // ======================================
-  // GOOGLE
+  // GOOGLE: FLUJO INDEPENDIENTE
   // ======================================
 
   rolGoogle: RegistroRol = 'HUESPED';
@@ -155,14 +174,10 @@ export class Login implements AfterViewInit {
 
   googleError = '';
 
-  googleSegundoFactor = false;
-
-  codigoGoogle = '';
-
   private googleIdToken = '';
 
   // ======================================
-  // 1. INICIAR SESIÓN NORMAL
+  // 1. INICIAR SESIÓN
   // ======================================
 
   iniciarSesion(form: NgForm): void {
@@ -177,7 +192,7 @@ export class Login implements AfterViewInit {
     if (form.invalid) {
 
       this.error =
-        'Completa correctamente los campos.';
+        'Completa correctamente todos los campos.';
 
       this.actualizarVista();
 
@@ -188,7 +203,9 @@ export class Login implements AfterViewInit {
 
     this.mensaje = '';
 
-    // Verificar correo pendiente
+    // ======================================
+    // VERIFICACIÓN DEL REGISTRO
+    // ======================================
 
     if (this.requiereVerificacion) {
 
@@ -197,30 +214,33 @@ export class Login implements AfterViewInit {
       return;
     }
 
-    // Verificar segundo factor
+    // ======================================
+    // CÓDIGO DEL LOGIN POR CORREO
+    // ======================================
 
     if (this.requiereSegundoFactor) {
 
       if (!this.codigoValido()) {
 
         this.error =
-          'Ingresa un código válido de 6 dígitos.';
+          'Introduce el código de 6 dígitos enviado a tu correo.';
 
         this.actualizarVista();
 
         return;
       }
 
-      this.ejecutarLogin(
-        this.codigo.trim()
-      );
+      this.ejecutarLogin(this.codigo);
 
       return;
     }
 
-    // Login normal
+    // ======================================
+    // PRIMER PASO: CREDENCIALES
+    // ======================================
 
     this.ejecutarLogin();
+
   }
 
   // ======================================
@@ -251,7 +271,9 @@ export class Login implements AfterViewInit {
       contrasenia: this.contrasenia,
 
       ...(codigo
-        ? { codigo }
+        ? {
+          codigo: codigo.trim()
+        }
         : {})
 
     })
@@ -265,14 +287,16 @@ export class Login implements AfterViewInit {
 
           this.actualizarVista();
 
-        })
+        }),
+
+        takeUntilDestroyed(this.destroyRef)
 
       )
       .subscribe({
 
         next: respuesta => {
 
-          this.guardarSesion(respuesta);
+          this.procesarRespuestaLogin(respuesta);
 
         },
 
@@ -283,32 +307,55 @@ export class Login implements AfterViewInit {
         }
 
       });
+
   }
 
   // ======================================
-  // 3. PROCESAR ERRORES DE LOGIN
+  // 3. PROCESAR RESPUESTA DEL LOGIN
+  // ======================================
+
+  private procesarRespuestaLogin(
+    respuesta: LoginResponse
+  ): void {
+
+    const datos =
+      respuesta as RespuestaAutenticacion;
+
+    // ======================================
+    // EL SERVIDOR SOLICITA SEGUNDO FACTOR
+    // ======================================
+
+    if (
+      datos.requiereSegundoFactor ||
+      datos.requiereCodigoCorreo
+    ) {
+
+      this.procesarSolicitudSegundoFactor(datos);
+
+      return;
+    }
+
+    // ======================================
+    // LOGIN COMPLETADO
+    // ======================================
+
+    this.guardarSesion(respuesta);
+
+  }
+
+  // ======================================
+  // 4. PROCESAR ERRORES DE LOGIN
   // ======================================
 
   private procesarErrorLogin(
     err: unknown
   ): void {
 
-    if (this.esTimeout(err)) {
+    if (!(err instanceof HttpErrorResponse)) {
 
-      this.error =
-        'El servidor tardó demasiado en responder. Intenta nuevamente.';
-
-      this.actualizarVista();
-
-      return;
-    }
-
-    if (
-      !(err instanceof HttpErrorResponse)
-    ) {
-
-      this.error =
-        'Ocurrió un error inesperado al iniciar sesión.';
+      this.error = this.esTimeout(err)
+        ? 'El servidor tardó demasiado en responder.'
+        : 'Ocurrió un error inesperado al iniciar sesión.';
 
       this.actualizarVista();
 
@@ -318,19 +365,15 @@ export class Login implements AfterViewInit {
     const datos =
       this.obtenerDatosError(err);
 
-    const mensaje =
-      this.obtenerMensaje(datos);
-
-    const texto = mensaje
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    const texto = this.normalizarTexto(
+      this.obtenerMensaje(datos)
+    );
 
     // ======================================
     // CORREO NO VERIFICADO
     // ======================================
 
-    const correoSinVerificar =
+    const correoPendiente =
 
       datos.requiereVerificacion === true ||
 
@@ -339,22 +382,13 @@ export class Login implements AfterViewInit {
 
         (
           texto.includes('correo sin verificar') ||
-
           texto.includes('correo no verificado') ||
-
-          texto.includes('correo no esta verificado') ||
-
           texto.includes('verificar tu correo') ||
-
-          texto.includes('verificar el correo') ||
-
-          texto.includes('verifica tu correo') ||
-
-          texto.includes('email not verified')
+          texto.includes('verifica tu correo')
         )
       );
 
-    if (correoSinVerificar) {
+    if (correoPendiente) {
 
       this.requiereVerificacion = true;
 
@@ -362,49 +396,174 @@ export class Login implements AfterViewInit {
 
       this.codigo = '';
 
+      this.error = '';
+
       this.mensaje =
-        'Tu correo no está verificado. ' +
-        'Introduce el código recibido o solicita otro.';
+        'Tu correo aún no está verificado. ' +
+        'Introduce el código recibido al registrarte.';
 
     } else if (
-      datos.requiereSegundoFactor === true
+      datos.requiereSegundoFactor ||
+      datos.requiereCodigoCorreo
     ) {
 
-      // ======================================
-      // SEGUNDO FACTOR REQUERIDO
-      // ======================================
+      this.procesarSolicitudSegundoFactor(datos);
 
-      this.requiereSegundoFactor = true;
-
-      this.requiereVerificacion = false;
-
-      this.codigo = '';
-
-      this.mensaje =
-        'Ingresa el código de tu aplicación autenticadora.';
+      return;
 
     } else if (err.status === 0) {
 
-      // ======================================
-      // BACKEND NO DISPONIBLE
-      // ======================================
-
       this.error =
-        'No fue posible conectar con Spring Boot en el puerto 8081.';
+        'No se pudo conectar con Spring Boot. ' +
+        'Comprueba el puerto 8081.';
 
     } else {
 
       this.error =
-        mensaje ||
-        'No se pudo iniciar sesión. Comprueba tus credenciales.';
+        this.obtenerMensaje(datos) ||
+        'No fue posible iniciar sesión. Revisa tus credenciales.';
 
     }
 
     this.actualizarVista();
+
   }
 
   // ======================================
-  // 4. VERIFICAR CORREO ELECTRÓNICO
+  // 5. IDENTIFICAR TIPO DE SEGUNDO FACTOR
+  // ======================================
+
+  private procesarSolicitudSegundoFactor(
+    datos: RespuestaAutenticacion
+  ): void {
+
+    const mensajeBackend =
+      this.obtenerMensaje(datos);
+
+    const texto = this.normalizarTexto(
+      mensajeBackend
+    );
+
+    const metodo = this.normalizarTexto(
+      datos.metodoSegundoFactor ||
+      datos.tipoSegundoFactor ||
+      ''
+    );
+
+    // ======================================
+    // DETECTAR AUTENTICADOR TOTP ANTIGUO
+    // ======================================
+
+    const esTotp =
+
+      metodo === 'totp' ||
+
+      metodo === 'autenticador' ||
+
+      texto.includes('aplicacion autenticadora') ||
+
+      texto.includes('google authenticator') ||
+
+      texto.includes('totp');
+
+    // ======================================
+    // DETECTAR CÓDIGO ENVIADO AL CORREO
+    // ======================================
+
+    const esCorreo =
+
+      datos.requiereCodigoCorreo === true ||
+
+      metodo === 'correo' ||
+
+      metodo === 'email' ||
+
+      (
+        texto.includes('codigo') &&
+
+        (
+          texto.includes('correo') ||
+          texto.includes('email')
+        )
+      );
+
+    // ======================================
+    // EVITAR CONFUNDIR TOTP CON CORREO
+    // ======================================
+
+    if (esTotp || !esCorreo) {
+
+      this.requiereSegundoFactor = false;
+
+      this.codigo = '';
+
+      this.mensaje = '';
+
+      this.error = esTotp
+
+        ? 'El servidor todavía solicita un código ' +
+        'de una aplicación autenticadora. ' +
+        'Para utilizar un código por correo en ' +
+        'cada inicio de sesión, primero debemos ' +
+        'actualizar Spring Boot.'
+
+        : 'El servidor solicitó una verificación ' +
+        'adicional, pero no confirmó que el código ' +
+        'se haya enviado al correo. ' +
+        'Revisa la respuesta del backend.';
+
+      this.actualizarVista();
+
+      return;
+    }
+
+    // ======================================
+    // MOSTRAR FORMULARIO DE CÓDIGO POR CORREO
+    // ======================================
+
+    const estabaVerificando =
+      this.requiereSegundoFactor;
+
+    this.requiereSegundoFactor = true;
+
+    this.requiereVerificacion = false;
+
+    this.codigo = '';
+
+    // ======================================
+    // CÓDIGO INCORRECTO
+    // ======================================
+
+    if (estabaVerificando) {
+
+      this.error =
+        mensajeBackend ||
+        'El código es incorrecto o ha vencido. ' +
+        'Inténtalo de nuevo.';
+
+      this.mensaje = '';
+
+    } else {
+
+      // ======================================
+      // PRIMER CÓDIGO SOLICITADO
+      // ======================================
+
+      this.error = '';
+
+      this.mensaje =
+        mensajeBackend ||
+        'Revisa tu correo y escribe el código ' +
+        'de seis dígitos para continuar.';
+
+    }
+
+    this.actualizarVista();
+
+  }
+
+  // ======================================
+  // 6. VERIFICAR CORREO DEL REGISTRO
   // POST /auth/verificar
   // ======================================
 
@@ -417,7 +576,7 @@ export class Login implements AfterViewInit {
     if (!this.codigoValido()) {
 
       this.error =
-        'Ingresa un código de verificación de 6 dígitos.';
+        'Introduce el código de 6 dígitos de tu registro.';
 
       this.actualizarVista();
 
@@ -431,7 +590,9 @@ export class Login implements AfterViewInit {
       this.contrasenia;
 
     const codigo =
-      this.codigo.trim();
+      this.codigo;
+
+    let verificado = false;
 
     this.cargando = true;
 
@@ -449,30 +610,40 @@ export class Login implements AfterViewInit {
 
         timeout(15000),
 
-        switchMap(() => {
+        tap(() => {
+
+          verificado = true;
 
           this.requiereVerificacion = false;
-
-          this.requiereSegundoFactor = false;
 
           this.codigo = '';
 
           this.mensaje =
-            'Correo verificado. Iniciando sesión...';
+            'Correo verificado. Comprobando el acceso...';
 
           this.actualizarVista();
 
-          return this.auth.login({
+        }),
+
+        // Iniciar sesión nuevamente.
+        // El backend deberá exigir el OTP de login
+        // antes de entregar el JWT.
+
+        switchMap(() =>
+
+          this.auth.login({
 
             correo,
 
             contrasenia
 
           }).pipe(
-            timeout(15000)
-          );
 
-        }),
+            timeout(15000)
+
+          )
+
+        ),
 
         finalize(() => {
 
@@ -480,43 +651,47 @@ export class Login implements AfterViewInit {
 
           this.actualizarVista();
 
-        })
+        }),
+
+        takeUntilDestroyed(this.destroyRef)
 
       )
       .subscribe({
 
         next: respuesta => {
 
-          this.guardarSesion(respuesta);
+          this.procesarRespuestaLogin(respuesta);
 
         },
 
         error: err => {
 
-          if (this.requiereVerificacion) {
+          if (verificado) {
 
-            this.error = this.mensajeError(
-              err,
-              'El código es incorrecto o ha vencido.'
-            );
-
-            this.actualizarVista();
+            this.procesarErrorLogin(err);
 
           } else {
 
-            this.procesarErrorLogin(err);
+            this.error = this.mensajeError(
+              err,
+              'El código de registro es incorrecto o venció.'
+            );
+
+            this.actualizarVista();
 
           }
 
         }
 
       });
+
   }
 
   // ======================================
-  // 5. REENVIAR CÓDIGO
+  // 7. REENVIAR CÓDIGO DEL REGISTRO
   // POST /auth/reenviarcodigo
   // ======================================
+  // No reenvía el código del inicio de sesión.
 
   reenviarCodigo(): void {
 
@@ -530,7 +705,7 @@ export class Login implements AfterViewInit {
     if (!this.correo.trim()) {
 
       this.error =
-        'Ingresa primero tu correo electrónico.';
+        'Primero escribe tu correo electrónico.';
 
       this.actualizarVista();
 
@@ -558,22 +733,24 @@ export class Login implements AfterViewInit {
 
           this.actualizarVista();
 
-        })
+        }),
+
+        takeUntilDestroyed(this.destroyRef)
 
       )
       .subscribe({
 
         next: respuesta => {
 
-          this.codigo = '';
-
           this.requiereVerificacion = true;
 
           this.requiereSegundoFactor = false;
 
+          this.codigo = '';
+
           this.mensaje =
-            respuesta?.message ||
-            'Solicitud procesada. Revisa tu correo electrónico.';
+            respuesta.message ||
+            'Revisa tu correo electrónico.';
 
           this.actualizarVista();
 
@@ -591,10 +768,11 @@ export class Login implements AfterViewInit {
         }
 
       });
+
   }
 
   // ======================================
-  // 6. CAMBIAR CORREO
+  // 8. CAMBIAR CORREO
   // ======================================
 
   cambiarCorreo(valor: string): void {
@@ -602,23 +780,55 @@ export class Login implements AfterViewInit {
     this.correo = valor;
 
     this.reiniciarVerificacion();
+
   }
 
   // ======================================
-  // 7. CAMBIAR CONTRASEÑA
+  // 9. CAMBIAR CONTRASEÑA
   // ======================================
 
-  cambiarContrasenia(
-    valor: string
-  ): void {
+  cambiarContrasenia(valor: string): void {
 
     this.contrasenia = valor;
 
     this.reiniciarVerificacion();
+
   }
 
   // ======================================
-  // 8. REINICIAR VERIFICACIÓN
+  // 10. CAMBIAR CÓDIGO
+  // ======================================
+
+  cambiarCodigo(valor: string): void {
+
+    this.codigo = (valor || '')
+      .replace(/\D/g, '')
+      .slice(0, 6);
+
+    this.error = '';
+
+  }
+
+  // ======================================
+  // 11. CANCELAR SEGUNDO FACTOR
+  // ======================================
+
+  cancelarSegundoFactor(): void {
+
+    this.requiereSegundoFactor = false;
+
+    this.codigo = '';
+
+    this.error = '';
+
+    this.mensaje = '';
+
+    this.actualizarVista();
+
+  }
+
+  // ======================================
+  // 12. REINICIAR VERIFICACIÓN
   // ======================================
 
   private reiniciarVerificacion(): void {
@@ -632,10 +842,11 @@ export class Login implements AfterViewInit {
     this.error = '';
 
     this.mensaje = '';
+
   }
 
   // ======================================
-  // 9. VALIDAR CÓDIGO
+  // 13. VALIDAR CÓDIGO
   // ======================================
 
   private codigoValido(): boolean {
@@ -643,10 +854,11 @@ export class Login implements AfterViewInit {
     return /^\d{6}$/.test(
       this.codigo.trim()
     );
+
   }
 
   // ======================================
-  // 10. GUARDAR SESIÓN JWT
+  // 14. GUARDAR SESIÓN JWT
   // ======================================
 
   private guardarSesion(
@@ -660,7 +872,8 @@ export class Login implements AfterViewInit {
     ) {
 
       this.error =
-        'El servidor no devolvió los datos necesarios de la sesión.';
+        'El servidor no devolvió los datos ' +
+        'necesarios de la sesión.';
 
       this.actualizarVista();
 
@@ -714,7 +927,7 @@ export class Login implements AfterViewInit {
           this.sesion.cerrarSesion();
 
           this.error =
-            'El rol recibido no es válido.';
+            'El rol recibido por el servidor no es válido.';
 
           this.actualizarVista();
 
@@ -723,22 +936,28 @@ export class Login implements AfterViewInit {
     } catch {
 
       this.error =
-        'No se pudo establecer la sesión con el JWT recibido.';
+        'No se pudo establecer la sesión ' +
+        'con el JWT recibido.';
 
       this.actualizarVista();
 
     }
+
   }
 
   // ======================================
-  // 11. INICIALIZAR GOOGLE
+  // 15. INICIALIZAR GOOGLE
   // ======================================
 
   ngAfterViewInit(): void {
 
     this.auth.configuracionGoogle()
       .pipe(
-        timeout(15000)
+
+        timeout(15000),
+
+        takeUntilDestroyed(this.destroyRef)
+
       )
       .subscribe({
 
@@ -763,25 +982,26 @@ export class Login implements AfterViewInit {
 
         },
 
-        error: () => {
+        error: err => {
 
-          this.googleError =
-            'No se pudo consultar la configuración de Google.';
+          this.googleError = this.mensajeError(
+            err,
+            'No se pudo obtener la configuración de Google.'
+          );
 
           this.actualizarVista();
 
         }
 
       });
+
   }
 
   // ======================================
-  // 12. SELECCIONAR ROL GOOGLE
+  // 16. CAMBIAR ROL DE GOOGLE
   // ======================================
 
-  cambiarRolGoogle(
-    valor: string
-  ): void {
+  cambiarRolGoogle(valor: string): void {
 
     if (
       valor === 'HUESPED' ||
@@ -791,75 +1011,93 @@ export class Login implements AfterViewInit {
       this.rolGoogle = valor;
 
     }
+
   }
 
   // ======================================
-  // 13. CARGAR LIBRERÍA DE GOOGLE
+  // 17. CARGAR GOOGLE IDENTITY SERVICES
   // ======================================
 
-  private cargarLibreriaGoogle():
-    Promise<void> {
+  private cargarLibreriaGoogle(): Promise<void> {
 
-    if (
-      window.google?.accounts?.id
-    ) {
+    if (window.google?.accounts?.id) {
 
       return Promise.resolve();
 
     }
 
-    return new Promise(
-      (resolve, reject) => {
+    return new Promise((resolve, reject) => {
 
-        const script =
-          document.createElement('script');
+      const previo =
+        document.querySelector<HTMLScriptElement>(
+          'script[src="https://accounts.google.com/gsi/client"]'
+        );
 
-        script.src =
-          'https://accounts.google.com/gsi/client';
+      if (previo) {
 
-        script.async = true;
+        if (window.google?.accounts?.id) {
 
-        script.defer = true;
+          resolve();
 
-        script.onload = () => {
+        } else {
 
-          if (
-            window.google?.accounts?.id
-          ) {
+          previo.addEventListener(
+            'load',
+            () => resolve(),
+            { once: true }
+          );
 
-            resolve();
+          previo.addEventListener(
+            'error',
+            () => reject(
+              new Error('No se pudo cargar Google.')
+            ),
+            { once: true }
+          );
 
-          } else {
+        }
 
-            reject(
-              new Error(
-                'No se cargó Google Identity Services.'
-              )
-            );
+        return;
+      }
 
-          }
+      const script =
+        document.createElement('script');
 
-        };
+      script.src =
+        'https://accounts.google.com/gsi/client';
 
-        script.onerror = () => {
+      script.async = true;
 
-          reject(
+      script.defer = true;
+
+      script.onload = () =>
+
+        window.google?.accounts?.id
+
+          ? resolve()
+
+          : reject(
             new Error(
-              'No se pudo descargar Google Identity Services.'
+              'Google Identity Services no está disponible.'
             )
           );
 
-        };
+      script.onerror = () =>
 
-        document.head.appendChild(script);
+        reject(
+          new Error(
+            'No se pudo descargar Google Identity Services.'
+          )
+        );
 
-      }
-    );
+      document.head.appendChild(script);
+
+    });
+
   }
 
   // ======================================
-  // 14. DIBUJAR BOTÓN GOOGLE
-  // DISEÑO BLANCO TIPO CÁPSULA
+  // 18. DIBUJAR BOTÓN GOOGLE
   // ======================================
 
   private async inicializarGoogle(
@@ -876,20 +1114,13 @@ export class Login implements AfterViewInit {
       const destino =
         this.googleButton?.nativeElement;
 
-      if (
-        !sdk ||
-        !destino
-      ) {
+      if (!sdk || !destino) {
 
         throw new Error(
-          'No se encontró el contenedor de Google.'
+          'No se encontró el botón de Google.'
         );
 
       }
-
-      // ======================================
-      // CONFIGURAR AUTENTICACIÓN GOOGLE
-      // ======================================
 
       sdk.initialize({
 
@@ -923,33 +1154,25 @@ export class Login implements AfterViewInit {
       destino.replaceChildren();
 
       // ======================================
-      // NUEVO DISEÑO GOOGLE
+      // BOTÓN BLANCO TIPO CÁPSULA
       // ======================================
 
       sdk.renderButton(destino, {
 
-        // Botón con icono y texto
         type: 'standard',
 
-        // Fondo blanco
         theme: 'outline',
 
-        // Forma de cápsula
         shape: 'pill',
 
-        // Tamaño del botón
         size: 'large',
 
-        // Texto de Google
         text: 'continue_with',
 
-        // Logotipo a la izquierda
         logo_alignment: 'left',
 
-        // Ancho del botón
         width: 230,
 
-        // Idioma español
         locale: 'es'
 
       });
@@ -963,50 +1186,25 @@ export class Login implements AfterViewInit {
     } catch {
 
       this.googleError =
-        'No se pudo cargar Google. Comprueba la conexión y el Client ID.';
+        'No fue posible cargar Google. ' +
+        'Revisa tu conexión y el Client ID.';
 
       this.actualizarVista();
 
     }
+
   }
 
   // ======================================
-  // 15. SEGUNDO FACTOR DE GOOGLE
-  // ======================================
-
-  verificarSegundoFactorGoogle(): void {
-
-    if (
-      !/^\d{6}$/.test(
-        this.codigoGoogle.trim()
-      )
-    ) {
-
-      this.googleError =
-        'Ingresa los 6 dígitos de tu autenticador.';
-
-      this.actualizarVista();
-
-      return;
-    }
-
-    this.ejecutarLoginGoogle(
-      this.codigoGoogle.trim()
-    );
-  }
-
-  // ======================================
-  // 16. INICIAR SESIÓN CON GOOGLE
+  // 19. INICIAR SESIÓN CON GOOGLE
   // POST /auth/google
   // ======================================
 
-  private ejecutarLoginGoogle(
-    codigo?: string
-  ): void {
+  private ejecutarLoginGoogle(): void {
 
     if (
-      this.googleCargando ||
-      !this.googleIdToken
+      !this.googleIdToken ||
+      this.googleCargando
     ) {
       return;
     }
@@ -1018,13 +1216,8 @@ export class Login implements AfterViewInit {
     this.actualizarVista();
 
     this.auth.iniciarConGoogle(
-
       this.googleIdToken,
-
-      this.rolGoogle,
-
-      codigo
-
+      this.rolGoogle
     )
       .pipe(
 
@@ -1034,68 +1227,48 @@ export class Login implements AfterViewInit {
 
           this.googleCargando = false;
 
+          this.googleIdToken = '';
+
           this.actualizarVista();
 
-        })
+        }),
+
+        takeUntilDestroyed(this.destroyRef)
 
       )
       .subscribe({
 
         next: respuesta => {
 
-          this.googleIdToken = '';
-
-          this.googleSegundoFactor = false;
-
-          this.codigoGoogle = '';
-
-          // Guardar JWT como login normal
-
           this.guardarSesion(respuesta);
 
         },
 
-        error: (err: unknown) => {
+        error: err => {
 
-          if (
-            err instanceof HttpErrorResponse
-          ) {
+          if (err instanceof HttpErrorResponse) {
 
             const datos =
               this.obtenerDatosError(err);
 
-            // Google requiere segundo factor
+            this.googleError =
+              datos.requiereSegundoFactor
 
-            if (
-              datos.requiereSegundoFactor === true
-            ) {
+                ? 'Este servidor todavía solicita ' +
+                'un autenticador en algunas cuentas Google. ' +
+                'Para mantener Google independiente, ' +
+                'debemos ajustar esa regla en Spring Boot.'
 
-              this.googleSegundoFactor = true;
-
-              this.googleError =
-                'Confirma el acceso con tu código de seguridad.';
-
-            } else if (
-              err.status === 503
-            ) {
-
-              this.googleError =
-                'Google no está habilitado en el backend.';
-
-            } else {
-
-              this.googleError =
-                this.obtenerMensaje(datos) ||
+                : this.obtenerMensaje(datos) ||
                 'No fue posible iniciar sesión con Google.';
-
-            }
 
           } else {
 
             this.googleError =
-              this.esTimeout(err)
-                ? 'Google tardó demasiado en responder.'
-                : 'No fue posible iniciar sesión con Google.';
+              this.mensajeError(
+                err,
+                'No fue posible iniciar sesión con Google.'
+              );
 
           }
 
@@ -1104,21 +1277,21 @@ export class Login implements AfterViewInit {
         }
 
       });
+
   }
 
   // ======================================
-  // 17. INTERPRETAR ERRORES DEL BACKEND
+  // 20. INTERPRETAR RESPUESTAS DEL BACKEND
   // ======================================
 
   private obtenerDatosError(
     err: HttpErrorResponse
-  ): ErrorBackend {
+  ): RespuestaAutenticacion {
 
-    let datos: unknown = err.error;
+    let datos: unknown =
+      err.error;
 
-    if (
-      typeof datos === 'string'
-    ) {
+    if (typeof datos === 'string') {
 
       try {
 
@@ -1131,27 +1304,27 @@ export class Login implements AfterViewInit {
         };
 
       }
+
     }
 
-    if (
+    return (
       datos !== null &&
       typeof datos === 'object' &&
       !Array.isArray(datos)
-    ) {
+    )
 
-      return datos as ErrorBackend;
+      ? datos as RespuestaAutenticacion
 
-    }
+      : {};
 
-    return {};
   }
 
   // ======================================
-  // 18. OBTENER MENSAJE DEL BACKEND
+  // 21. OBTENER MENSAJE
   // ======================================
 
   private obtenerMensaje(
-    datos: ErrorBackend
+    datos: RespuestaAutenticacion
   ): string {
 
     return (
@@ -1161,38 +1334,48 @@ export class Login implements AfterViewInit {
       datos.error ||
       ''
     );
+
   }
 
   // ======================================
-  // 19. MENSAJE DE ERROR GENERAL
+  // 22. NORMALIZAR MENSAJES
+  // ======================================
+
+  private normalizarTexto(
+    texto: string
+  ): string {
+
+    return texto
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  }
+
+  // ======================================
+  // 23. MENSAJES DE ERROR
   // ======================================
 
   private mensajeError(
     err: unknown,
-    mensajePorDefecto: string
+    defecto: string
   ): string {
 
     if (this.esTimeout(err)) {
 
-      return (
-        'El servidor tardó demasiado en responder.'
-      );
+      return 'El servidor tardó demasiado en responder.';
 
     }
 
-    if (
-      !(err instanceof HttpErrorResponse)
-    ) {
+    if (!(err instanceof HttpErrorResponse)) {
 
-      return mensajePorDefecto;
+      return defecto;
 
     }
 
     if (err.status === 0) {
 
-      return (
-        'No se pudo conectar con Spring Boot.'
-      );
+      return 'No se pudo conectar con Spring Boot.';
 
     }
 
@@ -1200,12 +1383,13 @@ export class Login implements AfterViewInit {
       this.obtenerMensaje(
         this.obtenerDatosError(err)
       ) ||
-      mensajePorDefecto
+      defecto
     );
+
   }
 
   // ======================================
-  // 20. DETECTAR TIMEOUT
+  // 24. DETECTAR TIMEOUT
   // ======================================
 
   private esTimeout(
@@ -1216,14 +1400,17 @@ export class Login implements AfterViewInit {
       err instanceof Error &&
       err.name === 'TimeoutError'
     );
+
   }
 
   // ======================================
-  // 21. ACTUALIZAR VISTA
+  // 25. ACTUALIZAR VISTA
   // ======================================
 
   private actualizarVista(): void {
 
     this.cdr.markForCheck();
+
   }
+
 }
