@@ -2,15 +2,21 @@ package co.edu.unbosque.marketplace;
 
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.web.servlet.MockMvc;
 
 import co.edu.unbosque.marketplace.service.UsuarioService;
 
@@ -24,6 +30,26 @@ final class CorreoPrueba {
 	private static final Pattern CODIGO = Pattern.compile("(?m)^\\s+(\\d{6})\\s*$");
 
 	private CorreoPrueba() {
+	}
+
+	/**
+	 * Inicia sesión en dos pasos: con la contraseña se recibe el código por
+	 * correo (401 con requiereCodigoCorreo) y con ese código se obtiene el token.
+	 *
+	 * @return el JSON de la respuesta 200 (con token, rol y correo)
+	 */
+	static String iniciarSesion(MockMvc mvc, JavaMailSender mailSender, String correo, String contrasenia)
+			throws Exception {
+		String credenciales = "\"correo\":\"" + correo + "\",\"contrasenia\":\"" + contrasenia + "\"";
+		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content("{" + credenciales + "}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.requiereCodigoCorreo").value(true))
+				.andExpect(jsonPath("$.token").doesNotExist());
+		String codigo = codigoEnviadoA(mailSender, correo);
+		return mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{" + credenciales + ",\"codigo\":\"" + codigo + "\"}"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 	}
 
 	/** Último código de verificación enviado al correo indicado (sin importar mayúsculas). */

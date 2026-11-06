@@ -123,11 +123,15 @@ public class AuthController {
 	 */
 	@Operation(summary = "Iniciar sesión", description = "Devuelve {token, rol, correo}. Si la cuenta tiene "
 			+ "segundo factor, también hay que enviar codigo; sin él responde 401 con requiereSegundoFactor=true. "
+			+ "Si no, en cada inicio de sesión se envía un código al correo: sin codigo responde 401 con "
+			+ "requiereCodigoCorreo=true y hay que repetir la petición con ese codigo. "
 			+ "Si el correo no está verificado responde 403 con requiereVerificacion=true.")
 	@ApiResponse(responseCode = "200", description = "Sesión iniciada: {token, rol, correo}")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo y la contraseña.")
 	@ApiResponse(responseCode = "401", description = "Correo o contraseña inválidos. | Ingresa el código de tu "
-			+ "aplicación autenticadora. | El código de verificación no es válido.")
+			+ "aplicación autenticadora. | El código de verificación no es válido. | Te enviamos un código de "
+			+ "verificación a tu correo. | El código del correo no es válido o ya venció.")
+	@ApiResponse(responseCode = "429", description = "Superaste los intentos permitidos para este código del correo.")
 	@ApiResponse(responseCode = "403", description = "Debes verificar tu correo con el código que te enviamos antes de "
 			+ "iniciar sesión. | La cuenta está restringida o desactivada.")
 	@PostMapping("/login")
@@ -168,6 +172,13 @@ public class AuthController {
 					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message",
 							"El código de verificación no es válido.", "requiereSegundoFactor", true));
 				}
+			} else if (usuario instanceof Usuario u) {
+				// Código por correo en cada inicio de sesión: sin él aún no se
+				// entrega el token
+				ResponseEntity<Object> pendiente = codigoInicioPorCorreo(u, correo, loginRequest.getCodigo());
+				if (pendiente != null) {
+					return pendiente;
+				}
 			}
 
 			auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO, idUsuario,
@@ -184,6 +195,58 @@ public class AuthController {
 			// error
 			return mensaje(HttpStatus.UNAUTHORIZED, "Correo o contraseña inválidos.");
 		}
+	}
+
+	/**
+	 * Paso del código por correo del inicio de sesión. Sin código, envía uno
+	 * nuevo al correo; con código, lo comprueba.
+	 *
+	 * @param usuario cuenta con las credenciales ya validadas
+	 * @param correo  correo normalizado de la cuenta
+	 * @param codigo  código recibido en el correo, o {@code null}
+	 * @return {@code null} si el código es correcto (se entrega el token); si
+	 *         no, la respuesta 401/429 con {@code requiereCodigoCorreo=true}
+	 */
+	private ResponseEntity<Object> codigoInicioPorCorreo(Usuario usuario, String correo, String codigo) {
+		Long idUsuario = usuario.getIdUsuario();
+		if (codigo == null || codigo.isBlank()) {
+			String texto = verificacionCorreoService.enviarCodigoInicio(usuario,
+					correo) == VerificacionCorreoService.ESPERAR
+							? "Ya te enviamos un código al correo hace menos de un minuto. Revisa tu bandeja de entrada."
+							: "Te enviamos un código de verificación a tu correo; vence en "
+									+ VerificacionCorreoService.MINUTOS_VIGENCIA + " minutos.";
+			return respuestaCodigoCorreo(HttpStatus.UNAUTHORIZED, texto);
+		}
+		int resultado = verificacionCorreoService.verificarCodigoInicio(usuario, codigo);
+		if (resultado == VerificacionCorreoService.VERIFICADO) {
+			return null;
+		}
+		auditoriaService.registrar(idUsuario, AuditoriaService.LOGIN, AuditoriaService.ENTIDAD_USUARIO, idUsuario,
+				ResultadoAuditoria.RECHAZADO, "Código de inicio de sesión inválido");
+		return resultado == VerificacionCorreoService.INTENTOS_AGOTADOS
+				? respuestaCodigoCorreo(HttpStatus.TOO_MANY_REQUESTS,
+						"Superaste los intentos permitidos para este código del correo. Vuelve a iniciar sesión "
+								+ "para recibir uno nuevo.")
+				: respuestaCodigoCorreo(HttpStatus.UNAUTHORIZED,
+						"El código del correo no es válido o ya venció. Revísalo o vuelve a iniciar sesión.");
+	}
+
+	/**
+	 * Respuesta que pide el código enviado al correo para terminar de iniciar
+	 * sesión.
+	 *
+	 * @param status estado HTTP
+	 * @param texto  mensaje para el usuario
+	 * @return {message, requiereSegundoFactor, requiereCodigoCorreo,
+	 *         metodoSegundoFactor=CORREO}
+	 */
+	private static ResponseEntity<Object> respuestaCodigoCorreo(HttpStatus status, String texto) {
+		Map<String, Object> respuesta = new LinkedHashMap<>();
+		respuesta.put("message", texto);
+		respuesta.put("requiereSegundoFactor", true);
+		respuesta.put("requiereCodigoCorreo", true);
+		respuesta.put("metodoSegundoFactor", "CORREO");
+		return ResponseEntity.status(status).body(respuesta);
 	}
 
 	/**

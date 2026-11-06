@@ -83,7 +83,7 @@ class AdministracionTest extends PruebaIntegracionBase {
 		assertEquals("Fraude", consulta.get("motivoRestriccion").asText());
 
 		llamar(patch("/admin/usuarios/" + huesped.id() + "/liberar"), admin, Map.of("motivo", "Aclarado"), 200);
-		llamar(post("/auth/login"), null, Map.of("correo", huesped.correo(), "contrasenia", CLAVE), 200);
+		login(huesped.correo(), CLAVE);
 
 		// Liberar no exige motivo: devolver el acceso no perjudica al usuario
 		llamar(patch("/admin/usuarios/" + huesped.id() + "/restringir"), admin, Map.of("motivo", "Revisión"), 200);
@@ -101,7 +101,7 @@ class AdministracionTest extends PruebaIntegracionBase {
 		llamar(patch("/usuarios/perfil/desactivar"), huesped.token(), null, 200);
 		JsonNode activada = llamar(patch("/admin/usuarios/" + huesped.id() + "/liberar"), admin, null, 200);
 		assertEquals("ACTIVO", activada.get("estado").asText());
-		llamar(post("/auth/login"), null, Map.of("correo", huesped.correo(), "contrasenia", CLAVE), 200);
+		login(huesped.correo(), CLAVE);
 	}
 
 	@Test

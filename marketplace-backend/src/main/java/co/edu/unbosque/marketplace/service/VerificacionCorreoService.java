@@ -228,6 +228,83 @@ public class VerificacionCorreoService {
 	}
 
 	/**
+	 * Envía el código de inicio de sesión a una cuenta ya verificada. Se pide en
+	 * cada inicio de sesión con contraseña. Si ya se envió un código hace menos
+	 * de un minuto y todavía sirve, no envía otro.
+	 *
+	 * @param usuario Usuario que inicia sesión (credenciales ya validadas).
+	 * @param correo  Correo en claro del usuario.
+	 * @return {@link #ENVIADO} o {@link #ESPERAR}.
+	 */
+	@Transactional
+	public int enviarCodigoInicio(Usuario usuario, String correo) {
+		Optional<CodigoVerificacion> ultimo = codigoRepo
+				.findTopByIdUsuarioAndUsadoFalseOrderByFechaCreacionDesc(usuario.getIdUsuario());
+		if (ultimo.isPresent() && ultimo.get().getIntentos() < MAXIMO_INTENTOS
+				&& ultimo.get().getFechaCreacion().plus(ESPERA_REENVIO).isAfter(LocalDateTime.now())) {
+			return ESPERAR;
+		}
+		invalidarAnteriores(usuario.getIdUsuario());
+
+		String codigo = generarCodigo();
+		LocalDateTime ahora = LocalDateTime.now();
+		CodigoVerificacion registro = new CodigoVerificacion();
+		registro.setIdUsuario(usuario.getIdUsuario());
+		registro.setCodigoHash(AESUtil.hash(codigo));
+		registro.setFechaCreacion(ahora);
+		registro.setFechaExpiracion(ahora.plus(VIGENCIA_CODIGO));
+		registro.setIntentos(0);
+		registro.setUsado(false);
+		codigoRepo.save(registro);
+
+		String cuerpo = String.format("Hola %s,%n%nEste es tu código para iniciar sesión:%n%n    %s%n%n"
+				+ "El código vence en %d minutos y solo puede usarse una vez. "
+				+ "Si no intentaste iniciar sesión, cambia tu contraseña.%n%n"
+				+ "Saludos,%nEquipo Marketplace Inversiones LR", usuario.getNombre(), codigo, MINUTOS_VIGENCIA);
+		boolean enviado = correoUtil.enviarCorreo(correo,
+				"Tu código de inicio de sesión - Marketplace Inversiones LR", cuerpo);
+		if (!enviado) {
+			LOG.warn("Código de inicio de sesión del usuario {}: {} (vence {})",
+					usuario.getIdUsuario(), codigo, registro.getFechaExpiracion());
+		}
+		auditoriaService.registrar(usuario.getIdUsuario(), AuditoriaService.CODIGO_VERIFICACION_ENVIADO,
+				AuditoriaService.ENTIDAD_USUARIO, usuario.getIdUsuario(),
+				enviado ? ResultadoAuditoria.EXITOSO : ResultadoAuditoria.ERROR,
+				enviado ? "Código de inicio de sesión" : "No se pudo enviar el correo");
+		return ENVIADO;
+	}
+
+	/**
+	 * Comprueba el código de inicio de sesión. Cada intento fallido cuenta; al
+	 * llegar al máximo el código deja de servir y hay que pedir otro.
+	 *
+	 * @param usuario Usuario que inicia sesión.
+	 * @param codigo  Código de 6 dígitos recibido en el correo.
+	 * @return {@link #VERIFICADO}, {@link #CODIGO_INVALIDO} o
+	 *         {@link #INTENTOS_AGOTADOS}.
+	 */
+	@Transactional
+	public int verificarCodigoInicio(Usuario usuario, String codigo) {
+		Optional<CodigoVerificacion> registroOpt = codigoRepo
+				.findTopByIdUsuarioAndUsadoFalseOrderByFechaCreacionDesc(usuario.getIdUsuario());
+		if (registroOpt.isEmpty() || registroOpt.get().getFechaExpiracion().isBefore(LocalDateTime.now())) {
+			return CODIGO_INVALIDO;
+		}
+		CodigoVerificacion registro = registroOpt.get();
+		if (registro.getIntentos() >= MAXIMO_INTENTOS) {
+			return INTENTOS_AGOTADOS;
+		}
+		if (esVacio(codigo) || !AESUtil.hash(codigo.trim()).equals(registro.getCodigoHash())) {
+			registro.setIntentos(registro.getIntentos() + 1);
+			codigoRepo.save(registro);
+			return registro.getIntentos() >= MAXIMO_INTENTOS ? INTENTOS_AGOTADOS : CODIGO_INVALIDO;
+		}
+		registro.setUsado(true);
+		codigoRepo.save(registro);
+		return VERIFICADO;
+	}
+
+	/**
 	 * Marca como usados los códigos anteriores del usuario.
 	 *
 	 * @param idUsuario usuario

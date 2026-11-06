@@ -134,8 +134,12 @@ abstract class PruebaIntegracionBase {
 	}
 
 	protected String tokenAdmin() throws Exception {
-		return llamar(post("/auth/login"), null, Map.of("correo", ADMIN, "contrasenia", CLAVE_ADMIN), 200)
-				.get("token").asText();
+		return login(ADMIN, CLAVE_ADMIN).get("token").asText();
+	}
+
+	/** Inicia sesión con la contraseña y el código enviado al correo; devuelve la respuesta con el token. */
+	protected JsonNode login(String correo, String contrasenia) throws Exception {
+		return json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, correo, contrasenia));
 	}
 
 	protected Long idPolitica(String nombre) {

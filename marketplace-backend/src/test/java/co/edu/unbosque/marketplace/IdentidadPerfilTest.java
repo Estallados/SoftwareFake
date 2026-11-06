@@ -94,10 +94,7 @@ class IdentidadPerfilTest {
 	}
 
 	private String login(String correo, String contrasenia) throws Exception {
-		String respuesta = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"correo\":\"" + correo + "\",\"contrasenia\":\"" + contrasenia + "\"}"))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-		return json.readTree(respuesta).get("token").asText();
+		return json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, correo, contrasenia)).get("token").asText();
 	}
 
 	private Usuario buscar(String correo) {
@@ -287,10 +284,8 @@ class IdentidadPerfilTest {
 						+ CorreoPrueba.codigoEnviadoA(mailSender, "admin2@correo.com") + "\"}"))
 				.andExpect(status().isOk());
 
-		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"correo\":\"admin2@correo.com\",\"contrasenia\":\"Admin#2026\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.rol").value("ADMIN"));
+		assertEquals("ADMIN", json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, "admin2@correo.com",
+				"Admin#2026")).get("rol").asText());
 		assertTrue(hayEvento(AuditoriaService.CREACION_ADMINISTRADOR, ResultadoAuditoria.EXITOSO));
 	}
 

@@ -141,8 +141,14 @@ class OpcionalesTest extends PruebaIntegracionBase {
 	@Test
 	void sinSegundoFactorElLoginSigueNormal_CA177() throws Exception {
 		Sesion usuario = registrar("HUESPED");
-		JsonNode login = llamar(post("/auth/login"), null, Map.of("correo", usuario.correo(), "contrasenia", CLAVE),
-				200);
+		JsonNode sinCodigo = llamar(post("/auth/login"), null,
+				Map.of("correo", usuario.correo(), "contrasenia", CLAVE), 401);
+		assertTrue(sinCodigo.get("requiereCodigoCorreo").asBoolean());
+		assertTrue(!sinCodigo.has("token"));
+
+		llamar(post("/auth/login"), null, Map.of("correo", usuario.correo(), "contrasenia", CLAVE, "codigo", "000000"),
+				401);
+		JsonNode login = login(usuario.correo(), CLAVE);
 		assertTrue(login.has("token"));
 	}
 }

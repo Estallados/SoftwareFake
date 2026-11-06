@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -130,11 +131,9 @@ class AuthFlowTest {
 				.andExpect(status().isCreated());
 		verificar("luis@correo.com");
 
-		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"correo\":\" LUIS@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.token").isNotEmpty())
-				.andExpect(jsonPath("$.rol").value("ANFITRION"));
+		JsonNode sesion = leer(CorreoPrueba.iniciarSesion(mvc, mailSender, " LUIS@correo.com", "Segura#2026"));
+		assertFalse(sesion.get("token").asText().isEmpty());
+		assertEquals("ANFITRION", sesion.get("rol").asText());
 
 		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"correo\":\"luis@correo.com\",\"contrasenia\":\"Incorrecta#1\"}"))
@@ -222,9 +221,7 @@ class AuthFlowTest {
 				.andExpect(jsonPath("$.token").doesNotExist());
 
 		verificar("ana@correo.com");
-		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"correo\":\"ana@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
-				.andExpect(status().isOk());
+		CorreoPrueba.iniciarSesion(mvc, mailSender, "ana@correo.com", "Segura#2026");
 
 		// El código sirve una sola vez
 		mvc.perform(post("/auth/verificar").contentType(MediaType.APPLICATION_JSON)

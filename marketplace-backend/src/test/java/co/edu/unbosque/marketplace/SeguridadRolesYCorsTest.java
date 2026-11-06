@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -45,11 +44,7 @@ class SeguridadRolesYCorsTest {
 	private JavaMailSender mailSender;
 
 	private String token(String correo, String contrasenia) throws Exception {
-		String respuesta = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"correo\":\"" + correo + "\",\"contrasenia\":\"" + contrasenia + "\"}"))
-				.andExpect(status().isOk())
-				.andReturn().getResponse().getContentAsString();
-		return json.readTree(respuesta).get("token").asText();
+		return json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, correo, contrasenia)).get("token").asText();
 	}
 
 	/** Registra y verifica el correo con el código enviado; devuelve el token de sesión. */
@@ -69,10 +64,8 @@ class SeguridadRolesYCorsTest {
 	void seCreaElAdminInicialYPuedeIniciarSesion() throws Exception {
 		assertEquals(true, usuarioRepo.existsByRol(Role.ADMIN));
 
-		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"correo\":\"admin@marketplace.local\",\"contrasenia\":\"Admin#Prueba1\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.rol").value("ADMIN"));
+		assertEquals("ADMIN", json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, "admin@marketplace.local",
+				"Admin#Prueba1")).get("rol").asText());
 	}
 
 	@Test

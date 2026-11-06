@@ -165,7 +165,7 @@ class InicioGoogleTest {
 
 		// Es la misma cuenta: conserva su rol y ahora también entra con contraseña
 		assertEquals("ANFITRION", sesion.get("rol").asText());
-		llamar(post("/auth/login"), null, Map.of("correo", correo, "contrasenia", "Segura#2026"), 200);
+		CorreoPrueba.iniciarSesion(mvc, mailSender, correo, "Segura#2026");
 	}
 
 	@Test
@@ -188,8 +188,8 @@ class InicioGoogleTest {
 
 	@Test
 	void unaCuentaRestringidaNoEntraYConSegundoFactorPideElCodigo() throws Exception {
-		String admin = llamar(post("/auth/login"), null,
-				Map.of("correo", "admin@marketplace.local", "contrasenia", "Admin#Prueba1"), 200).get("token").asText();
+		String admin = json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, "admin@marketplace.local",
+				"Admin#Prueba1")).get("token").asText();
 		String restringido = correoNuevo();
 		Long id = llamar(get("/usuarios/perfil"), google(Map.of("idToken", token(restringido)), 201).get("token")
 				.asText(), null, 200).get("idUsuario").asLong();
