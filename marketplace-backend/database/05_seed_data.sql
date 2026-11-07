@@ -7,8 +7,8 @@
 -- CREDENCIALES
 --   Contraseña de todos los usuarios: Demo#2026 (hash BCrypt, como SecurityConfig).
 --   El correo va cifrado y correo_hash se deriva de AES_SECRET_KEY. Estos valores
---   se generaron con AESUtil y una clave SOLO PARA DESARROLLO:
---       AES_SECRET_KEY=bWFya2V0cGxhY2Utc2VtaWxsYS1kZW1vLTIwMjYhISE=
+--   se generaron con AESUtil y la AES_SECRET_KEY compartida del equipo (no se
+--   escribe aquí: pídela al equipo y defínela como variable de entorno).
 --   Si usas otra clave, ejecuta herramientas/RecifrarUsuariosSemilla.java después
 --   de este script (ver 07_documentacion_bd.md); si no, nadie podrá iniciar sesión.
 --
@@ -22,14 +22,14 @@ BEGIN;
 -- ---- Usuarios ---------------------------------------------------------------
 INSERT INTO usuario (id_usuario, nombre, correo, correo_hash, telefono, rol, estado, contrasenia,
                      motivo_restriccion, totp_habilitado, fecha_registro, correo_verificado) VALUES
-(1, 'Administrador',  'l6HZFFb3xRX/GxeUrb3Bz+KvbhI1Uotoq0zYh673esMLT4PKiLzq0fMH7EbhTd/aLcxE',      'Zq9j5CrjFmGz85AO0o2LXX6k4CJ6vxs+LjkgtoPq3CA=',      NULL,         'ADMIN',     'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '200' DAY, TRUE),
-(2, 'Laura Gómez',    'mxZcnpF3dAI1s2ey64jmKuvzfbua5MDmxJfRSZoxOs2zrzaQobzYy1AzRvFs1+zsv5o/Q8weCwo=', 'Sf30em+lkvl0juaAOIhA4wN4GgcNSC+u8sNS5eAo4Bo=', '3001112233', 'ANFITRION', 'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '180' DAY, TRUE),
-(3, 'Carlos Ruiz',    'jHwjm8Z87nGxTFWA7M417cWqx5kHQONnks0TOfuVCmkobiZD2rzYbfkDXSA3/p7boQO65ipmnug=', 'dPXyRMN5DOLY+KnhBMCJGv9EOaxfa71sSG8vAvNkCmg=', '3002223344', 'ANFITRION', 'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '170' DAY, TRUE),
-(4, 'Ana Torres',     '05rFL3qHZgN7tdNxzbOliN8KdKddmD6zuCWI4ZZ0EpYvRI8l3yXAwbW86rP35n1N3aSKXn9hFA==',  'U1b0x0xAMukL9UWGIbjoOIuJfBMhbbZGP5CgFmHXxbE=',  '3003334455', 'HUESPED',   'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '120' DAY, TRUE),
-(5, 'Diego Mora',     'XRu5bA/pqFDPjzIiTwoxqhNA1AcMrbGn0VniNx6Tx0SgzNx1dPvGQxJkY3sWy8rqHHvUghyhew==',  'nHkvjC/HP+TAl3Bedpkos7qhLyetd8Z4bY4S76KfseE=',  '3004445566', 'HUESPED',   'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '100' DAY, TRUE),
-(6, 'Sofía Pérez',    't6GM20jraAKYmVSo5u6Qf7cJ8q+8kbRoeCec8carDPZXk2Q59yFkB7MsHhvk0+jV2FPxWX/MY7M=', 'gmjOcWxzliHBE3AOT47B3ZiE/iZcdIUPawWDCiv3e0o=', NULL,         'HUESPED',   'RESTRINGIDO', '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', 'Incumplimiento de las normas de la plataforma.', FALSE, LOCALTIMESTAMP - INTERVAL '90' DAY, TRUE),
+(1, 'Administrador',  'ym3LA2CldJjNle+Ny79DqvwE5MFQZr2R8viaKg0Q0GLhUBwAkwu33PFbh5D1eTaGrtKe',      'uM8MdozE1UsfjZTDf3bX4PtfNZ/lYY7jFivFU9k3Fd4=',      NULL,         'ADMIN',     'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '200' DAY, TRUE),
+(2, 'Laura Gómez',    'eRZkVKhgczfhxYekMpCVHitZ+hDjqSE8Fspqi7rQFujF7bjQyeX7p9yZ0gyuIBI/SKFQLYOybFw=', 'J4rWRCtXFoP/tKygRIU0/mGYgHGMp61dcKPQlHI4wy0=', '3001112233', 'ANFITRION', 'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '180' DAY, TRUE),
+(3, 'Carlos Ruiz',    'WahczCcpi5J/agRA+B+7BWNBgodq3ATFKinUj/m+5K6oVI8soJrLb5HSiZofOp/Rm1HZOfb6U7c=', 'YlY0jctb8rZ37Quuw6TNwCerQv9hvEBF92y+8kAyINg=', '3002223344', 'ANFITRION', 'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '170' DAY, TRUE),
+(4, 'Ana Torres',     'h6Rsf33coxODE9IfdP1ABJx3zHKfl2u04+/NmZCeL87rEIBsq0/o3kaUjej5Ou0ir8TymTCXbA==',  'zaaGNfuZaWA1f3yWPCCj3TiCU9eIQUSvDlNlEjtekMQ=',  '3003334455', 'HUESPED',   'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '120' DAY, TRUE),
+(5, 'Diego Mora',     'p813nzh/iuaC5ks2u+tAQVHQg8maqEMCr4yVEZ5M3SV/0saz/+B/Yauwi36s1bo2tW7Iu0VjvQ==',  '+3JvDjbqAXxohobqAVzz+PsvzMjkv6ymZs1SdYDwS7Y=',  '3004445566', 'HUESPED',   'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '100' DAY, TRUE),
+(6, 'Sofía Pérez',    'zyf9V1rtku3YxCK0ndPcdpxa4G1ndia3bYk8dTczCSntRUiq8F2l2XBVdSkaT6qfrIq26QUwXW4=', 'ix7iv7u2M3aDYbEzzXyVNqPuw3qXsI/3LRIpVk2+i9c=', NULL,         'HUESPED',   'RESTRINGIDO', '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', 'Incumplimiento de las normas de la plataforma.', FALSE, LOCALTIMESTAMP - INTERVAL '90' DAY, TRUE),
 -- Correo sin verificar: sirve para probar el rechazo del inicio de sesión.
-(7, 'Pedro Díaz',     'vSeGg8pqiPTE76FSldVYXtp3TKHeUyO7QqfyVTAvll622n8MxbCrPyNK2CK1bpZp945XGopo+Q==',  'bR90VzUiXbGv1v0zRnjeT/nGDJUg5XY6dOaILvBzWuY=',  NULL,         'HUESPED',   'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '5' DAY, FALSE);
+(7, 'Pedro Díaz',     '1PBg0GKyzStUQdMhO3YfLIBP4eqm6JS8dTOj4690wdyjHPUFQc2pbXIf8aMhk/nA/Yho7TGidQ==',  'WLifqt4MAUN8mi/XJKGmp7EJwptMtDvKcpwqsAG3Krg=',  NULL,         'HUESPED',   'ACTIVO',      '$2a$10$odaYIXaqmyE0x2QXWJIj6eDMn5hT1UHJ3t7oKtnei70pI21wBxLsO', NULL, FALSE, LOCALTIMESTAMP - INTERVAL '5' DAY, FALSE);
 
 -- ---- Políticas: los mismos textos de PoliticasInicializador, para que no cree otras ----
 INSERT INTO politica_cancelacion (id_politica, nombre, condiciones, dias_reembolso_total, dias_reembolso_parcial, porcentaje_parcial) VALUES

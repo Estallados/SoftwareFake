@@ -31,6 +31,12 @@ public class TokenRecuperacionRepository {
 	private final Map<Long, TokenRecuperacion> tokens = new ConcurrentHashMap<>();
 
 	/**
+	 * Constructor de TokenRecuperacionRepository.
+	 */
+	public TokenRecuperacionRepository() {
+	}
+	
+	/**
 	 * Guarda el token como el único del usuario.
 	 *
 	 * @param token Token a guardar.

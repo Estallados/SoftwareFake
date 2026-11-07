@@ -31,6 +31,12 @@ public class CodigoVerificacionRepository {
 	private final Map<Long, CodigoVerificacion> codigos = new ConcurrentHashMap<>();
 
 	/**
+	 * Constructor de CodigoVerificacionRepository.
+	 */
+	public CodigoVerificacionRepository() {
+	}
+	
+	/**
 	 * Guarda el código como el único del usuario.
 	 *
 	 * @param codigo Código a guardar.

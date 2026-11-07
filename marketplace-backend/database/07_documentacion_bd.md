@@ -16,6 +16,13 @@ foreach ($f in '01_schema_ddl','02_indexes','03_triggers','03b_triggers_validaci
 }
 ```
 
+Para **borrar los datos y volver a poblar** sin recrear el esquema:
+
+```powershell
+psql -v ON_ERROR_STOP=1 -U postgres -d marketplace -f 00_limpiar_datos.sql
+psql -v ON_ERROR_STOP=1 -U postgres -d marketplace -f 05_seed_data.sql
+```
+
 `99_verificacion.sql` debe terminar con el aviso `VERIFICACION CORRECTA` y no deja cambios. `06_queries.sql` se ejecuta aparte, cuando quieras consultar.
 
 **No ejecutes `05_seed_data.sql` en producción:** crea usuarios, incluido un administrador, con una contraseña conocida.
@@ -36,8 +43,8 @@ La contraseña de todos es `Demo#2026`.
 ### La clave de cifrado
 El correo se guarda cifrado y `correo_hash` se deriva de `AES_SECRET_KEY`, así que estos usuarios dependen de la clave. Hay dos opciones:
 
-- **Usar la clave de desarrollo** con la que se generaron: `AES_SECRET_KEY=bWFya2V0cGxhY2Utc2VtaWxsYS1kZW1vLTIwMjYhISE=`. Solo para desarrollo.
-- **Conservar tu clave:** con ella definida en el entorno, genera y aplica los cambios después de `05_seed_data.sql`:
+- **Usar la clave compartida del equipo** con la que se generaron (pídela al equipo; no se guarda en el repositorio). Defínela en la variable de entorno `AES_SECRET_KEY` antes de arrancar el backend.
+- **Usar otra clave:** con ella definida en el entorno, genera y aplica los cambios después de `05_seed_data.sql`:
 
 ```powershell
 java herramientas\RecifrarUsuariosSemilla.java > recifrar.sql
