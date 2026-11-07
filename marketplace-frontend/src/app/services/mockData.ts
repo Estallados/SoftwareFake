@@ -1,7 +1,4 @@
-/**
- * Fotos de ejemplo (Unsplash) que usan las pantallas como fondo o cuando un alojamiento todavía no
- * tiene imágenes.
- */
+
 export const photos = {
   hero: "https://images.unsplash.com/photo-1613036955981-1cd68c048d7b?auto=format&fit=crop&w=1800&q=88",
   casa: "https://images.unsplash.com/photo-1684226910423-a4eb43a03257?auto=format&fit=crop&w=1200&q=85",

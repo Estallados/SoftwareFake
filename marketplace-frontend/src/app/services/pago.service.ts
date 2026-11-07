@@ -3,21 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 import { ConfiguracionPago, ConfiguracionPagoRespuesta, MetodoPagoPrueba } from '../models/pagoDto';
 import { API_URL } from './api-url';
-/**
- * Consulta la configuración de pagos del backend: si se cobra con Stripe en modo de prueba o con
- * el simulador, la clave publicable y las tarjetas de prueba.
- */
+
 @Injectable({
   providedIn: 'root',
 })
 export class PagoService {
-  /** Cliente HTTP. */
+
   private http = inject(HttpClient);
 
-  /** Ruta base de los pagos. */
+ 
   private base = `${inject(API_URL)}/pagos`;
 
-  /** Configuración guardada después de la primera consulta, para no repetirla. */
+ 
   private configuracion$?: Observable<ConfiguracionPago>;
   /**
    * GET /pagos/configuracion (público): modo, clave publicable, moneda y métodos de prueba.
