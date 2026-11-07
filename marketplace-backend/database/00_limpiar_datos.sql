@@ -7,6 +7,9 @@
 -- sus triggers se desactivan solo dentro de esta transacción y se reactivan antes
 -- del COMMIT. Requiere ser dueño de las tablas.
 --
+-- Para volver a poblar, carga 05_seed_data.sql en modo carga (03b_triggers_validacion.sql):
+--   $env:PGOPTIONS = '-c marketplace.carga_datos=on'
+--
 -- NUNCA lo ejecutes en producción.
 -- =============================================================================
 SET client_encoding = 'UTF8';

@@ -83,12 +83,18 @@ SELECT id_pago, proveedor, metodo, valor, estado, valor_reembolsado, fecha
   FROM pago WHERE id_reserva = 4 ORDER BY fecha DESC, id_pago DESC;
 
 -- ---- 14. Cancelaciones y devoluciones ---------------------------------------
+-- Solo el último pago de cada reserva (el que se reembolsa): unir todos los
+-- pagos repetiría la cancelación por cada intento de cobro.
 SELECT c.id_cancelacion, c.id_reserva, u.nombre AS cancelada_por, c.motivo, c.politica,
        c.porcentaje_reembolso, c.valor_reembolso, p.estado AS estado_pago, p.referencia_reembolso
   FROM cancelacion c
   JOIN usuario u ON u.id_usuario = c.id_usuario
-  LEFT JOIN pago p ON p.id_reserva = c.id_reserva
- ORDER BY c.fecha DESC;
+  LEFT JOIN LATERAL (SELECT p2.estado, p2.referencia_reembolso
+                       FROM pago p2
+                      WHERE p2.id_reserva = c.id_reserva
+                      ORDER BY p2.fecha DESC, p2.id_pago DESC
+                      LIMIT 1) p ON TRUE
+ ORDER BY c.fecha DESC, c.id_cancelacion DESC;
 
 -- ---- 15. Conversaciones de un usuario (buscarDeParticipante) ----------------
 SELECT c.id_conversacion, a.titulo, c.estado, c.fecha_creacion
@@ -181,15 +187,22 @@ SELECT r.id_reserva, u.nombre AS huesped, a.titulo, r.fecha_salida
   LEFT JOIN resena re ON re.id_reserva = r.id_reserva
  WHERE r.estado = 'CONFIRMADA' AND r.fecha_salida <= CURRENT_DATE AND re.id_resena IS NULL;
 
--- ---- 28. Último pago de cada reserva (findTopByIdReserva..., subconsulta) ---
+-- ---- 28. Último pago de cada reserva (findTopByIdReserva..., LATERAL) -------
+-- Mismo orden que findTopByIdReservaOrderByFechaDescIdPagoDesc; usa idx_pago_reserva.
 SELECT r.id_reserva, r.estado, p.estado AS estado_pago, p.valor
   FROM reserva r
-  LEFT JOIN pago p ON p.id_pago = (SELECT MAX(p2.id_pago) FROM pago p2 WHERE p2.id_reserva = r.id_reserva)
+  LEFT JOIN LATERAL (SELECT p2.estado, p2.valor
+                       FROM pago p2
+                      WHERE p2.id_reserva = r.id_reserva
+                      ORDER BY p2.fecha DESC, p2.id_pago DESC
+                      LIMIT 1) p ON TRUE
  ORDER BY r.id_reserva;
 
--- ---- 29. Control de integridad: reservas pagadas sin pago aprobado ----------
--- Debe devolver cero filas.
+-- ---- 29. Control de integridad: reservas confirmadas sin pago aprobado ------
+-- Debe devolver cero filas (trg_reserva_transicion lo impide desde ahora).
+-- EN_REVISION no se incluye: PublicacionService.bloquear también pasa a revisión
+-- reservas PENDIENTE_PAGO, que legítimamente no tienen pago.
 SELECT r.id_reserva, r.estado
   FROM reserva r
- WHERE r.estado IN ('CONFIRMADA', 'EN_REVISION')
+ WHERE r.estado = 'CONFIRMADA'
    AND NOT EXISTS (SELECT 1 FROM pago p WHERE p.id_reserva = r.id_reserva AND p.estado = 'APROBADO');

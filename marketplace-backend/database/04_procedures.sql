@@ -5,6 +5,8 @@
 --
 -- Transacciones: un CALL es atómico. Si algo falla se revierte todo. Ninguno hace
 -- COMMIT, así que también se pueden usar dentro de un BEGIN ... COMMIT.
+-- Se puede ejecutar sobre una base con datos y repetir (CREATE OR REPLACE).
+-- 08_produccion.sql quita el permiso de ejecutarlos al usuario del backend.
 --
 -- Importante: sp_cancelar_reserva y sp_registrar_devolucion_simulada rechazan los
 -- pagos de Stripe. Una devolución real exige llamar a Stripe, y eso solo puede
@@ -14,15 +16,33 @@ SET client_encoding = 'UTF8';
 
 -- -----------------------------------------------------------------------------
 -- Devolución simulada del último pago aprobado de una reserva.
+-- Solo para una reserva ya CANCELADA y por hasta lo que fija su cancelación:
+-- así no se puede devolver dinero de una reserva que sigue vigente.
 -- Uso: CALL sp_registrar_devolucion_simulada(4, 414000);
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_registrar_devolucion_simulada(p_id_reserva BIGINT, p_valor NUMERIC)
 LANGUAGE plpgsql AS $$
 DECLARE
-    v_pago pago%ROWTYPE;
+    v_pago      pago%ROWTYPE;
+    v_estado    VARCHAR(20);
+    v_permitido NUMERIC(18, 2);
 BEGIN
     IF p_valor IS NULL OR p_valor <= 0 THEN
         RAISE EXCEPTION 'El valor de la devolución debe ser positivo' USING ERRCODE = 'check_violation';
+    END IF;
+
+    SELECT estado INTO v_estado FROM reserva WHERE id_reserva = p_id_reserva FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La reserva % no existe', p_id_reserva USING ERRCODE = 'no_data_found';
+    END IF;
+    SELECT valor_reembolso INTO v_permitido FROM cancelacion WHERE id_reserva = p_id_reserva;
+    IF v_estado <> 'CANCELADA' OR NOT FOUND THEN
+        RAISE EXCEPTION 'La reserva % no está cancelada: usa sp_cancelar_reserva', p_id_reserva
+            USING ERRCODE = 'check_violation';
+    END IF;
+    IF p_valor > v_permitido THEN
+        RAISE EXCEPTION 'La devolución (%) supera la que fijó la cancelación (%)', p_valor, v_permitido
+            USING ERRCODE = 'check_violation';
     END IF;
 
     SELECT * INTO v_pago FROM pago
@@ -82,7 +102,7 @@ BEGIN
         RAISE EXCEPTION 'La reserva % no existe', p_id_reserva USING ERRCODE = 'no_data_found';
     END IF;
 
-    SELECT rol INTO v_rol FROM usuario WHERE id_usuario = p_id_actor;
+    SELECT rol INTO v_rol FROM usuario WHERE id_usuario = p_id_actor AND estado = 'ACTIVO';
     IF v_rol IS NULL OR (v_reserva.id_huesped <> p_id_actor AND v_rol <> 'ADMIN') THEN
         RAISE EXCEPTION 'El usuario % no puede cancelar la reserva %', p_id_actor, p_id_reserva
             USING ERRCODE = 'insufficient_privilege';
@@ -100,7 +120,12 @@ BEGIN
       FROM alojamiento a JOIN politica_cancelacion p ON p.id_politica = a.id_politica
      WHERE a.id_alojamiento = v_reserva.id_alojamiento;
     IF NOT FOUND THEN
+        -- CancelacionService.POLITICA_POR_DEFECTO.
         SELECT * INTO v_politica FROM politica_cancelacion WHERE nombre = 'FLEXIBLE';
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'El alojamiento no tiene política y no existe la política FLEXIBLE'
+                USING ERRCODE = 'no_data_found';
+        END IF;
     END IF;
 
     v_dias := v_reserva.fecha_entrada - CURRENT_DATE;
@@ -121,6 +146,8 @@ BEGIN
             USING ERRCODE = 'check_violation';
     END IF;
 
+    -- Primero la reserva y después la cancelación: así el procedimiento también
+    -- funciona con trg_cancelacion_reserva_cancelada en modo IMMEDIATE.
     UPDATE reserva SET estado = 'CANCELADA' WHERE id_reserva = p_id_reserva;
 
     INSERT INTO cancelacion (motivo, politica, porcentaje_reembolso, valor_reembolso, estado,
@@ -161,7 +188,7 @@ BEGIN
         RAISE EXCEPTION 'Este procedimiento solo pasa a CONFIRMADA o EN_REVISION (recibido: %)', p_estado
             USING ERRCODE = 'check_violation';
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM usuario WHERE id_usuario = p_id_admin AND rol = 'ADMIN') THEN
+    IF NOT EXISTS (SELECT 1 FROM usuario WHERE id_usuario = p_id_admin AND rol = 'ADMIN' AND estado = 'ACTIVO') THEN
         RAISE EXCEPTION 'El usuario % no es administrador', p_id_admin USING ERRCODE = 'insufficient_privilege';
     END IF;
 
@@ -171,7 +198,8 @@ BEGIN
     END IF;
 
     BEGIN
-        -- trg_reserva_transicion valida la transición y ex_reserva_sin_cruces las fechas.
+        -- trg_reserva_transicion valida la transición (y que haya un pago aprobado
+        -- para CONFIRMADA) y ex_reserva_sin_cruces las fechas.
         UPDATE reserva SET estado = p_estado WHERE id_reserva = p_id_reserva;
     EXCEPTION WHEN exclusion_violation THEN
         RAISE EXCEPTION 'Las fechas de la reserva % se cruzan con otra reserva activa', p_id_reserva
