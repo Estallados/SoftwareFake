@@ -1,0 +1,10 @@
+co.edu.unbosque.marketplace
+co.edu.unbosque.marketplace.configuration
+co.edu.unbosque.marketplace.controller
+co.edu.unbosque.marketplace.dto
+co.edu.unbosque.marketplace.entity
+co.edu.unbosque.marketplace.exception
+co.edu.unbosque.marketplace.repository
+co.edu.unbosque.marketplace.security
+co.edu.unbosque.marketplace.service
+co.edu.unbosque.marketplace.util

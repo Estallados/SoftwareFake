@@ -10,4 +10,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @EnableScheduling
 public class ProgramacionConfig {
+	
+	/**
+	 * Constructor de la configuración de programación.
+	 */
+	public ProgramacionConfig() {
+	}
 }
