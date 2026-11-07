@@ -45,7 +45,7 @@ type PasoRecuperacion =
 // COMPONENTE RECUPERAR CONTRASEÑA
 // ======================================
 
-/** Componente de recuperación de contraseña (todavía sin lógica). */
+
 @Component({
   selector: 'app-recover',
   standalone: true,

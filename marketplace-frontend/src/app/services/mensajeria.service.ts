@@ -5,9 +5,9 @@ import { API_URL } from './api-url';
 import { SessionService } from './session.service';
 /** Mensaje ya normalizado para la pantalla. */
 export interface Mensaje {
-  /** Identificador del mensaje. */
+
   id: number;
-  /** Texto del mensaje. */
+  
   texto: string;
   /** ISO date-time. */
   fecha: string;
@@ -16,26 +16,26 @@ export interface Mensaje {
 }
 /** Conversación ya normalizada para la pantalla. */
 export interface Conversacion {
-  /** Identificador de la conversación. */
+
   id: number;
   /** El otro participante. */
   contacto: string;
   /** Nombre del anfitrión del alojamiento de la conversación. */
   anfitrion: string;
-  /** Iniciales para el avatar. */
+  
   iniciales: string;
-  /** Título del alojamiento de la conversación. */
+ 
   alojamiento: string;
   /** Id del alojamiento relacionado (null si el backend no lo envía). */
   idAlojamiento: number | null;
-  /** Código de la reserva relacionada, si hay. */
+  
   reserva: string;
-  /** Mensajes sin leer. */
+  
   noLeidos: number;
-  /** Texto del último mensaje. */
+ 
   ultimo: string;
 }
-/** Objeto tal como llega del backend, antes de normalizarlo. */
+
 type Crudo = Record<string, unknown>;
 
 /**
@@ -51,25 +51,18 @@ function valorDe(origen: Crudo, ...claves: string[]): string {
   }
   return '';
 }
-/** Página tal como llega del backend. */
+
 type PaginaCruda = { contenido?: Crudo[]; content?: Crudo[]; totalPaginas?: number; totalPages?: number };
-/**
- * Conversaciones y mensajes entre huésped y anfitrión ({@code /conversaciones}). No guarda nada en
- * caché porque son datos en vivo: la pantalla los vuelve a pedir cada pocos segundos. Las
- * respuestas se normalizan en {@link MensajeriaService.aConversacion} y
- * {@link MensajeriaService.aMensaje}, que aceptan varios nombres de campo.
- */
+
 @Injectable({
   providedIn: 'root',
 })
 export class MensajeriaService {
-  /** Cliente HTTP. */
+
   private http = inject(HttpClient);
 
-  /** Sesión, para saber quién es el usuario. */
   private session = inject(SessionService);
 
-  /** Ruta base de las conversaciones. */
   private base = `${inject(API_URL)}/conversaciones`;
   /** Mis conversaciones (primera página, las más recientes). */
   conversaciones(tamanio = 50): Observable<Conversacion[]> {
@@ -201,22 +194,12 @@ export class MensajeriaService {
     }
   }
 
-  /**
-   * Quita las tildes de un texto.
-   *
-   * @param texto texto original
-   * @returns texto sin tildes
-   */
+
   private sinTildes(texto: string): string {
     return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   }
 
-  /**
-   * Iniciales de un nombre, para el avatar.
-   *
-   * @param nombre nombre
-   * @returns hasta dos iniciales
-   */
+
   private iniciales(nombre: string): string {
     return (
       nombre

@@ -27,6 +27,7 @@ import co.edu.unbosque.marketplace.dto.UsuarioDTO;
 import co.edu.unbosque.marketplace.dto.VerificacionCorreoDTO;
 import co.edu.unbosque.marketplace.entity.EstadoUsuario;
 import co.edu.unbosque.marketplace.entity.ResultadoAuditoria;
+import co.edu.unbosque.marketplace.entity.Role;
 import co.edu.unbosque.marketplace.entity.Usuario;
 import co.edu.unbosque.marketplace.security.JwtUtil;
 import co.edu.unbosque.marketplace.service.AuditoriaService;
@@ -124,7 +125,8 @@ public class AuthController {
 	@Operation(summary = "Iniciar sesión", description = "Devuelve {token, rol, correo}. Si la cuenta tiene "
 			+ "segundo factor, también hay que enviar codigo; sin él responde 401 con requiereSegundoFactor=true. "
 			+ "Si no, en cada inicio de sesión se envía un código al correo: sin codigo responde 401 con "
-			+ "requiereCodigoCorreo=true y hay que repetir la petición con ese codigo. "
+			+ "requiereCodigoCorreo=true y hay que repetir la petición con ese codigo. El administrador no "
+			+ "recibe código por correo. "
 			+ "Si el correo no está verificado responde 403 con requiereVerificacion=true.")
 	@ApiResponse(responseCode = "200", description = "Sesión iniciada: {token, rol, correo}")
 	@ApiResponse(responseCode = "400", description = "Debes enviar el correo y la contraseña.")
@@ -172,9 +174,9 @@ public class AuthController {
 					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message",
 							"El código de verificación no es válido.", "requiereSegundoFactor", true));
 				}
-			} else if (usuario instanceof Usuario u) {
+			} else if (usuario instanceof Usuario u && u.getRol() != Role.ADMIN) {
 				// Código por correo en cada inicio de sesión: sin él aún no se
-				// entrega el token
+				// entrega el token. El administrador no lo necesita.
 				ResponseEntity<Object> pendiente = codigoInicioPorCorreo(u, correo, loginRequest.getCodigo());
 				if (pendiente != null) {
 					return pendiente;

@@ -17,15 +17,15 @@ import { API_URL } from './api-url';
   providedIn: 'root',
 })
 export class DisponibilidadService {
-  /** Cliente HTTP. */
+  
   private http = inject(HttpClient);
 
-  /** Dirección base del backend. */
+  
   private apiUrl = inject(API_URL);
   private readonly TTL_CALENDARIO_MS = 30_000;
   private readonly TTL_CONSULTA_MS = 15_000;
 
-  /** Respuestas guardadas por clave, con su vencimiento. */
+ 
   private readonly cache = new Map<string, { expira: number; fuente$: Observable<unknown> }>();
   private cacheado<T>(clave: string, ttl: number, pedir: () => Observable<T>): Observable<T> {
     const guardado = this.cache.get(clave);
@@ -52,25 +52,12 @@ export class DisponibilidadService {
     }
   }
 
-  /**
-   * Ruta de la disponibilidad de un alojamiento.
-   *
-   * @param idAlojamiento alojamiento
-   * @returns la ruta
-   */
   private base(idAlojamiento: number): string {
     return `${this.apiUrl}/alojamientos/${idAlojamiento}/disponibilidad`;
   }
   // ================= Normalización =================
   // Los nombres de campo del backend no se conocían con certeza: se buscan bajo varias claves posibles.
 
-  /**
-   * Primer valor de texto encontrado entre varias claves posibles.
-   *
-   * @param o objeto crudo
-   * @param claves claves a probar, en orden
-   * @returns el valor, o vacío
-   */
   private texto(o: Record<string, unknown>, ...claves: string[]): string {
     for (const clave of claves) {
       const v = o?.[clave];
@@ -81,12 +68,7 @@ export class DisponibilidadService {
     return '';
   }
 
-  /**
-   * Convierte una lista cruda en períodos, aceptando varios nombres de fecha.
-   *
-   * @param valor lista cruda
-   * @returns períodos normalizados
-   */
+
   private aRangos(valor: unknown): PeriodoDisponibilidad[] {
     if (!Array.isArray(valor)) {
       return [];
@@ -102,12 +84,7 @@ export class DisponibilidadService {
       .filter((r) => r.fechaLlegada && r.fechaSalida);
   }
 
-  /**
-   * Convierte la respuesta del calendario al formato de la pantalla.
-   *
-   * @param r respuesta cruda
-   * @returns calendario normalizado
-   */
+
   private normalizarCalendario(r: Record<string, unknown>): CalendarioDisponibilidad {
     const lista = (...claves: string[]) => claves.map((k) => r?.[k]).find((v) => Array.isArray(v));
     return {
@@ -116,12 +93,7 @@ export class DisponibilidadService {
     };
   }
 
-  /**
-   * Convierte la respuesta de la consulta por fechas.
-   *
-   * @param r respuesta cruda
-   * @returns si está disponible y el motivo
-   */
+
   private normalizarConsulta(r: Record<string, unknown>): ConsultaDisponibilidad {
     return {
       disponible: this.texto(r, 'disponible', 'estaDisponible') === 'true',

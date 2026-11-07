@@ -11,13 +11,6 @@ import {
   SessionService
 } from '../services/session.service';
 
-/**
- * Guarda de las rutas protegidas. Si no hay sesión, manda al login; si la ruta pide roles (en
- * {@code data.roles}) y el usuario no tiene ninguno, lo devuelve al inicio.
- *
- * @param route ruta a la que se quiere entrar
- * @returns true si puede entrar, o la redirección
- */
 export const roleGuard: CanActivateFn = (route) => {
 
   const sessionService = inject(SessionService);

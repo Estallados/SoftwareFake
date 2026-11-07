@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,22 @@ class SeguridadRolesYCorsTest {
 
 		assertEquals("ADMIN", json.readTree(CorreoPrueba.iniciarSesion(mvc, mailSender, "admin@marketplace.local",
 				"Admin#Prueba1")).get("rol").asText());
+	}
+
+	@Test
+	void adminIniciaSesionSinCodigoPorCorreoYHuespedSiLoNecesita() throws Exception {
+		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"admin@marketplace.local\",\"contrasenia\":\"Admin#Prueba1\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.token").exists())
+				.andExpect(jsonPath("$.rol").value("ADMIN"));
+
+		registrarHuesped("huesped.codigo@correo.com");
+		mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"correo\":\"huesped.codigo@correo.com\",\"contrasenia\":\"Segura#2026\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.requiereCodigoCorreo").value(true))
+				.andExpect(jsonPath("$.token").doesNotExist());
 	}
 
 	@Test
