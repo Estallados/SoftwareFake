@@ -20,4 +20,10 @@ public class ModelMapperConfig {
 	public ModelMapper modelMapper() {
 		return new ModelMapper();
 	}
+	
+	/**
+	 * Constructor de la configuración de ModelMapper.
+	 */
+	public ModelMapperConfig() {
+	}
 }

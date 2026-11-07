@@ -13,6 +13,13 @@ import java.util.InputMismatchException;
  * </p>
  */
 public class ExceptionCheker {
+	
+	/**
+	 * Constructor de ExceptionCheker.
+	 */
+	public ExceptionCheker() {
+	}
+	
 
 	/**
 	 * Verifica que una contraseña cumpla todas las reglas. Se detiene en la

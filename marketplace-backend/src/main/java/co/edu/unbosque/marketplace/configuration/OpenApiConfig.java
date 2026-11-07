@@ -72,7 +72,13 @@ public class OpenApiConfig {
 
 	/** Mensaje del 500. */
 	private static final String ERROR_INTERNO = "Ocurrió un error inesperado. Intenta de nuevo.";
-
+	
+	/**
+	 * Constructor de la configuración de OpenAPI.
+	 */
+	public OpenApiConfig() {
+	}
+	
 	/**
 	 * Registra el esquema de todos los errores: {@code {"message": "..."}}.
 	 *
