@@ -1,0 +1,6 @@
+      3 [marketplace] [o-8081-exec-178] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 30000ms (total=10, active=1
+      3 [marketplace] [o-8081-exec-174] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 30000ms (total=10, active=1
+      3 [marketplace] [o-8081-exec-140] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 30000ms (total=10, active=1
+      3 [marketplace] [o-8081-exec-134] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 30000ms (total=10, active=1
+      3 [marketplace] [o-8081-exec-108] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 30000ms (total=10, active=1
+      3 [marketplace] [o-8081-exec-108] c.e.u.m.e.ManejadorGlobalExcepciones     : Base de datos no disponible en GET /alojamientos

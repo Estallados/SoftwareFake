@@ -1,0 +1,56 @@
+[
+ {
+  "nombre": "Búsqueda por ciudad (12)",
+  "ruta": "/alojamientos?ciudad=Cali&tamanio=12",
+  "estado": 200,
+  "consultas": 75
+ },
+ {
+  "nombre": "Búsqueda con fechas (12)",
+  "ruta": "/alojamientos?ciudad=Cali&llegada=2027-03-01&salida=2027-03-04&huespedes=2&tamanio=12",
+  "estado": 200,
+  "consultas": 75
+ },
+ {
+  "nombre": "Catálogo /disponibles (20)",
+  "ruta": "/alojamientos/disponibles?tamanio=20",
+  "estado": 200,
+  "consultas": 123
+ },
+ {
+  "nombre": "Detalle de alojamiento",
+  "ruta": "/alojamientos/10",
+  "estado": 200,
+  "consultas": 7
+ },
+ {
+  "nombre": "Disponibilidad",
+  "ruta": "/alojamientos/10/disponibilidad",
+  "estado": 200,
+  "consultas": 3
+ },
+ {
+  "nombre": "Reseñas",
+  "ruta": "/alojamientos/10/resenas",
+  "estado": 200,
+  "consultas": 8
+ },
+ {
+  "nombre": "Perfil (token)",
+  "ruta": "/usuarios/perfil",
+  "estado": 200,
+  "consultas": 2
+ },
+ {
+  "nombre": "Notificaciones no leídas",
+  "ruta": "/notificaciones/noleidas",
+  "estado": 200,
+  "consultas": 2
+ },
+ {
+  "nombre": "Mis reservas (10)",
+  "ruta": "/reservas/mias?tamanio=10",
+  "estado": 200,
+  "consultas": 54
+ }
+]

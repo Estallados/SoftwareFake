@@ -1,0 +1,6 @@
+      3 [marketplace] [io-8081-exec-97] o.h.engine.jdbc.spi.SqlExceptionHelper   : Violación de indice de Unicidad ó Clave primaria: "PUBLIC.UQ_IDEMPOTENCIA_INDEX_4 ON PUBLIC.REG
+      3 [marketplace] [io-8081-exec-87] o.h.engine.jdbc.spi.SqlExceptionHelper   : Violación de indice de Unicidad ó Clave primaria: "PUBLIC.UQ_IDEMPOTENCIA_INDEX_4 ON PUBLIC.REG
+      3 [marketplace] [io-8081-exec-83] o.h.engine.jdbc.spi.SqlExceptionHelper   : Violación de indice de Unicidad ó Clave primaria: "PUBLIC.UQ_IDEMPOTENCIA_INDEX_4 ON PUBLIC.REG
+      2 [marketplace] [nio-8081-exec-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : Violación de indice de Unicidad ó Clave primaria: "PUBLIC.UQ_IDEMPOTENCIA_INDEX_4 ON PUBLIC.REG
+      2 [marketplace] [io-8081-exec-56] o.h.engine.jdbc.spi.SqlExceptionHelper   : Violación de indice de Unicidad ó Clave primaria: "PUBLIC.UQ_IDEMPOTENCIA_INDEX_4 ON PUBLIC.REG
+      2 [marketplace] [io-8081-exec-40] o.h.engine.jdbc.spi.SqlExceptionHelper   : Violación de indice de Unicidad ó Clave primaria: "PUBLIC.UQ_IDEMPOTENCIA_INDEX_4 ON PUBLIC.REG

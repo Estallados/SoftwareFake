@@ -1,0 +1,4753 @@
+{
+ "escenario": "resistencia",
+ "base": "http://localhost:8081",
+ "fecha": "2026-11-07T05:50:28.882Z",
+ "etapas": [
+  {
+   "nombre": "rampa_25",
+   "objetivo": "25 rps",
+   "segundos": 60,
+   "n": 1516,
+   "rps": 25.2,
+   "ok": 1516,
+   "err": 0,
+   "errPct": 0,
+   "p50": 21.7,
+   "p90": 71.9,
+   "p95": 78.6,
+   "p99": 117.8,
+   "max": 160.6,
+   "descartadas": 0,
+   "retrasoMaxMs": 40,
+   "estados": {
+    "200": 1451,
+    "201": 65
+   },
+   "operaciones": {
+    "buscar_ciudad": {
+     "n": 333,
+     "rps": 5.5,
+     "ok": 333,
+     "err": 0,
+     "errPct": 0,
+     "p50": 23.3,
+     "p90": 35.3,
+     "p95": 46.8,
+     "p99": 59.4,
+     "max": 61.8,
+     "estados": {
+      "200": 333
+     }
+    },
+    "disponibles": {
+     "n": 179,
+     "rps": 3,
+     "ok": 179,
+     "err": 0,
+     "errPct": 0,
+     "p50": 74.7,
+     "p90": 114.4,
+     "p95": 135.2,
+     "p99": 158.6,
+     "max": 160.6,
+     "estados": {
+      "200": 179
+     }
+    },
+    "disponibilidad": {
+     "n": 113,
+     "rps": 1.9,
+     "ok": 113,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.9,
+     "p90": 5.7,
+     "p95": 7.1,
+     "p99": 8.7,
+     "max": 9.1,
+     "estados": {
+      "200": 113
+     }
+    },
+    "mis_reservas": {
+     "n": 48,
+     "rps": 0.8,
+     "ok": 48,
+     "err": 0,
+     "errPct": 0,
+     "p50": 25.9,
+     "p90": 47.3,
+     "p95": 52.7,
+     "p99": 54.6,
+     "max": 54.6,
+     "estados": {
+      "200": 48
+     }
+    },
+    "buscar_fechas": {
+     "n": 190,
+     "rps": 3.2,
+     "ok": 190,
+     "err": 0,
+     "errPct": 0,
+     "p50": 30.4,
+     "p90": 50.1,
+     "p95": 63.3,
+     "p99": 78.1,
+     "max": 78.9,
+     "estados": {
+      "200": 190
+     }
+    },
+    "detalle": {
+     "n": 265,
+     "rps": 4.4,
+     "ok": 265,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.7,
+     "p90": 7,
+     "p95": 8.4,
+     "p99": 11.3,
+     "max": 12.1,
+     "estados": {
+      "200": 265
+     }
+    },
+    "buscar_filtros": {
+     "n": 67,
+     "rps": 1.1,
+     "ok": 67,
+     "err": 0,
+     "errPct": 0,
+     "p50": 25.5,
+     "p90": 45.1,
+     "p95": 51,
+     "p99": 73.7,
+     "max": 73.7,
+     "estados": {
+      "200": 67
+     }
+    },
+    "resenas": {
+     "n": 76,
+     "rps": 1.3,
+     "ok": 76,
+     "err": 0,
+     "errPct": 0,
+     "p50": 6,
+     "p90": 9.1,
+     "p95": 10.1,
+     "p99": 12.3,
+     "max": 12.3,
+     "estados": {
+      "200": 76
+     }
+    },
+    "tipos": {
+     "n": 40,
+     "rps": 0.7,
+     "ok": 40,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.1,
+     "p90": 6.9,
+     "p95": 7.9,
+     "p99": 7.9,
+     "max": 7.9,
+     "estados": {
+      "200": 40
+     }
+    },
+    "perfil": {
+     "n": 45,
+     "rps": 0.7,
+     "ok": 45,
+     "err": 0,
+     "errPct": 0,
+     "p50": 5.2,
+     "p90": 9,
+     "p95": 9.7,
+     "p99": 10.5,
+     "max": 10.5,
+     "estados": {
+      "200": 45
+     }
+    },
+    "cotizar": {
+     "n": 48,
+     "rps": 0.8,
+     "ok": 48,
+     "err": 0,
+     "errPct": 0,
+     "p50": 9.6,
+     "p90": 14,
+     "p95": 16.9,
+     "p99": 20.2,
+     "max": 20.2,
+     "estados": {
+      "201": 48
+     }
+    },
+    "noleidas": {
+     "n": 45,
+     "rps": 0.7,
+     "ok": 45,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.6,
+     "p90": 7.5,
+     "p95": 8,
+     "p99": 10.2,
+     "max": 10.2,
+     "estados": {
+      "200": 45
+     }
+    },
+    "reservar": {
+     "n": 17,
+     "rps": 0.3,
+     "ok": 17,
+     "err": 0,
+     "errPct": 0,
+     "p50": 19.8,
+     "p90": 42.9,
+     "p95": 95,
+     "p99": 95,
+     "max": 95,
+     "estados": {
+      "201": 17
+     }
+    },
+    "mejor_calificados": {
+     "n": 50,
+     "rps": 0.8,
+     "ok": 50,
+     "err": 0,
+     "errPct": 0,
+     "p50": 74.1,
+     "p90": 97.3,
+     "p95": 113.1,
+     "p99": 130.9,
+     "max": 130.9,
+     "estados": {
+      "200": 50
+     }
+    }
+   }
+  },
+  {
+   "nombre": "rampa_50",
+   "objetivo": "50 rps",
+   "segundos": 60,
+   "n": 3029,
+   "rps": 50.4,
+   "ok": 3029,
+   "err": 0,
+   "errPct": 0,
+   "p50": 21.1,
+   "p90": 75.8,
+   "p95": 82.4,
+   "p99": 100.8,
+   "max": 122.8,
+   "descartadas": 0,
+   "retrasoMaxMs": 20,
+   "estados": {
+    "200": 2911,
+    "201": 118
+   },
+   "operaciones": {
+    "perfil": {
+     "n": 88,
+     "rps": 1.5,
+     "ok": 88,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.2,
+     "p90": 5.5,
+     "p95": 6.4,
+     "p99": 8.3,
+     "max": 8.3,
+     "estados": {
+      "200": 88
+     }
+    },
+    "buscar_filtros": {
+     "n": 154,
+     "rps": 2.6,
+     "ok": 154,
+     "err": 0,
+     "errPct": 0,
+     "p50": 24.9,
+     "p90": 31.9,
+     "p95": 34.4,
+     "p99": 40.4,
+     "max": 43.3,
+     "estados": {
+      "200": 154
+     }
+    },
+    "tipos": {
+     "n": 96,
+     "rps": 1.6,
+     "ok": 96,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.4,
+     "p90": 4.5,
+     "p95": 4.9,
+     "p99": 5.8,
+     "max": 5.8,
+     "estados": {
+      "200": 96
+     }
+    },
+    "disponibilidad": {
+     "n": 227,
+     "rps": 3.8,
+     "ok": 227,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.1,
+     "p90": 4.2,
+     "p95": 4.5,
+     "p99": 6.1,
+     "max": 10.4,
+     "estados": {
+      "200": 227
+     }
+    },
+    "buscar_fechas": {
+     "n": 364,
+     "rps": 6.1,
+     "ok": 364,
+     "err": 0,
+     "errPct": 0,
+     "p50": 29.8,
+     "p90": 34.5,
+     "p95": 36.4,
+     "p99": 44,
+     "max": 55.1,
+     "estados": {
+      "200": 364
+     }
+    },
+    "disponibles": {
+     "n": 370,
+     "rps": 6.2,
+     "ok": 370,
+     "err": 0,
+     "errPct": 0,
+     "p50": 78.8,
+     "p90": 92.6,
+     "p95": 102.4,
+     "p99": 115.9,
+     "max": 122.8,
+     "estados": {
+      "200": 370
+     }
+    },
+    "detalle": {
+     "n": 562,
+     "rps": 9.4,
+     "ok": 562,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.7,
+     "p90": 4.8,
+     "p95": 5.2,
+     "p99": 6.5,
+     "max": 26.3,
+     "estados": {
+      "200": 562
+     }
+    },
+    "noleidas": {
+     "n": 79,
+     "rps": 1.3,
+     "ok": 79,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.1,
+     "p90": 5.9,
+     "p95": 6.6,
+     "p99": 7.1,
+     "max": 7.1,
+     "estados": {
+      "200": 79
+     }
+    },
+    "resenas": {
+     "n": 144,
+     "rps": 2.4,
+     "ok": 144,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.8,
+     "p90": 6.3,
+     "p95": 6.6,
+     "p99": 7.8,
+     "max": 8.7,
+     "estados": {
+      "200": 144
+     }
+    },
+    "buscar_ciudad": {
+     "n": 650,
+     "rps": 10.8,
+     "ok": 650,
+     "err": 0,
+     "errPct": 0,
+     "p50": 22.3,
+     "p90": 26.9,
+     "p95": 29.3,
+     "p99": 33.5,
+     "max": 41.9,
+     "estados": {
+      "200": 650
+     }
+    },
+    "mejor_calificados": {
+     "n": 97,
+     "rps": 1.6,
+     "ok": 97,
+     "err": 0,
+     "errPct": 0,
+     "p50": 76.6,
+     "p90": 98.4,
+     "p95": 107.2,
+     "p99": 112.1,
+     "max": 112.1,
+     "estados": {
+      "200": 97
+     }
+    },
+    "mis_reservas": {
+     "n": 80,
+     "rps": 1.3,
+     "ok": 80,
+     "err": 0,
+     "errPct": 0,
+     "p50": 21,
+     "p90": 28,
+     "p95": 31.3,
+     "p99": 34.6,
+     "max": 34.6,
+     "estados": {
+      "200": 80
+     }
+    },
+    "cotizar": {
+     "n": 88,
+     "rps": 1.5,
+     "ok": 88,
+     "err": 0,
+     "errPct": 0,
+     "p50": 8.2,
+     "p90": 10.8,
+     "p95": 11.1,
+     "p99": 27.6,
+     "max": 27.6,
+     "estados": {
+      "201": 88
+     }
+    },
+    "reservar": {
+     "n": 30,
+     "rps": 0.5,
+     "ok": 30,
+     "err": 0,
+     "errPct": 0,
+     "p50": 18.3,
+     "p90": 22.7,
+     "p95": 24.1,
+     "p99": 24.1,
+     "max": 24.1,
+     "estados": {
+      "201": 30
+     }
+    }
+   }
+  },
+  {
+   "nombre": "rampa_75",
+   "objetivo": "75 rps",
+   "segundos": 60,
+   "n": 4539,
+   "rps": 75.6,
+   "ok": 4539,
+   "err": 0,
+   "errPct": 0,
+   "p50": 20.8,
+   "p90": 74.8,
+   "p95": 79.2,
+   "p99": 90.9,
+   "max": 199.3,
+   "descartadas": 0,
+   "retrasoMaxMs": 13,
+   "estados": {
+    "200": 4382,
+    "201": 157
+   },
+   "operaciones": {
+    "mis_reservas": {
+     "n": 138,
+     "rps": 2.3,
+     "ok": 138,
+     "err": 0,
+     "errPct": 0,
+     "p50": 20.9,
+     "p90": 25.7,
+     "p95": 27.3,
+     "p99": 34.5,
+     "max": 48,
+     "estados": {
+      "200": 138
+     }
+    },
+    "buscar_ciudad": {
+     "n": 1001,
+     "rps": 16.7,
+     "ok": 1001,
+     "err": 0,
+     "errPct": 0,
+     "p50": 21.7,
+     "p90": 25.1,
+     "p95": 26.8,
+     "p99": 35.1,
+     "max": 49.6,
+     "estados": {
+      "200": 1001
+     }
+    },
+    "buscar_filtros": {
+     "n": 202,
+     "rps": 3.4,
+     "ok": 202,
+     "err": 0,
+     "errPct": 0,
+     "p50": 24.2,
+     "p90": 27.7,
+     "p95": 28.8,
+     "p99": 61.1,
+     "max": 94.3,
+     "estados": {
+      "200": 202
+     }
+    },
+    "buscar_fechas": {
+     "n": 603,
+     "rps": 10,
+     "ok": 603,
+     "err": 0,
+     "errPct": 0,
+     "p50": 28.6,
+     "p90": 33.1,
+     "p95": 36.1,
+     "p99": 42.9,
+     "max": 73.7,
+     "estados": {
+      "200": 603
+     }
+    },
+    "disponibles": {
+     "n": 513,
+     "rps": 8.5,
+     "ok": 513,
+     "err": 0,
+     "errPct": 0,
+     "p50": 77.1,
+     "p90": 87.3,
+     "p95": 93.3,
+     "p99": 114.5,
+     "max": 199.3,
+     "estados": {
+      "200": 513
+     }
+    },
+    "detalle": {
+     "n": 816,
+     "rps": 13.6,
+     "ok": 816,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.1,
+     "p90": 4.2,
+     "p95": 4.8,
+     "p99": 7,
+     "max": 14.6,
+     "estados": {
+      "200": 816
+     }
+    },
+    "disponibilidad": {
+     "n": 319,
+     "rps": 5.3,
+     "ok": 319,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.5,
+     "p90": 3.4,
+     "p95": 3.7,
+     "p99": 4.6,
+     "max": 9.4,
+     "estados": {
+      "200": 319
+     }
+    },
+    "cotizar": {
+     "n": 117,
+     "rps": 1.9,
+     "ok": 117,
+     "err": 0,
+     "errPct": 0,
+     "p50": 6.6,
+     "p90": 9.1,
+     "p95": 10.1,
+     "p99": 22.8,
+     "max": 50.2,
+     "estados": {
+      "201": 117
+     }
+    },
+    "reservar": {
+     "n": 40,
+     "rps": 0.7,
+     "ok": 40,
+     "err": 0,
+     "errPct": 0,
+     "p50": 15.9,
+     "p90": 19.1,
+     "p95": 25.1,
+     "p99": 50.3,
+     "max": 50.3,
+     "estados": {
+      "201": 40
+     }
+    },
+    "mejor_calificados": {
+     "n": 141,
+     "rps": 2.3,
+     "ok": 141,
+     "err": 0,
+     "errPct": 0,
+     "p50": 76,
+     "p90": 90.9,
+     "p95": 97.3,
+     "p99": 120.4,
+     "max": 123.8,
+     "estados": {
+      "200": 141
+     }
+    },
+    "resenas": {
+     "n": 221,
+     "rps": 3.7,
+     "ok": 221,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.1,
+     "p90": 5.1,
+     "p95": 5.5,
+     "p99": 6.9,
+     "max": 7.3,
+     "estados": {
+      "200": 221
+     }
+    },
+    "noleidas": {
+     "n": 159,
+     "rps": 2.6,
+     "ok": 159,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.2,
+     "p90": 4.4,
+     "p95": 4.7,
+     "p99": 9,
+     "max": 15.4,
+     "estados": {
+      "200": 159
+     }
+    },
+    "tipos": {
+     "n": 145,
+     "rps": 2.4,
+     "ok": 145,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.8,
+     "p90": 3.6,
+     "p95": 4.1,
+     "p99": 4.8,
+     "max": 5.6,
+     "estados": {
+      "200": 145
+     }
+    },
+    "perfil": {
+     "n": 124,
+     "rps": 2.1,
+     "ok": 124,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.4,
+     "p90": 4.7,
+     "p95": 5.4,
+     "p99": 7.2,
+     "max": 22.4,
+     "estados": {
+      "200": 124
+     }
+    }
+   }
+  },
+  {
+   "nombre": "rampa_100",
+   "objetivo": "100 rps",
+   "segundos": 60,
+   "n": 6052,
+   "rps": 100.7,
+   "ok": 6052,
+   "err": 0,
+   "errPct": 0,
+   "p50": 22,
+   "p90": 81.3,
+   "p95": 94.5,
+   "p99": 117.3,
+   "max": 169.9,
+   "descartadas": 0,
+   "retrasoMaxMs": 10,
+   "estados": {
+    "200": 5835,
+    "201": 217
+   },
+   "operaciones": {
+    "perfil": {
+     "n": 184,
+     "rps": 3.1,
+     "ok": 184,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.5,
+     "p90": 4.8,
+     "p95": 5.3,
+     "p99": 9,
+     "max": 10,
+     "estados": {
+      "200": 184
+     }
+    },
+    "buscar_ciudad": {
+     "n": 1344,
+     "rps": 22.4,
+     "ok": 1344,
+     "err": 0,
+     "errPct": 0,
+     "p50": 24,
+     "p90": 31.2,
+     "p95": 34.1,
+     "p99": 44.3,
+     "max": 79.2,
+     "estados": {
+      "200": 1344
+     }
+    },
+    "buscar_filtros": {
+     "n": 284,
+     "rps": 4.7,
+     "ok": 284,
+     "err": 0,
+     "errPct": 0,
+     "p50": 26.1,
+     "p90": 33.7,
+     "p95": 38,
+     "p99": 47.7,
+     "max": 76.6,
+     "estados": {
+      "200": 284
+     }
+    },
+    "buscar_fechas": {
+     "n": 798,
+     "rps": 13.3,
+     "ok": 798,
+     "err": 0,
+     "errPct": 0,
+     "p50": 31.5,
+     "p90": 41.1,
+     "p95": 44.9,
+     "p99": 55.8,
+     "max": 76.7,
+     "estados": {
+      "200": 798
+     }
+    },
+    "resenas": {
+     "n": 332,
+     "rps": 5.5,
+     "ok": 332,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.2,
+     "p90": 5.7,
+     "p95": 6.5,
+     "p99": 9.5,
+     "max": 15.9,
+     "estados": {
+      "200": 332
+     }
+    },
+    "detalle": {
+     "n": 1050,
+     "rps": 17.5,
+     "ok": 1050,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.2,
+     "p90": 4.4,
+     "p95": 4.9,
+     "p99": 6.7,
+     "max": 14.3,
+     "estados": {
+      "200": 1050
+     }
+    },
+    "disponibles": {
+     "n": 717,
+     "rps": 11.9,
+     "ok": 717,
+     "err": 0,
+     "errPct": 0,
+     "p50": 85.7,
+     "p90": 110.9,
+     "p95": 119.5,
+     "p99": 138.2,
+     "max": 169.9,
+     "estados": {
+      "200": 717
+     }
+    },
+    "noleidas": {
+     "n": 190,
+     "rps": 3.2,
+     "ok": 190,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.3,
+     "p90": 4.8,
+     "p95": 6.2,
+     "p99": 16.1,
+     "max": 16.6,
+     "estados": {
+      "200": 190
+     }
+    },
+    "cotizar": {
+     "n": 164,
+     "rps": 2.7,
+     "ok": 164,
+     "err": 0,
+     "errPct": 0,
+     "p50": 7.1,
+     "p90": 9.5,
+     "p95": 13.2,
+     "p99": 23.4,
+     "max": 32.9,
+     "estados": {
+      "201": 164
+     }
+    },
+    "reservar": {
+     "n": 53,
+     "rps": 0.9,
+     "ok": 53,
+     "err": 0,
+     "errPct": 0,
+     "p50": 16.6,
+     "p90": 21.7,
+     "p95": 28.8,
+     "p99": 57.2,
+     "max": 57.2,
+     "estados": {
+      "201": 53
+     }
+    },
+    "tipos": {
+     "n": 186,
+     "rps": 3.1,
+     "ok": 186,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.9,
+     "p90": 3.8,
+     "p95": 4.1,
+     "p99": 5.5,
+     "max": 6.1,
+     "estados": {
+      "200": 186
+     }
+    },
+    "disponibilidad": {
+     "n": 400,
+     "rps": 6.7,
+     "ok": 400,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.5,
+     "p90": 3.6,
+     "p95": 4.2,
+     "p99": 7.1,
+     "max": 12.8,
+     "estados": {
+      "200": 400
+     }
+    },
+    "mejor_calificados": {
+     "n": 178,
+     "rps": 3,
+     "ok": 178,
+     "err": 0,
+     "errPct": 0,
+     "p50": 89.5,
+     "p90": 117.3,
+     "p95": 126.5,
+     "p99": 133.3,
+     "max": 154.3,
+     "estados": {
+      "200": 178
+     }
+    },
+    "mis_reservas": {
+     "n": 172,
+     "rps": 2.9,
+     "ok": 172,
+     "err": 0,
+     "errPct": 0,
+     "p50": 23.3,
+     "p90": 30.6,
+     "p95": 36.8,
+     "p99": 55.4,
+     "max": 56.1,
+     "estados": {
+      "200": 172
+     }
+    }
+   }
+  },
+  {
+   "nombre": "rampa_125",
+   "objetivo": "125 rps",
+   "segundos": 60,
+   "n": 7581,
+   "rps": 126.1,
+   "ok": 7581,
+   "err": 0,
+   "errPct": 0,
+   "p50": 26.1,
+   "p90": 99.5,
+   "p95": 106,
+   "p99": 115.7,
+   "max": 173.2,
+   "descartadas": 0,
+   "retrasoMaxMs": 8,
+   "estados": {
+    "200": 7265,
+    "201": 316
+   },
+   "operaciones": {
+    "perfil": {
+     "n": 221,
+     "rps": 3.7,
+     "ok": 221,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4,
+     "p90": 5.4,
+     "p95": 5.8,
+     "p99": 7.6,
+     "max": 8.7,
+     "estados": {
+      "200": 221
+     }
+    },
+    "detalle": {
+     "n": 1343,
+     "rps": 22.3,
+     "ok": 1343,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.6,
+     "p90": 4.8,
+     "p95": 5.5,
+     "p99": 8.8,
+     "max": 22.9,
+     "estados": {
+      "200": 1343
+     }
+    },
+    "buscar_ciudad": {
+     "n": 1687,
+     "rps": 28.1,
+     "ok": 1687,
+     "err": 0,
+     "errPct": 0,
+     "p50": 27.6,
+     "p90": 32.4,
+     "p95": 34.5,
+     "p99": 39.4,
+     "max": 65.2,
+     "estados": {
+      "200": 1687
+     }
+    },
+    "buscar_fechas": {
+     "n": 984,
+     "rps": 16.4,
+     "ok": 984,
+     "err": 0,
+     "errPct": 0,
+     "p50": 36.5,
+     "p90": 42.3,
+     "p95": 44.3,
+     "p99": 53.3,
+     "max": 65.5,
+     "estados": {
+      "200": 984
+     }
+    },
+    "buscar_filtros": {
+     "n": 366,
+     "rps": 6.1,
+     "ok": 366,
+     "err": 0,
+     "errPct": 0,
+     "p50": 30.2,
+     "p90": 35.5,
+     "p95": 37.6,
+     "p99": 41.8,
+     "max": 50.2,
+     "estados": {
+      "200": 366
+     }
+    },
+    "tipos": {
+     "n": 226,
+     "rps": 3.8,
+     "ok": 226,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.3,
+     "p90": 4.4,
+     "p95": 4.7,
+     "p99": 7.1,
+     "max": 8.5,
+     "estados": {
+      "200": 226
+     }
+    },
+    "disponibles": {
+     "n": 911,
+     "rps": 15.2,
+     "ok": 911,
+     "err": 0,
+     "errPct": 0,
+     "p50": 103.1,
+     "p90": 113.6,
+     "p95": 116.7,
+     "p99": 126.8,
+     "max": 173.2,
+     "estados": {
+      "200": 911
+     }
+    },
+    "resenas": {
+     "n": 339,
+     "rps": 5.6,
+     "ok": 339,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.8,
+     "p90": 6.1,
+     "p95": 6.7,
+     "p99": 11.3,
+     "max": 21.1,
+     "estados": {
+      "200": 339
+     }
+    },
+    "cotizar": {
+     "n": 234,
+     "rps": 3.9,
+     "ok": 234,
+     "err": 0,
+     "errPct": 0,
+     "p50": 7.6,
+     "p90": 9.8,
+     "p95": 10.6,
+     "p99": 14.7,
+     "max": 36.1,
+     "estados": {
+      "201": 234
+     }
+    },
+    "reservar": {
+     "n": 82,
+     "rps": 1.4,
+     "ok": 82,
+     "err": 0,
+     "errPct": 0,
+     "p50": 17.5,
+     "p90": 22.5,
+     "p95": 24.4,
+     "p99": 25.7,
+     "max": 25.7,
+     "estados": {
+      "201": 82
+     }
+    },
+    "noleidas": {
+     "n": 213,
+     "rps": 3.5,
+     "ok": 213,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.9,
+     "p90": 5.2,
+     "p95": 6.3,
+     "p99": 7.4,
+     "max": 11.2,
+     "estados": {
+      "200": 213
+     }
+    },
+    "disponibilidad": {
+     "n": 550,
+     "rps": 9.2,
+     "ok": 550,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.8,
+     "p90": 3.8,
+     "p95": 4.3,
+     "p99": 6.7,
+     "max": 27.4,
+     "estados": {
+      "200": 550
+     }
+    },
+    "mis_reservas": {
+     "n": 200,
+     "rps": 3.3,
+     "ok": 200,
+     "err": 0,
+     "errPct": 0,
+     "p50": 27.2,
+     "p90": 32.9,
+     "p95": 37.1,
+     "p99": 40,
+     "max": 59.5,
+     "estados": {
+      "200": 200
+     }
+    },
+    "mejor_calificados": {
+     "n": 225,
+     "rps": 3.7,
+     "ok": 225,
+     "err": 0,
+     "errPct": 0,
+     "p50": 102.3,
+     "p90": 112.5,
+     "p95": 116.7,
+     "p99": 121.2,
+     "max": 133.2,
+     "estados": {
+      "200": 225
+     }
+    }
+   }
+  },
+  {
+   "nombre": "tramo_5min",
+   "objetivo": "150 rps",
+   "segundos": 300,
+   "n": 45461,
+   "rps": 151.5,
+   "ok": 45461,
+   "err": 0,
+   "errPct": 0,
+   "p50": 24.1,
+   "p90": 92.4,
+   "p95": 107.2,
+   "p99": 141.1,
+   "max": 470.5,
+   "descartadas": 0,
+   "retrasoMaxMs": 20,
+   "estados": {
+    "200": 43624,
+    "201": 1837
+   },
+   "operaciones": {
+    "detalle": {
+     "n": 8072,
+     "rps": 26.9,
+     "ok": 8072,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.4,
+     "p90": 5.3,
+     "p95": 7.4,
+     "p99": 27.2,
+     "max": 255.8,
+     "estados": {
+      "200": 8072
+     }
+    },
+    "mis_reservas": {
+     "n": 1369,
+     "rps": 4.6,
+     "ok": 1369,
+     "err": 0,
+     "errPct": 0,
+     "p50": 24.8,
+     "p90": 34,
+     "p95": 40.9,
+     "p99": 71.8,
+     "max": 350.4,
+     "estados": {
+      "200": 1369
+     }
+    },
+    "buscar_fechas": {
+     "n": 5881,
+     "rps": 19.6,
+     "ok": 5881,
+     "err": 0,
+     "errPct": 0,
+     "p50": 34.7,
+     "p90": 46.6,
+     "p95": 55.6,
+     "p99": 104.2,
+     "max": 291.5,
+     "estados": {
+      "200": 5881
+     }
+    },
+    "cotizar": {
+     "n": 1375,
+     "rps": 4.6,
+     "ok": 1375,
+     "err": 0,
+     "errPct": 0,
+     "p50": 6.7,
+     "p90": 9.8,
+     "p95": 12.4,
+     "p99": 39.3,
+     "max": 389.7,
+     "estados": {
+      "201": 1375
+     }
+    },
+    "buscar_ciudad": {
+     "n": 9914,
+     "rps": 33,
+     "ok": 9914,
+     "err": 0,
+     "errPct": 0,
+     "p50": 26.4,
+     "p90": 36.4,
+     "p95": 43.6,
+     "p99": 91.7,
+     "max": 305.8,
+     "estados": {
+      "200": 9914
+     }
+    },
+    "buscar_filtros": {
+     "n": 2211,
+     "rps": 7.4,
+     "ok": 2211,
+     "err": 0,
+     "errPct": 0,
+     "p50": 28.7,
+     "p90": 39,
+     "p95": 45.8,
+     "p99": 83.3,
+     "max": 314.1,
+     "estados": {
+      "200": 2211
+     }
+    },
+    "reservar": {
+     "n": 462,
+     "rps": 1.5,
+     "ok": 462,
+     "err": 0,
+     "errPct": 0,
+     "p50": 14,
+     "p90": 20.2,
+     "p95": 24.6,
+     "p99": 56.4,
+     "max": 413.1,
+     "estados": {
+      "201": 462
+     }
+    },
+    "resenas": {
+     "n": 2268,
+     "rps": 7.6,
+     "ok": 2268,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.4,
+     "p90": 6.8,
+     "p95": 9.4,
+     "p99": 26.2,
+     "max": 148.7,
+     "estados": {
+      "200": 2268
+     }
+    },
+    "disponibles": {
+     "n": 5481,
+     "rps": 18.3,
+     "ok": 5481,
+     "err": 0,
+     "errPct": 0,
+     "p50": 97.7,
+     "p90": 125.8,
+     "p95": 141.4,
+     "p99": 208.2,
+     "max": 470.5,
+     "estados": {
+      "200": 5481
+     }
+    },
+    "mejor_calificados": {
+     "n": 1345,
+     "rps": 4.5,
+     "ok": 1345,
+     "err": 0,
+     "errPct": 0,
+     "p50": 95.8,
+     "p90": 122.7,
+     "p95": 139.1,
+     "p99": 215.6,
+     "max": 397.9,
+     "estados": {
+      "200": 1345
+     }
+    },
+    "perfil": {
+     "n": 1280,
+     "rps": 4.3,
+     "ok": 1280,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.7,
+     "p90": 6.5,
+     "p95": 10.3,
+     "p99": 69.9,
+     "max": 381.3,
+     "estados": {
+      "200": 1280
+     }
+    },
+    "disponibilidad": {
+     "n": 3115,
+     "rps": 10.4,
+     "ok": 3115,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.6,
+     "p90": 4.2,
+     "p95": 6.5,
+     "p99": 37.1,
+     "max": 167.2,
+     "estados": {
+      "200": 3115
+     }
+    },
+    "noleidas": {
+     "n": 1338,
+     "rps": 4.5,
+     "ok": 1338,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.5,
+     "p90": 6,
+     "p95": 8.1,
+     "p99": 24.8,
+     "max": 237.9,
+     "estados": {
+      "200": 1338
+     }
+    },
+    "tipos": {
+     "n": 1350,
+     "rps": 4.5,
+     "ok": 1350,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.1,
+     "p90": 4.8,
+     "p95": 7.5,
+     "p99": 57.4,
+     "max": 126.2,
+     "estados": {
+      "200": 1350
+     }
+    }
+   }
+  },
+  {
+   "nombre": "tramo_10min",
+   "objetivo": "150 rps",
+   "segundos": 300,
+   "n": 45446,
+   "rps": 151.4,
+   "ok": 45446,
+   "err": 0,
+   "errPct": 0,
+   "p50": 23,
+   "p90": 86.7,
+   "p95": 95.6,
+   "p99": 121.1,
+   "max": 309.8,
+   "descartadas": 0,
+   "retrasoMaxMs": 20,
+   "estados": {
+    "200": 43658,
+    "201": 1788
+   },
+   "operaciones": {
+    "detalle": {
+     "n": 8074,
+     "rps": 26.9,
+     "ok": 8074,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.1,
+     "p90": 4.4,
+     "p95": 5.3,
+     "p99": 13.1,
+     "max": 83.8,
+     "estados": {
+      "200": 8074
+     }
+    },
+    "buscar_ciudad": {
+     "n": 9918,
+     "rps": 33,
+     "ok": 9918,
+     "err": 0,
+     "errPct": 0,
+     "p50": 24.7,
+     "p90": 31.3,
+     "p95": 36,
+     "p99": 60.5,
+     "max": 174.4,
+     "estados": {
+      "200": 9918
+     }
+    },
+    "noleidas": {
+     "n": 1318,
+     "rps": 4.4,
+     "ok": 1318,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.3,
+     "p90": 4.9,
+     "p95": 5.9,
+     "p99": 15.5,
+     "max": 90.4,
+     "estados": {
+      "200": 1318
+     }
+    },
+    "buscar_fechas": {
+     "n": 5986,
+     "rps": 19.9,
+     "ok": 5986,
+     "err": 0,
+     "errPct": 0,
+     "p50": 32.4,
+     "p90": 40.9,
+     "p95": 46,
+     "p99": 79.6,
+     "max": 179.3,
+     "estados": {
+      "200": 5986
+     }
+    },
+    "perfil": {
+     "n": 1308,
+     "rps": 4.4,
+     "ok": 1308,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.4,
+     "p90": 4.9,
+     "p95": 6.2,
+     "p99": 17.3,
+     "max": 102.8,
+     "estados": {
+      "200": 1308
+     }
+    },
+    "disponibles": {
+     "n": 5332,
+     "rps": 17.8,
+     "ok": 5332,
+     "err": 0,
+     "errPct": 0,
+     "p50": 90.5,
+     "p90": 112.2,
+     "p95": 126.2,
+     "p99": 175.3,
+     "max": 299.3,
+     "estados": {
+      "200": 5332
+     }
+    },
+    "buscar_filtros": {
+     "n": 2306,
+     "rps": 7.7,
+     "ok": 2306,
+     "err": 0,
+     "errPct": 0,
+     "p50": 26.7,
+     "p90": 34.1,
+     "p95": 38.3,
+     "p99": 63.8,
+     "max": 151.8,
+     "estados": {
+      "200": 2306
+     }
+    },
+    "mis_reservas": {
+     "n": 1300,
+     "rps": 4.3,
+     "ok": 1300,
+     "err": 0,
+     "errPct": 0,
+     "p50": 23.3,
+     "p90": 29.7,
+     "p95": 33.5,
+     "p99": 58.8,
+     "max": 117.3,
+     "estados": {
+      "200": 1300
+     }
+    },
+    "cotizar": {
+     "n": 1341,
+     "rps": 4.5,
+     "ok": 1341,
+     "err": 0,
+     "errPct": 0,
+     "p50": 5.9,
+     "p90": 8.1,
+     "p95": 9.3,
+     "p99": 30.2,
+     "max": 137.2,
+     "estados": {
+      "201": 1341
+     }
+    },
+    "tipos": {
+     "n": 1329,
+     "rps": 4.4,
+     "ok": 1329,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.8,
+     "p90": 3.8,
+     "p95": 4.7,
+     "p99": 11.2,
+     "max": 69.2,
+     "estados": {
+      "200": 1329
+     }
+    },
+    "disponibilidad": {
+     "n": 3155,
+     "rps": 10.5,
+     "ok": 3155,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.4,
+     "p90": 3.5,
+     "p95": 4.2,
+     "p99": 11.9,
+     "max": 84.2,
+     "estados": {
+      "200": 3155
+     }
+    },
+    "mejor_calificados": {
+     "n": 1392,
+     "rps": 4.6,
+     "ok": 1392,
+     "err": 0,
+     "errPct": 0,
+     "p50": 90.1,
+     "p90": 110.7,
+     "p95": 125.4,
+     "p99": 161.7,
+     "max": 309.8,
+     "estados": {
+      "200": 1392
+     }
+    },
+    "resenas": {
+     "n": 2240,
+     "rps": 7.5,
+     "ok": 2240,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.9,
+     "p90": 5.5,
+     "p95": 7,
+     "p99": 19,
+     "max": 121.1,
+     "estados": {
+      "200": 2240
+     }
+    },
+    "reservar": {
+     "n": 447,
+     "rps": 1.5,
+     "ok": 447,
+     "err": 0,
+     "errPct": 0,
+     "p50": 11.8,
+     "p90": 16,
+     "p95": 17.7,
+     "p99": 53.8,
+     "max": 196.3,
+     "estados": {
+      "201": 447
+     }
+    }
+   }
+  },
+  {
+   "nombre": "tramo_15min",
+   "objetivo": "150 rps",
+   "segundos": 300,
+   "n": 45452,
+   "rps": 151.5,
+   "ok": 45452,
+   "err": 0,
+   "errPct": 0,
+   "p50": 22.3,
+   "p90": 84.4,
+   "p95": 91,
+   "p99": 104.1,
+   "max": 312,
+   "descartadas": 0,
+   "retrasoMaxMs": 33,
+   "estados": {
+    "200": 43710,
+    "201": 1742
+   },
+   "operaciones": {
+    "cotizar": {
+     "n": 1289,
+     "rps": 4.3,
+     "ok": 1289,
+     "err": 0,
+     "errPct": 0,
+     "p50": 5.7,
+     "p90": 7.3,
+     "p95": 8,
+     "p99": 11.7,
+     "max": 143.2,
+     "estados": {
+      "201": 1289
+     }
+    },
+    "buscar_ciudad": {
+     "n": 10041,
+     "rps": 33.5,
+     "ok": 10041,
+     "err": 0,
+     "errPct": 0,
+     "p50": 23.9,
+     "p90": 28.5,
+     "p95": 30.7,
+     "p99": 43.1,
+     "max": 218.9,
+     "estados": {
+      "200": 10041
+     }
+    },
+    "buscar_filtros": {
+     "n": 2165,
+     "rps": 7.2,
+     "ok": 2165,
+     "err": 0,
+     "errPct": 0,
+     "p50": 25.7,
+     "p90": 30.7,
+     "p95": 32.9,
+     "p99": 46.1,
+     "max": 139.1,
+     "estados": {
+      "200": 2165
+     }
+    },
+    "disponibilidad": {
+     "n": 3192,
+     "rps": 10.6,
+     "ok": 3192,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.3,
+     "p90": 3.1,
+     "p95": 3.5,
+     "p99": 5.4,
+     "max": 57.9,
+     "estados": {
+      "200": 3192
+     }
+    },
+    "disponibles": {
+     "n": 5350,
+     "rps": 17.8,
+     "ok": 5350,
+     "err": 0,
+     "errPct": 0,
+     "p50": 87.3,
+     "p90": 100.2,
+     "p95": 107.3,
+     "p99": 130.1,
+     "max": 312,
+     "estados": {
+      "200": 5350
+     }
+    },
+    "detalle": {
+     "n": 8100,
+     "rps": 27,
+     "ok": 8100,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3,
+     "p90": 3.9,
+     "p95": 4.5,
+     "p99": 7.6,
+     "max": 93.7,
+     "estados": {
+      "200": 8100
+     }
+    },
+    "tipos": {
+     "n": 1314,
+     "rps": 4.4,
+     "ok": 1314,
+     "err": 0,
+     "errPct": 0,
+     "p50": 2.7,
+     "p90": 3.7,
+     "p95": 4.2,
+     "p99": 6.5,
+     "max": 72.6,
+     "estados": {
+      "200": 1314
+     }
+    },
+    "mejor_calificados": {
+     "n": 1344,
+     "rps": 4.5,
+     "ok": 1344,
+     "err": 0,
+     "errPct": 0,
+     "p50": 87.7,
+     "p90": 99.1,
+     "p95": 103.1,
+     "p99": 120.1,
+     "max": 177.6,
+     "estados": {
+      "200": 1344
+     }
+    },
+    "mis_reservas": {
+     "n": 1319,
+     "rps": 4.4,
+     "ok": 1319,
+     "err": 0,
+     "errPct": 0,
+     "p50": 22.2,
+     "p90": 26.8,
+     "p95": 29.2,
+     "p99": 36.5,
+     "max": 196,
+     "estados": {
+      "200": 1319
+     }
+    },
+    "buscar_fechas": {
+     "n": 5912,
+     "rps": 19.7,
+     "ok": 5912,
+     "err": 0,
+     "errPct": 0,
+     "p50": 31.2,
+     "p90": 36.6,
+     "p95": 39.2,
+     "p99": 50.1,
+     "max": 184.5,
+     "estados": {
+      "200": 5912
+     }
+    },
+    "resenas": {
+     "n": 2311,
+     "rps": 7.7,
+     "ok": 2311,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.8,
+     "p90": 5,
+     "p95": 5.5,
+     "p99": 7.8,
+     "max": 48.1,
+     "estados": {
+      "200": 2311
+     }
+    },
+    "noleidas": {
+     "n": 1309,
+     "rps": 4.4,
+     "ok": 1309,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.1,
+     "p90": 4.3,
+     "p95": 4.8,
+     "p99": 10,
+     "max": 134.4,
+     "estados": {
+      "200": 1309
+     }
+    },
+    "reservar": {
+     "n": 453,
+     "rps": 1.5,
+     "ok": 453,
+     "err": 0,
+     "errPct": 0,
+     "p50": 11.1,
+     "p90": 14.1,
+     "p95": 15,
+     "p99": 25.5,
+     "max": 183.6,
+     "estados": {
+      "201": 453
+     }
+    },
+    "perfil": {
+     "n": 1353,
+     "rps": 4.5,
+     "ok": 1353,
+     "err": 0,
+     "errPct": 0,
+     "p50": 3.3,
+     "p90": 4.4,
+     "p95": 4.9,
+     "p99": 10.2,
+     "max": 44.7,
+     "estados": {
+      "200": 1353
+     }
+    }
+   }
+  }
+ ],
+ "telemetria": [
+  {
+   "t": 5,
+   "cpuBackend": null,
+   "cpuH2": null,
+   "etapa": "rampa_25",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 278,
+   "cpuPct": 17,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 10,
+   "cpuBackend": 123,
+   "cpuH2": 54,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 449,
+   "cpuPct": 10,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 15,
+   "cpuBackend": 69,
+   "cpuH2": 45,
+   "etapa": "rampa_25",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 606,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 20,
+   "cpuBackend": 49,
+   "cpuH2": 47,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 174,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 25,
+   "cpuBackend": 76,
+   "cpuH2": 61,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 349,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 30,
+   "cpuBackend": 76,
+   "cpuH2": 44,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 525,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 35,
+   "cpuBackend": 38,
+   "cpuH2": 35,
+   "etapa": "rampa_25",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 665,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 40,
+   "cpuBackend": 45,
+   "cpuH2": 40,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 229,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 45,
+   "cpuBackend": 33,
+   "cpuH2": 41,
+   "etapa": "rampa_25",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 400,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 50,
+   "cpuBackend": 30,
+   "cpuH2": 27,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 534,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 55,
+   "cpuBackend": 34,
+   "cpuH2": 36,
+   "etapa": "rampa_25",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 89,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 60,
+   "cpuBackend": 26,
+   "cpuH2": 30,
+   "etapa": "rampa_25",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 234,
+   "cpuPct": 2,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 65,
+   "cpuBackend": 67,
+   "cpuH2": 84,
+   "etapa": "rampa_50",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 549,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 70,
+   "cpuBackend": 59,
+   "cpuH2": 82,
+   "etapa": "rampa_50",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 265,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 75,
+   "cpuBackend": 58,
+   "cpuH2": 80,
+   "etapa": "rampa_50",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 566,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 80,
+   "cpuBackend": 62,
+   "cpuH2": 92,
+   "etapa": "rampa_50",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 292,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 85,
+   "cpuBackend": 67,
+   "cpuH2": 87,
+   "etapa": "rampa_50",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 607,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 90,
+   "cpuBackend": 61,
+   "cpuH2": 79,
+   "etapa": "rampa_50",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 314,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 95,
+   "cpuBackend": 59,
+   "cpuH2": 84,
+   "etapa": "rampa_50",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 633,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 100,
+   "cpuBackend": 57,
+   "cpuH2": 70,
+   "etapa": "rampa_50",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 339,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 105,
+   "cpuBackend": 53,
+   "cpuH2": 81,
+   "etapa": "rampa_50",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 665,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 110,
+   "cpuBackend": 51,
+   "cpuH2": 63,
+   "etapa": "rampa_50",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 359,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 115,
+   "cpuBackend": 53,
+   "cpuH2": 78,
+   "etapa": "rampa_50",
+   "hilos": 4,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 661,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 120,
+   "cpuBackend": 70,
+   "cpuH2": 82,
+   "etapa": "rampa_50",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 372,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 125,
+   "cpuBackend": 87,
+   "cpuH2": 117,
+   "etapa": "rampa_75",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 234,
+   "cpuPct": 7,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 130,
+   "cpuBackend": 108,
+   "cpuH2": 133,
+   "etapa": "rampa_75",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 110,
+   "cpuPct": 9,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 135,
+   "cpuBackend": 88,
+   "cpuH2": 130,
+   "etapa": "rampa_75",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 610,
+   "cpuPct": 8,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 140,
+   "cpuBackend": 81,
+   "cpuH2": 112,
+   "etapa": "rampa_75",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 457,
+   "cpuPct": 7,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 145,
+   "cpuBackend": 95,
+   "cpuH2": 101,
+   "etapa": "rampa_75",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 289,
+   "cpuPct": 8,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 150,
+   "cpuBackend": 78,
+   "cpuH2": 119,
+   "etapa": "rampa_75",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 153,
+   "cpuPct": 7,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 155,
+   "cpuBackend": 87,
+   "cpuH2": 120,
+   "etapa": "rampa_75",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 635,
+   "cpuPct": 7,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 160,
+   "cpuBackend": 72,
+   "cpuH2": 105,
+   "etapa": "rampa_75",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 447,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 165,
+   "cpuBackend": 72,
+   "cpuH2": 101,
+   "etapa": "rampa_75",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 245,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 170,
+   "cpuBackend": 72,
+   "cpuH2": 117,
+   "etapa": "rampa_75",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 79,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 175,
+   "cpuBackend": 75,
+   "cpuH2": 111,
+   "etapa": "rampa_75",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 528,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 180,
+   "cpuBackend": 69,
+   "cpuH2": 113,
+   "etapa": "rampa_75",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 371,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 185,
+   "cpuBackend": 99,
+   "cpuH2": 153,
+   "etapa": "rampa_100",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 354,
+   "cpuPct": 9,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 190,
+   "cpuBackend": 91,
+   "cpuH2": 165,
+   "etapa": "rampa_100",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 310,
+   "cpuPct": 8,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 195,
+   "cpuBackend": 111,
+   "cpuH2": 188,
+   "etapa": "rampa_100",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 314,
+   "cpuPct": 10,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 200,
+   "cpuBackend": 118,
+   "cpuH2": 195,
+   "etapa": "rampa_100",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 310,
+   "cpuPct": 10,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 205,
+   "cpuBackend": 105,
+   "cpuH2": 179,
+   "etapa": "rampa_100",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 308,
+   "cpuPct": 9,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 210,
+   "cpuBackend": 88,
+   "cpuH2": 148,
+   "etapa": "rampa_100",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 254,
+   "cpuPct": 8,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 215,
+   "cpuBackend": 101,
+   "cpuH2": 164,
+   "etapa": "rampa_100",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 251,
+   "cpuPct": 9,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 220,
+   "cpuBackend": 88,
+   "cpuH2": 150,
+   "etapa": "rampa_100",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 210,
+   "cpuPct": 8,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 225,
+   "cpuBackend": 99,
+   "cpuH2": 177,
+   "etapa": "rampa_100",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 186,
+   "cpuPct": 8,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 230,
+   "cpuBackend": 147,
+   "cpuH2": 187,
+   "etapa": "rampa_100",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 171,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 235,
+   "cpuBackend": 112,
+   "cpuH2": 204,
+   "etapa": "rampa_100",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 161,
+   "cpuPct": 10,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 240,
+   "cpuBackend": 116,
+   "cpuH2": 199,
+   "etapa": "rampa_100",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 151,
+   "cpuPct": 10,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 245,
+   "cpuBackend": 141,
+   "cpuH2": 243,
+   "etapa": "rampa_125",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 267,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 250,
+   "cpuBackend": 143,
+   "cpuH2": 265,
+   "etapa": "rampa_125",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 436,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 255,
+   "cpuBackend": 133,
+   "cpuH2": 216,
+   "etapa": "rampa_125",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 567,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 260,
+   "cpuBackend": 134,
+   "cpuH2": 239,
+   "etapa": "rampa_125",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 670,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 265,
+   "cpuBackend": 147,
+   "cpuH2": 259,
+   "etapa": "rampa_125",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 174,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 270,
+   "cpuBackend": 159,
+   "cpuH2": 262,
+   "etapa": "rampa_125",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 351,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 275,
+   "cpuBackend": 137,
+   "cpuH2": 255,
+   "etapa": "rampa_125",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 498,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 280,
+   "cpuBackend": 132,
+   "cpuH2": 241,
+   "etapa": "rampa_125",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 626,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 285,
+   "cpuBackend": 147,
+   "cpuH2": 280,
+   "etapa": "rampa_125",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 148,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 290,
+   "cpuBackend": 144,
+   "cpuH2": 269,
+   "etapa": "rampa_125",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 305,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 295,
+   "cpuBackend": 137,
+   "cpuH2": 245,
+   "etapa": "rampa_125",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 442,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 300,
+   "cpuBackend": 126,
+   "cpuH2": 220,
+   "etapa": "rampa_125",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 544,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 305,
+   "cpuBackend": 163,
+   "cpuH2": 291,
+   "etapa": "tramo_5min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 151,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 310,
+   "cpuBackend": 172,
+   "cpuH2": 347,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 492,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 315,
+   "cpuBackend": 164,
+   "cpuH2": 291,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 126,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 320,
+   "cpuBackend": 163,
+   "cpuH2": 300,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 432,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 325,
+   "cpuBackend": 178,
+   "cpuH2": 322,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 110,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 30
+  },
+  {
+   "t": 330,
+   "cpuBackend": 167,
+   "cpuH2": 281,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 404,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 335,
+   "cpuBackend": 165,
+   "cpuH2": 328,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 90,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 340,
+   "cpuBackend": 159,
+   "cpuH2": 308,
+   "etapa": "tramo_5min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 411,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 345,
+   "cpuBackend": 148,
+   "cpuH2": 258,
+   "etapa": "tramo_5min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 676,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 350,
+   "cpuBackend": 153,
+   "cpuH2": 265,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 323,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 355,
+   "cpuBackend": 160,
+   "cpuH2": 330,
+   "etapa": "tramo_5min",
+   "hilos": 12,
+   "hikPend": 1,
+   "hikAct": 8,
+   "heapMB": 596,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 360,
+   "cpuBackend": 163,
+   "cpuH2": 322,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 287,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 365,
+   "cpuBackend": 144,
+   "cpuH2": 260,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 572,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 370,
+   "cpuBackend": 154,
+   "cpuH2": 293,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 218,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 375,
+   "cpuBackend": 160,
+   "cpuH2": 293,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 522,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 380,
+   "cpuBackend": 155,
+   "cpuH2": 307,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 182,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 385,
+   "cpuBackend": 178,
+   "cpuH2": 348,
+   "etapa": "tramo_5min",
+   "hilos": 33,
+   "hikPend": 17,
+   "hikAct": 10,
+   "heapMB": 482,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 33
+  },
+  {
+   "t": 390,
+   "cpuBackend": 176,
+   "cpuH2": 353,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 10,
+   "heapMB": 147,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 29
+  },
+  {
+   "t": 395,
+   "cpuBackend": 169,
+   "cpuH2": 308,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 426,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 400,
+   "cpuBackend": 166,
+   "cpuH2": 315,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 104,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 405,
+   "cpuBackend": 146,
+   "cpuH2": 267,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 382,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 410,
+   "cpuBackend": 163,
+   "cpuH2": 311,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 90,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 415,
+   "cpuBackend": 150,
+   "cpuH2": 270,
+   "etapa": "tramo_5min",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 380,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 420,
+   "cpuBackend": 151,
+   "cpuH2": 300,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 684,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 425,
+   "cpuBackend": 153,
+   "cpuH2": 283,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 337,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 430,
+   "cpuBackend": 154,
+   "cpuH2": 282,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 667,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 435,
+   "cpuBackend": 146,
+   "cpuH2": 265,
+   "etapa": "tramo_5min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 302,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 440,
+   "cpuBackend": 165,
+   "cpuH2": 337,
+   "etapa": "tramo_5min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 618,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 445,
+   "cpuBackend": 171,
+   "cpuH2": 332,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 267,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 450,
+   "cpuBackend": 172,
+   "cpuH2": 337,
+   "etapa": "tramo_5min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 568,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 455,
+   "cpuBackend": 149,
+   "cpuH2": 276,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 231,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 460,
+   "cpuBackend": 146,
+   "cpuH2": 261,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 516,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 465,
+   "cpuBackend": 160,
+   "cpuH2": 280,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 195,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 470,
+   "cpuBackend": 145,
+   "cpuH2": 273,
+   "etapa": "tramo_5min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 478,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 475,
+   "cpuBackend": 155,
+   "cpuH2": 244,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 134,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 480,
+   "cpuBackend": 153,
+   "cpuH2": 266,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 9,
+   "heapMB": 438,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 485,
+   "cpuBackend": 155,
+   "cpuH2": 294,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 708,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 490,
+   "cpuBackend": 147,
+   "cpuH2": 268,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 364,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 495,
+   "cpuBackend": 170,
+   "cpuH2": 281,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 621,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 500,
+   "cpuBackend": 159,
+   "cpuH2": 300,
+   "etapa": "tramo_5min",
+   "hilos": 13,
+   "hikPend": 3,
+   "hikAct": 9,
+   "heapMB": 304,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 505,
+   "cpuBackend": 153,
+   "cpuH2": 291,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 1,
+   "hikAct": 8,
+   "heapMB": 599,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 31
+  },
+  {
+   "t": 510,
+   "cpuBackend": 148,
+   "cpuH2": 274,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 1,
+   "hikAct": 4,
+   "heapMB": 256,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 515,
+   "cpuBackend": 158,
+   "cpuH2": 313,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 600,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 520,
+   "cpuBackend": 151,
+   "cpuH2": 281,
+   "etapa": "tramo_5min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 288,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 525,
+   "cpuBackend": 163,
+   "cpuH2": 321,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 674,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 530,
+   "cpuBackend": 142,
+   "cpuH2": 264,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 336,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 535,
+   "cpuBackend": 143,
+   "cpuH2": 270,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 642,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 540,
+   "cpuBackend": 146,
+   "cpuH2": 291,
+   "etapa": "tramo_5min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 326,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 545,
+   "cpuBackend": 170,
+   "cpuH2": 260,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 619,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 550,
+   "cpuBackend": 138,
+   "cpuH2": 217,
+   "etapa": "tramo_5min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 237,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 555,
+   "cpuBackend": 155,
+   "cpuH2": 289,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 575,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 560,
+   "cpuBackend": 151,
+   "cpuH2": 293,
+   "etapa": "tramo_5min",
+   "hilos": 13,
+   "hikPend": 0,
+   "hikAct": 9,
+   "heapMB": 238,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 565,
+   "cpuBackend": 145,
+   "cpuH2": 263,
+   "etapa": "tramo_5min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 524,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 570,
+   "cpuBackend": 149,
+   "cpuH2": 275,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 164,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 575,
+   "cpuBackend": 164,
+   "cpuH2": 317,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 544,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 580,
+   "cpuBackend": 148,
+   "cpuH2": 266,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 160,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 585,
+   "cpuBackend": 142,
+   "cpuH2": 266,
+   "etapa": "tramo_5min",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 457,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 590,
+   "cpuBackend": 138,
+   "cpuH2": 257,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 101,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 595,
+   "cpuBackend": 148,
+   "cpuH2": 258,
+   "etapa": "tramo_5min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 408,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 600,
+   "cpuBackend": 153,
+   "cpuH2": 292,
+   "etapa": "tramo_5min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 74,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 30
+  },
+  {
+   "t": 605,
+   "cpuBackend": 155,
+   "cpuH2": 265,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 356,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 43
+  },
+  {
+   "t": 610,
+   "cpuBackend": 163,
+   "cpuH2": 328,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 697,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 615,
+   "cpuBackend": 155,
+   "cpuH2": 302,
+   "etapa": "tramo_10min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 392,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 620,
+   "cpuBackend": 175,
+   "cpuH2": 318,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 693,
+   "cpuPct": 15,
+   "retrasoGeneradorMs": 28
+  },
+  {
+   "t": 625,
+   "cpuBackend": 162,
+   "cpuH2": 292,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 361,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 630,
+   "cpuBackend": 153,
+   "cpuH2": 286,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 72,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 635,
+   "cpuBackend": 138,
+   "cpuH2": 267,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 348,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 640,
+   "cpuBackend": 142,
+   "cpuH2": 259,
+   "etapa": "tramo_10min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 661,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 645,
+   "cpuBackend": 143,
+   "cpuH2": 258,
+   "etapa": "tramo_10min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 329,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 650,
+   "cpuBackend": 148,
+   "cpuH2": 282,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 660,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 655,
+   "cpuBackend": 148,
+   "cpuH2": 276,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 304,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 660,
+   "cpuBackend": 141,
+   "cpuH2": 263,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 577,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 665,
+   "cpuBackend": 139,
+   "cpuH2": 261,
+   "etapa": "tramo_10min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 227,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 670,
+   "cpuBackend": 147,
+   "cpuH2": 288,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 543,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 675,
+   "cpuBackend": 150,
+   "cpuH2": 288,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 236,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 680,
+   "cpuBackend": 137,
+   "cpuH2": 249,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 504,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 685,
+   "cpuBackend": 144,
+   "cpuH2": 267,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 169,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 690,
+   "cpuBackend": 129,
+   "cpuH2": 233,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 426,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 695,
+   "cpuBackend": 132,
+   "cpuH2": 236,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 705,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 700,
+   "cpuBackend": 134,
+   "cpuH2": 246,
+   "etapa": "tramo_10min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 347,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 705,
+   "cpuBackend": 145,
+   "cpuH2": 284,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 689,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 710,
+   "cpuBackend": 143,
+   "cpuH2": 261,
+   "etapa": "tramo_10min",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 386,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 715,
+   "cpuBackend": 149,
+   "cpuH2": 282,
+   "etapa": "tramo_10min",
+   "hilos": 13,
+   "hikPend": 0,
+   "hikAct": 10,
+   "heapMB": 94,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 720,
+   "cpuBackend": 138,
+   "cpuH2": 255,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 382,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 725,
+   "cpuBackend": 132,
+   "cpuH2": 240,
+   "etapa": "tramo_10min",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 9,
+   "heapMB": 645,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 730,
+   "cpuBackend": 146,
+   "cpuH2": 265,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 9,
+   "heapMB": 314,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 735,
+   "cpuBackend": 142,
+   "cpuH2": 256,
+   "etapa": "tramo_10min",
+   "hilos": 11,
+   "hikPend": 1,
+   "hikAct": 7,
+   "heapMB": 575,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 740,
+   "cpuBackend": 151,
+   "cpuH2": 277,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 221,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 745,
+   "cpuBackend": 153,
+   "cpuH2": 289,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 516,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 750,
+   "cpuBackend": 140,
+   "cpuH2": 263,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 160,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 755,
+   "cpuBackend": 152,
+   "cpuH2": 293,
+   "etapa": "tramo_10min",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 460,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 760,
+   "cpuBackend": 150,
+   "cpuH2": 268,
+   "etapa": "tramo_10min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 100,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 765,
+   "cpuBackend": 146,
+   "cpuH2": 279,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 395,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 770,
+   "cpuBackend": 138,
+   "cpuH2": 249,
+   "etapa": "tramo_10min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 699,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 775,
+   "cpuBackend": 148,
+   "cpuH2": 283,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 387,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 780,
+   "cpuBackend": 141,
+   "cpuH2": 259,
+   "etapa": "tramo_10min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 669,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 785,
+   "cpuBackend": 138,
+   "cpuH2": 261,
+   "etapa": "tramo_10min",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 326,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 790,
+   "cpuBackend": 139,
+   "cpuH2": 253,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 617,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 795,
+   "cpuBackend": 140,
+   "cpuH2": 259,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 291,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 800,
+   "cpuBackend": 142,
+   "cpuH2": 265,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 599,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 805,
+   "cpuBackend": 141,
+   "cpuH2": 257,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 258,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 810,
+   "cpuBackend": 164,
+   "cpuH2": 313,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 560,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 815,
+   "cpuBackend": 148,
+   "cpuH2": 274,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 202,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 820,
+   "cpuBackend": 146,
+   "cpuH2": 291,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 473,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 825,
+   "cpuBackend": 153,
+   "cpuH2": 287,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 120,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 830,
+   "cpuBackend": 154,
+   "cpuH2": 295,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 419,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 835,
+   "cpuBackend": 155,
+   "cpuH2": 287,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 691,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 30
+  },
+  {
+   "t": 840,
+   "cpuBackend": 152,
+   "cpuH2": 297,
+   "etapa": "tramo_10min",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 367,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 845,
+   "cpuBackend": 151,
+   "cpuH2": 292,
+   "etapa": "tramo_10min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 662,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 850,
+   "cpuBackend": 148,
+   "cpuH2": 282,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 357,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 29
+  },
+  {
+   "t": 855,
+   "cpuBackend": 137,
+   "cpuH2": 260,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 650,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 860,
+   "cpuBackend": 140,
+   "cpuH2": 256,
+   "etapa": "tramo_10min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 310,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 865,
+   "cpuBackend": 143,
+   "cpuH2": 271,
+   "etapa": "tramo_10min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 623,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 870,
+   "cpuBackend": 144,
+   "cpuH2": 265,
+   "etapa": "tramo_10min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 302,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 875,
+   "cpuBackend": 139,
+   "cpuH2": 245,
+   "etapa": "tramo_10min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 590,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 880,
+   "cpuBackend": 150,
+   "cpuH2": 285,
+   "etapa": "tramo_10min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 280,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 885,
+   "cpuBackend": 144,
+   "cpuH2": 283,
+   "etapa": "tramo_10min",
+   "hilos": 3,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 589,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 890,
+   "cpuBackend": 146,
+   "cpuH2": 253,
+   "etapa": "tramo_10min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 270,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 895,
+   "cpuBackend": 141,
+   "cpuH2": 276,
+   "etapa": "tramo_10min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 550,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 900,
+   "cpuBackend": 135,
+   "cpuH2": 238,
+   "etapa": "tramo_10min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 180,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 905,
+   "cpuBackend": 143,
+   "cpuH2": 280,
+   "etapa": "tramo_15min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 503,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 33
+  },
+  {
+   "t": 910,
+   "cpuBackend": 131,
+   "cpuH2": 242,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 128,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 915,
+   "cpuBackend": 144,
+   "cpuH2": 270,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 436,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 920,
+   "cpuBackend": 144,
+   "cpuH2": 290,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 123,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 925,
+   "cpuBackend": 134,
+   "cpuH2": 241,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 388,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 930,
+   "cpuBackend": 152,
+   "cpuH2": 303,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 128,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 935,
+   "cpuBackend": 141,
+   "cpuH2": 267,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 441,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 940,
+   "cpuBackend": 143,
+   "cpuH2": 256,
+   "etapa": "tramo_15min",
+   "hilos": 12,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 118,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 945,
+   "cpuBackend": 134,
+   "cpuH2": 250,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 367,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 950,
+   "cpuBackend": 144,
+   "cpuH2": 260,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 632,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 955,
+   "cpuBackend": 138,
+   "cpuH2": 256,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 289,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 960,
+   "cpuBackend": 138,
+   "cpuH2": 258,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 568,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 965,
+   "cpuBackend": 144,
+   "cpuH2": 280,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 249,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 970,
+   "cpuBackend": 133,
+   "cpuH2": 229,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 519,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 975,
+   "cpuBackend": 137,
+   "cpuH2": 256,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 166,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 980,
+   "cpuBackend": 148,
+   "cpuH2": 290,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 480,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 985,
+   "cpuBackend": 145,
+   "cpuH2": 273,
+   "etapa": "tramo_15min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 125,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 990,
+   "cpuBackend": 141,
+   "cpuH2": 263,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 405,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 995,
+   "cpuBackend": 140,
+   "cpuH2": 259,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 708,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1000,
+   "cpuBackend": 139,
+   "cpuH2": 250,
+   "etapa": "tramo_15min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 362,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 1005,
+   "cpuBackend": 144,
+   "cpuH2": 271,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 685,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 1010,
+   "cpuBackend": 141,
+   "cpuH2": 268,
+   "etapa": "tramo_15min",
+   "hilos": 13,
+   "hikPend": 0,
+   "hikAct": 9,
+   "heapMB": 361,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1015,
+   "cpuBackend": 131,
+   "cpuH2": 232,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 624,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1020,
+   "cpuBackend": 133,
+   "cpuH2": 240,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 264,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1025,
+   "cpuBackend": 135,
+   "cpuH2": 244,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 553,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 1030,
+   "cpuBackend": 142,
+   "cpuH2": 263,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 8,
+   "heapMB": 246,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1035,
+   "cpuBackend": 152,
+   "cpuH2": 290,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 10,
+   "heapMB": 565,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1040,
+   "cpuBackend": 155,
+   "cpuH2": 307,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 292,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 1045,
+   "cpuBackend": 141,
+   "cpuH2": 261,
+   "etapa": "tramo_15min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 596,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1050,
+   "cpuBackend": 142,
+   "cpuH2": 266,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 277,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1055,
+   "cpuBackend": 139,
+   "cpuH2": 253,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 584,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1060,
+   "cpuBackend": 152,
+   "cpuH2": 284,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 268,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1065,
+   "cpuBackend": 158,
+   "cpuH2": 306,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 569,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 42
+  },
+  {
+   "t": 1070,
+   "cpuBackend": 149,
+   "cpuH2": 295,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 260,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1075,
+   "cpuBackend": 133,
+   "cpuH2": 228,
+   "etapa": "tramo_15min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 533,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1080,
+   "cpuBackend": 138,
+   "cpuH2": 246,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 168,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1085,
+   "cpuBackend": 131,
+   "cpuH2": 238,
+   "etapa": "tramo_15min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 433,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1090,
+   "cpuBackend": 127,
+   "cpuH2": 220,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 677,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1095,
+   "cpuBackend": 134,
+   "cpuH2": 241,
+   "etapa": "tramo_15min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 322,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1100,
+   "cpuBackend": 141,
+   "cpuH2": 257,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 633,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 1105,
+   "cpuBackend": 147,
+   "cpuH2": 278,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 333,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1110,
+   "cpuBackend": 132,
+   "cpuH2": 237,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 595,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1115,
+   "cpuBackend": 146,
+   "cpuH2": 273,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 304,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1120,
+   "cpuBackend": 139,
+   "cpuH2": 261,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 601,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 1125,
+   "cpuBackend": 134,
+   "cpuH2": 244,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 237,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1130,
+   "cpuBackend": 142,
+   "cpuH2": 261,
+   "etapa": "tramo_15min",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 563,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1135,
+   "cpuBackend": 135,
+   "cpuH2": 256,
+   "etapa": "tramo_15min",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 193,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1140,
+   "cpuBackend": 152,
+   "cpuH2": 297,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 507,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 1145,
+   "cpuBackend": 142,
+   "cpuH2": 270,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 163,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 1150,
+   "cpuBackend": 130,
+   "cpuH2": 225,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 425,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1155,
+   "cpuBackend": 131,
+   "cpuH2": 231,
+   "etapa": "tramo_15min",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 684,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1160,
+   "cpuBackend": 137,
+   "cpuH2": 257,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 336,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1165,
+   "cpuBackend": 132,
+   "cpuH2": 242,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 585,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1170,
+   "cpuBackend": 127,
+   "cpuH2": 224,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 185,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1175,
+   "cpuBackend": 144,
+   "cpuH2": 276,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 508,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1180,
+   "cpuBackend": 136,
+   "cpuH2": 258,
+   "etapa": "tramo_15min",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 158,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1185,
+   "cpuBackend": 134,
+   "cpuH2": 245,
+   "etapa": "tramo_15min",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 438,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1190,
+   "cpuBackend": 134,
+   "cpuH2": 250,
+   "etapa": "tramo_15min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 711,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 1195,
+   "cpuBackend": 137,
+   "cpuH2": 239,
+   "etapa": "tramo_15min",
+   "hilos": 11,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 370,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 1200,
+   "cpuBackend": 147,
+   "cpuH2": 281,
+   "etapa": "tramo_15min",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 711,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  }
+ ]
+}

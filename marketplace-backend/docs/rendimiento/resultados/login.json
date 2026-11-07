@@ -1,0 +1,909 @@
+{
+ "escenario": "login",
+ "base": "http://localhost:8081",
+ "fecha": "2026-11-07T04:45:37.226Z",
+ "etapas": [
+  {
+   "nombre": "login_5",
+   "objetivo": "5 rps",
+   "segundos": 30,
+   "n": 149,
+   "rps": 5,
+   "ok": 149,
+   "err": 0,
+   "errPct": 0,
+   "p50": 69.7,
+   "p90": 72.3,
+   "p95": 72.9,
+   "p99": 74.1,
+   "max": 78.5,
+   "descartadas": 0,
+   "retrasoMaxMs": 200,
+   "estados": {
+    "200": 149
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 149,
+     "rps": 5,
+     "ok": 149,
+     "err": 0,
+     "errPct": 0,
+     "p50": 69.7,
+     "p90": 72.3,
+     "p95": 72.9,
+     "p99": 74.1,
+     "max": 78.5,
+     "estados": {
+      "200": 149
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_10",
+   "objetivo": "10 rps",
+   "segundos": 30,
+   "n": 299,
+   "rps": 10,
+   "ok": 299,
+   "err": 0,
+   "errPct": 0,
+   "p50": 67.1,
+   "p90": 69.6,
+   "p95": 70.9,
+   "p99": 74.4,
+   "max": 79.2,
+   "descartadas": 0,
+   "retrasoMaxMs": 100,
+   "estados": {
+    "200": 299
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 299,
+     "rps": 10,
+     "ok": 299,
+     "err": 0,
+     "errPct": 0,
+     "p50": 67.1,
+     "p90": 69.6,
+     "p95": 70.9,
+     "p99": 74.4,
+     "max": 79.2,
+     "estados": {
+      "200": 299
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_20",
+   "objetivo": "20 rps",
+   "segundos": 30,
+   "n": 599,
+   "rps": 19.9,
+   "ok": 599,
+   "err": 0,
+   "errPct": 0,
+   "p50": 66,
+   "p90": 68.5,
+   "p95": 69.4,
+   "p99": 71.3,
+   "max": 78.7,
+   "descartadas": 0,
+   "retrasoMaxMs": 50,
+   "estados": {
+    "200": 599
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 599,
+     "rps": 19.9,
+     "ok": 599,
+     "err": 0,
+     "errPct": 0,
+     "p50": 66,
+     "p90": 68.5,
+     "p95": 69.4,
+     "p99": 71.3,
+     "max": 78.7,
+     "estados": {
+      "200": 599
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_40",
+   "objetivo": "40 rps",
+   "segundos": 30,
+   "n": 1199,
+   "rps": 39.9,
+   "ok": 1199,
+   "err": 0,
+   "errPct": 0,
+   "p50": 66.4,
+   "p90": 68.6,
+   "p95": 69.5,
+   "p99": 73,
+   "max": 100,
+   "descartadas": 0,
+   "retrasoMaxMs": 25,
+   "estados": {
+    "200": 1199
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 1199,
+     "rps": 39.9,
+     "ok": 1199,
+     "err": 0,
+     "errPct": 0,
+     "p50": 66.4,
+     "p90": 68.6,
+     "p95": 69.5,
+     "p99": 73,
+     "max": 100,
+     "estados": {
+      "200": 1199
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_80",
+   "objetivo": "80 rps",
+   "segundos": 30,
+   "n": 2399,
+   "rps": 79.7,
+   "ok": 2399,
+   "err": 0,
+   "errPct": 0,
+   "p50": 69.3,
+   "p90": 74.9,
+   "p95": 77.8,
+   "p99": 86.7,
+   "max": 106.5,
+   "descartadas": 0,
+   "retrasoMaxMs": 13,
+   "estados": {
+    "200": 2399
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 2399,
+     "rps": 79.7,
+     "ok": 2399,
+     "err": 0,
+     "errPct": 0,
+     "p50": 69.3,
+     "p90": 74.9,
+     "p95": 77.8,
+     "p99": 86.7,
+     "max": 106.5,
+     "estados": {
+      "200": 2399
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_120",
+   "objetivo": "120 rps",
+   "segundos": 32,
+   "n": 3599,
+   "rps": 113.5,
+   "ok": 3599,
+   "err": 0,
+   "errPct": 0,
+   "p50": 1240.9,
+   "p90": 1695.6,
+   "p95": 2744.8,
+   "p99": 3278.6,
+   "max": 6388.7,
+   "descartadas": 0,
+   "retrasoMaxMs": 17,
+   "estados": {
+    "200": 3599
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 3599,
+     "rps": 113.5,
+     "ok": 3599,
+     "err": 0,
+     "errPct": 0,
+     "p50": 1240.9,
+     "p90": 1695.6,
+     "p95": 2744.8,
+     "p99": 3278.6,
+     "max": 6388.7,
+     "estados": {
+      "200": 3599
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_160",
+   "objetivo": "160 rps",
+   "segundos": 40,
+   "n": 4799,
+   "rps": 119.9,
+   "ok": 4249,
+   "err": 550,
+   "errPct": 11.5,
+   "p50": 5576.5,
+   "p90": 10000.2,
+   "p95": 10001.2,
+   "p99": 10002.9,
+   "max": 10010.4,
+   "descartadas": 0,
+   "retrasoMaxMs": 19,
+   "estados": {
+    "200": 4249,
+    "TIMEOUT": 550
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 4799,
+     "rps": 119.9,
+     "ok": 4249,
+     "err": 550,
+     "errPct": 11.5,
+     "p50": 5576.5,
+     "p90": 10000.2,
+     "p95": 10001.2,
+     "p99": 10002.9,
+     "max": 10010.4,
+     "estados": {
+      "200": 4249,
+      "TIMEOUT": 550
+     }
+    }
+   }
+  },
+  {
+   "nombre": "login_240",
+   "objetivo": "240 rps",
+   "segundos": 40,
+   "n": 7199,
+   "rps": 179.8,
+   "ok": 2036,
+   "err": 5163,
+   "errPct": 71.7,
+   "p50": 10000.9,
+   "p90": 10003.2,
+   "p95": 10004.3,
+   "p99": 10006.9,
+   "max": 10027.6,
+   "descartadas": 0,
+   "retrasoMaxMs": 21,
+   "estados": {
+    "200": 2036,
+    "TIMEOUT": 5163
+   },
+   "operaciones": {
+    "login_admin": {
+     "n": 7199,
+     "rps": 179.8,
+     "ok": 2036,
+     "err": 5163,
+     "errPct": 71.7,
+     "p50": 10000.9,
+     "p90": 10003.2,
+     "p95": 10004.3,
+     "p99": 10006.9,
+     "max": 10027.6,
+     "estados": {
+      "200": 2036,
+      "TIMEOUT": 5163
+     }
+    }
+   }
+  }
+ ],
+ "telemetria": [
+  {
+   "t": 5,
+   "cpuBackend": null,
+   "cpuH2": null,
+   "etapa": "login_5",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 117,
+   "cpuPct": 2,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 10,
+   "cpuBackend": 45,
+   "cpuH2": 1,
+   "etapa": "login_5",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 126,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 15,
+   "cpuBackend": 38,
+   "cpuH2": 1,
+   "etapa": "login_5",
+   "hilos": 2,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 134,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 20,
+   "cpuBackend": 41,
+   "cpuH2": 2,
+   "etapa": "login_5",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 141,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 25,
+   "cpuBackend": 40,
+   "cpuH2": 1,
+   "etapa": "login_5",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 150,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 30,
+   "cpuBackend": 40,
+   "cpuH2": 1,
+   "etapa": "login_10",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 157,
+   "cpuPct": 3,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 35,
+   "cpuBackend": 71,
+   "cpuH2": 1,
+   "etapa": "login_10",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 170,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 40,
+   "cpuBackend": 74,
+   "cpuH2": 1,
+   "etapa": "login_10",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 181,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 45,
+   "cpuBackend": 72,
+   "cpuH2": 3,
+   "etapa": "login_10",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 194,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 50,
+   "cpuBackend": 72,
+   "cpuH2": 1,
+   "etapa": "login_10",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 205,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 55,
+   "cpuBackend": 74,
+   "cpuH2": 1,
+   "etapa": "login_10",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 219,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 60,
+   "cpuBackend": 71,
+   "cpuH2": 1,
+   "etapa": "login_20",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 231,
+   "cpuPct": 6,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 65,
+   "cpuBackend": 147,
+   "cpuH2": 1,
+   "etapa": "login_20",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 253,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 70,
+   "cpuBackend": 142,
+   "cpuH2": 3,
+   "etapa": "login_20",
+   "hilos": 4,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 275,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 75,
+   "cpuBackend": 157,
+   "cpuH2": 4,
+   "etapa": "login_20",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 298,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 80,
+   "cpuBackend": 156,
+   "cpuH2": 1,
+   "etapa": "login_20",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 319,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 85,
+   "cpuBackend": 141,
+   "cpuH2": 1,
+   "etapa": "login_20",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 341,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 90,
+   "cpuBackend": 135,
+   "cpuH2": 1,
+   "etapa": "login_20",
+   "hilos": 4,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 362,
+   "cpuPct": 12,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 95,
+   "cpuBackend": 286,
+   "cpuH2": 2,
+   "etapa": "login_40",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 401,
+   "cpuPct": 24,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 100,
+   "cpuBackend": 285,
+   "cpuH2": 2,
+   "etapa": "login_40",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 441,
+   "cpuPct": 25,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 105,
+   "cpuBackend": 284,
+   "cpuH2": 3,
+   "etapa": "login_40",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 481,
+   "cpuPct": 24,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 110,
+   "cpuBackend": 278,
+   "cpuH2": 3,
+   "etapa": "login_40",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 521,
+   "cpuPct": 24,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 115,
+   "cpuBackend": 283,
+   "cpuH2": 2,
+   "etapa": "login_40",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 560,
+   "cpuPct": 24,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 120,
+   "cpuBackend": 264,
+   "cpuH2": 3,
+   "etapa": "login_40",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 600,
+   "cpuPct": 22,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 125,
+   "cpuBackend": 568,
+   "cpuH2": 10,
+   "etapa": "login_80",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 79,
+   "cpuPct": 48,
+   "retrasoGeneradorMs": 29
+  },
+  {
+   "t": 130,
+   "cpuBackend": 598,
+   "cpuH2": 4,
+   "etapa": "login_80",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 158,
+   "cpuPct": 51,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 135,
+   "cpuBackend": 590,
+   "cpuH2": 4,
+   "etapa": "login_80",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 6,
+   "heapMB": 235,
+   "cpuPct": 50,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 140,
+   "cpuBackend": 562,
+   "cpuH2": 4,
+   "etapa": "login_80",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 309,
+   "cpuPct": 48,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 145,
+   "cpuBackend": 555,
+   "cpuH2": 6,
+   "etapa": "login_80",
+   "hilos": 7,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 385,
+   "cpuPct": 47,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 150,
+   "cpuBackend": 544,
+   "cpuH2": 4,
+   "etapa": "login_80",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 461,
+   "cpuPct": 46,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 156,
+   "cpuBackend": 861,
+   "cpuH2": 8,
+   "etapa": "login_120",
+   "hilos": 68,
+   "hikPend": 55,
+   "hikAct": 10,
+   "heapMB": 598,
+   "cpuPct": 72,
+   "retrasoGeneradorMs": 29
+  },
+  {
+   "t": 162,
+   "cpuBackend": 905,
+   "cpuH2": 7,
+   "etapa": "login_120",
+   "hilos": 111,
+   "hikPend": 102,
+   "hikAct": 9,
+   "heapMB": 156,
+   "cpuPct": 76,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 166,
+   "cpuBackend": 909,
+   "cpuH2": 6,
+   "etapa": "login_120",
+   "hilos": 160,
+   "hikPend": 148,
+   "hikAct": 10,
+   "heapMB": 280,
+   "cpuPct": 76,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 172,
+   "cpuBackend": 895,
+   "cpuH2": 5,
+   "etapa": "login_120",
+   "hilos": 188,
+   "hikPend": 175,
+   "hikAct": 10,
+   "heapMB": 402,
+   "cpuPct": 74,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 177,
+   "cpuBackend": 917,
+   "cpuH2": 4,
+   "etapa": "login_120",
+   "hilos": 200,
+   "hikPend": 189,
+   "hikAct": 9,
+   "heapMB": 517,
+   "cpuPct": 77,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 182,
+   "cpuBackend": 920,
+   "cpuH2": 5,
+   "etapa": "login_120",
+   "hilos": 37,
+   "hikPend": 24,
+   "hikAct": 10,
+   "heapMB": 617,
+   "cpuPct": 77,
+   "retrasoGeneradorMs": 27
+  },
+  {
+   "t": 188,
+   "cpuBackend": 886,
+   "cpuH2": 4,
+   "etapa": "login_160",
+   "hilos": 195,
+   "hikPend": 184,
+   "hikAct": 9,
+   "heapMB": 173,
+   "cpuPct": 75,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 195,
+   "cpuBackend": 881,
+   "cpuH2": 5,
+   "etapa": "login_160",
+   "hilos": 200,
+   "hikPend": 188,
+   "hikAct": 9,
+   "heapMB": 326,
+   "cpuPct": 74,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 202,
+   "cpuBackend": 902,
+   "cpuH2": 5,
+   "etapa": "login_160",
+   "hilos": 200,
+   "hikPend": 187,
+   "hikAct": 10,
+   "heapMB": 441,
+   "cpuPct": 75,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 210,
+   "cpuBackend": 897,
+   "cpuH2": 4,
+   "etapa": "login_160",
+   "hilos": 200,
+   "hikPend": 189,
+   "hikAct": 10,
+   "heapMB": 629,
+   "cpuPct": 75,
+   "retrasoGeneradorMs": 28
+  },
+  {
+   "t": 215,
+   "cpuBackend": 893,
+   "cpuH2": 5,
+   "etapa": "login_160",
+   "hilos": null,
+   "hikPend": 188,
+   "hikAct": 8,
+   "heapMB": 222,
+   "cpuPct": 75,
+   "retrasoGeneradorMs": 34
+  },
+  {
+   "t": 220,
+   "cpuBackend": 898,
+   "cpuH2": 4,
+   "etapa": "login_160",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 225,
+   "cpuBackend": 896,
+   "cpuH2": 5,
+   "etapa": "login_240",
+   "hilos": 200,
+   "hikPend": 187,
+   "hikAct": 10,
+   "heapMB": 390,
+   "cpuPct": 77,
+   "retrasoGeneradorMs": 35
+  },
+  {
+   "t": 225,
+   "cpuBackend": 866,
+   "cpuH2": 5,
+   "etapa": "login_240",
+   "hilos": 200,
+   "hikPend": 189,
+   "hikAct": 10,
+   "heapMB": null,
+   "cpuPct": 100,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 230,
+   "cpuBackend": 883,
+   "cpuH2": 5,
+   "etapa": "login_240",
+   "hilos": 200,
+   "hikPend": 189,
+   "hikAct": 10,
+   "heapMB": 577,
+   "cpuPct": 73,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 240,
+   "cpuBackend": 905,
+   "cpuH2": 5,
+   "etapa": "login_240",
+   "hilos": null,
+   "hikPend": 189,
+   "hikAct": 10,
+   "heapMB": null,
+   "cpuPct": 76,
+   "retrasoGeneradorMs": 29
+  },
+  {
+   "t": 245,
+   "cpuBackend": 886,
+   "cpuH2": 4,
+   "etapa": "login_240",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 32
+  },
+  {
+   "t": 250,
+   "cpuBackend": 880,
+   "cpuH2": 5,
+   "etapa": "login_240",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 31
+  },
+  {
+   "t": 255,
+   "cpuBackend": 877,
+   "cpuH2": 5,
+   "etapa": "login_240",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 260,
+   "cpuBackend": 896,
+   "cpuH2": 4,
+   "etapa": "login_240",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 25
+  }
+ ]
+}

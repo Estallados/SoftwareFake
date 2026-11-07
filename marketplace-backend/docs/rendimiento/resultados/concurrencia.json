@@ -1,0 +1,415 @@
+{
+ "escenario": "concurrencia",
+ "base": "http://localhost:8081",
+ "fecha": "2026-11-07T04:13:08.707Z",
+ "etapas": [
+  {
+   "nombre": "doble_reserva",
+   "objetivo": "100 x 20 rondas",
+   "segundos": 13,
+   "n": 4000,
+   "rps": 297.4,
+   "ok": 4000,
+   "err": 0,
+   "errPct": 0,
+   "p50": 166.4,
+   "p90": 394.9,
+   "p95": 501.1,
+   "p99": 750.4,
+   "max": 951.2,
+   "descartadas": 0,
+   "retrasoMaxMs": 0,
+   "estados": {
+    "201": 2020,
+    "409": 1980
+   },
+   "operaciones": {
+    "cotizar": {
+     "n": 2000,
+     "rps": 148.7,
+     "ok": 2000,
+     "err": 0,
+     "errPct": 0,
+     "p50": 122.5,
+     "p90": 220.1,
+     "p95": 256.3,
+     "p99": 323.1,
+     "max": 348.3,
+     "estados": {
+      "201": 2000
+     }
+    },
+    "reservar_mismas_fechas": {
+     "n": 2000,
+     "rps": 148.7,
+     "ok": 2000,
+     "err": 0,
+     "errPct": 0,
+     "p50": 260.7,
+     "p90": 501.1,
+     "p95": 609,
+     "p99": 854.5,
+     "max": 951.2,
+     "estados": {
+      "201": 20,
+      "409": 1980
+     }
+    }
+   }
+  },
+  {
+   "nombre": "idempotencia",
+   "objetivo": "30 x 20 rondas",
+   "segundos": 1,
+   "n": 600,
+   "rps": 708.5,
+   "ok": 600,
+   "err": 0,
+   "errPct": 0,
+   "p50": 17.8,
+   "p90": 28.2,
+   "p95": 30.9,
+   "p99": 36.7,
+   "max": 49.1,
+   "descartadas": 0,
+   "retrasoMaxMs": 0,
+   "estados": {
+    "201": 21,
+    "409": 579
+   },
+   "operaciones": {
+    "reservar_misma_clave": {
+     "n": 600,
+     "rps": 708.5,
+     "ok": 600,
+     "err": 0,
+     "errPct": 0,
+     "p50": 17.8,
+     "p90": 28.2,
+     "p95": 30.9,
+     "p99": 36.7,
+     "max": 49.1,
+     "estados": {
+      "201": 21,
+      "409": 579
+     }
+    }
+   }
+  }
+ ],
+ "telemetria": [
+  {
+   "t": 5,
+   "cpuBackend": null,
+   "cpuH2": null,
+   "etapa": "doble_reserva",
+   "hilos": 42,
+   "hikPend": 46,
+   "hikAct": 9,
+   "heapMB": 323,
+   "cpuPct": 33,
+   "retrasoGeneradorMs": 56
+  },
+  {
+   "t": 10,
+   "cpuBackend": 576,
+   "cpuH2": 122,
+   "etapa": "doble_reserva",
+   "hilos": 19,
+   "hikPend": 4,
+   "hikAct": 10,
+   "heapMB": 168,
+   "cpuPct": 49,
+   "retrasoGeneradorMs": 39
+  }
+ ],
+ "extra": {
+  "rondas": [
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3900
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3901
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3902
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3903
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3904
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3905
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3906
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3907
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3908
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3909
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3910
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3911
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3912
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3913
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3914
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3915
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3916
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3917
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3918
+   },
+   {
+    "201": 1,
+    "409": 99,
+    "alojamiento": 3919
+   }
+  ],
+  "ganadoresPorRonda": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "idempotencia": [
+   {
+    "ronda": 0,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 1,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 2,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 3,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 4,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 5,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 6,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 7,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 2,
+     "409": 28
+    }
+   },
+   {
+    "ronda": 8,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 9,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 10,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 11,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 12,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 13,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 14,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 15,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 16,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 17,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 18,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   },
+   {
+    "ronda": 19,
+    "reservasDistintas": 1,
+    "estados": {
+     "201": 1,
+     "409": 29
+    }
+   }
+  ],
+  "primeraEtapa": "doble_reserva"
+ }
+}

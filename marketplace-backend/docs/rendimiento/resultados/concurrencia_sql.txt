@@ -1,0 +1,9 @@
+CRUCES_CONFIRMADOS
+0
+(1 row, 121 ms)
+ESTADO     | ?column?
+CONFIRMADA | 40
+(1 row, 1 ms)
+ESTADO   | ?column?
+APROBADO | 40
+(1 row, 0 ms)

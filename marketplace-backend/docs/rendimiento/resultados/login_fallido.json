@@ -1,0 +1,496 @@
+{
+ "escenario": "login_fallido",
+ "base": "http://localhost:8081",
+ "fecha": "2026-11-07T04:48:48.670Z",
+ "etapas": [
+  {
+   "nombre": "solo_lecturas",
+   "objetivo": "100 rps",
+   "segundos": 30,
+   "n": 2999,
+   "rps": 100,
+   "ok": 2999,
+   "err": 0,
+   "errPct": 0,
+   "p50": 5.4,
+   "p90": 8.6,
+   "p95": 9.9,
+   "p99": 12.7,
+   "max": 29.8,
+   "descartadas": 0,
+   "retrasoMaxMs": 10,
+   "estados": {
+    "200": 2999
+   },
+   "operaciones": {
+    "busqueda_victima": {
+     "n": 2999,
+     "rps": 100,
+     "ok": 2999,
+     "err": 0,
+     "errPct": 0,
+     "p50": 5.4,
+     "p90": 8.6,
+     "p95": 9.9,
+     "p99": 12.7,
+     "max": 29.8,
+     "estados": {
+      "200": 2999
+     }
+    }
+   }
+  },
+  {
+   "nombre": "ataque_50",
+   "objetivo": "150 rps",
+   "segundos": 30,
+   "n": 4499,
+   "rps": 149.5,
+   "ok": 4499,
+   "err": 0,
+   "errPct": 0,
+   "p50": 5.7,
+   "p90": 70.4,
+   "p95": 72.9,
+   "p99": 79.8,
+   "max": 140.9,
+   "descartadas": 0,
+   "retrasoMaxMs": 7,
+   "estados": {
+    "200": 3009,
+    "401": 1490
+   },
+   "operaciones": {
+    "busqueda_victima": {
+     "n": 3009,
+     "rps": 100,
+     "ok": 3009,
+     "err": 0,
+     "errPct": 0,
+     "p50": 4.8,
+     "p90": 6.7,
+     "p95": 7.5,
+     "p99": 12.4,
+     "max": 31.4,
+     "estados": {
+      "200": 3009
+     }
+    },
+    "login_fallido": {
+     "n": 1490,
+     "rps": 49.5,
+     "ok": 1490,
+     "err": 0,
+     "errPct": 0,
+     "p50": 68.8,
+     "p90": 74.5,
+     "p95": 77.5,
+     "p99": 100.8,
+     "max": 140.9,
+     "estados": {
+      "401": 1490
+     }
+    }
+   }
+  },
+  {
+   "nombre": "ataque_100",
+   "objetivo": "200 rps",
+   "segundos": 30,
+   "n": 5999,
+   "rps": 199.3,
+   "ok": 5999,
+   "err": 0,
+   "errPct": 0,
+   "p50": 73.6,
+   "p90": 144.1,
+   "p95": 171.9,
+   "p99": 237.1,
+   "max": 430.8,
+   "descartadas": 0,
+   "retrasoMaxMs": 10,
+   "estados": {
+    "200": 2995,
+    "401": 3004
+   },
+   "operaciones": {
+    "busqueda_victima": {
+     "n": 2995,
+     "rps": 99.5,
+     "ok": 2995,
+     "err": 0,
+     "errPct": 0,
+     "p50": 10.4,
+     "p90": 81.9,
+     "p95": 109.1,
+     "p99": 161.6,
+     "max": 287.5,
+     "estados": {
+      "200": 2995
+     }
+    },
+    "login_fallido": {
+     "n": 3004,
+     "rps": 99.8,
+     "ok": 3004,
+     "err": 0,
+     "errPct": 0,
+     "p50": 93.7,
+     "p90": 168.7,
+     "p95": 197.5,
+     "p99": 256.6,
+     "max": 430.8,
+     "estados": {
+      "401": 3004
+     }
+    }
+   }
+  },
+  {
+   "nombre": "ataque_200",
+   "objetivo": "300 rps",
+   "segundos": 40,
+   "n": 8999,
+   "rps": 224.9,
+   "ok": 3420,
+   "err": 5579,
+   "errPct": 62,
+   "p50": 10000.5,
+   "p90": 10002.8,
+   "p95": 10003.9,
+   "p99": 10006.9,
+   "max": 10020.9,
+   "descartadas": 0,
+   "retrasoMaxMs": 20,
+   "estados": {
+    "200": 1142,
+    "401": 2278,
+    "TIMEOUT": 5579
+   },
+   "operaciones": {
+    "busqueda_victima": {
+     "n": 3009,
+     "rps": 75.2,
+     "ok": 1142,
+     "err": 1867,
+     "errPct": 62,
+     "p50": 10000.4,
+     "p90": 10002.8,
+     "p95": 10003.9,
+     "p99": 10007.4,
+     "max": 10020.9,
+     "estados": {
+      "200": 1142,
+      "TIMEOUT": 1867
+     }
+    },
+    "login_fallido": {
+     "n": 5990,
+     "rps": 149.7,
+     "ok": 2278,
+     "err": 3712,
+     "errPct": 62,
+     "p50": 10000.5,
+     "p90": 10002.8,
+     "p95": 10003.9,
+     "p99": 10006.7,
+     "max": 10015.7,
+     "estados": {
+      "401": 2278,
+      "TIMEOUT": 3712
+     }
+    }
+   }
+  }
+ ],
+ "telemetria": [
+  {
+   "t": 5,
+   "cpuBackend": null,
+   "cpuH2": null,
+   "etapa": "solo_lecturas",
+   "hilos": 3,
+   "hikPend": 0,
+   "hikAct": 2,
+   "heapMB": 230,
+   "cpuPct": 14,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 10,
+   "cpuBackend": 161,
+   "cpuH2": 15,
+   "etapa": "solo_lecturas",
+   "hilos": 3,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 349,
+   "cpuPct": 13,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 15,
+   "cpuBackend": 130,
+   "cpuH2": 11,
+   "etapa": "solo_lecturas",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 469,
+   "cpuPct": 11,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 20,
+   "cpuBackend": 80,
+   "cpuH2": 10,
+   "etapa": "solo_lecturas",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 585,
+   "cpuPct": 7,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 25,
+   "cpuBackend": 58,
+   "cpuH2": 10,
+   "etapa": "solo_lecturas",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 1,
+   "heapMB": 105,
+   "cpuPct": 5,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 30,
+   "cpuBackend": 50,
+   "cpuH2": 9,
+   "etapa": "ataque_50",
+   "hilos": 5,
+   "hikPend": 0,
+   "hikAct": 0,
+   "heapMB": 222,
+   "cpuPct": 4,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 35,
+   "cpuBackend": 373,
+   "cpuH2": 29,
+   "etapa": "ataque_50",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 372,
+   "cpuPct": 32,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 40,
+   "cpuBackend": 373,
+   "cpuH2": 25,
+   "etapa": "ataque_50",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 524,
+   "cpuPct": 32,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 45,
+   "cpuBackend": 406,
+   "cpuH2": 24,
+   "etapa": "ataque_50",
+   "hilos": 6,
+   "hikPend": 0,
+   "hikAct": 3,
+   "heapMB": 75,
+   "cpuPct": 35,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 50,
+   "cpuBackend": 419,
+   "cpuH2": 27,
+   "etapa": "ataque_50",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 225,
+   "cpuPct": 36,
+   "retrasoGeneradorMs": 22
+  },
+  {
+   "t": 55,
+   "cpuBackend": 426,
+   "cpuH2": 17,
+   "etapa": "ataque_50",
+   "hilos": 9,
+   "hikPend": 0,
+   "hikAct": 4,
+   "heapMB": 373,
+   "cpuPct": 36,
+   "retrasoGeneradorMs": 21
+  },
+  {
+   "t": 60,
+   "cpuBackend": 459,
+   "cpuH2": 17,
+   "etapa": "ataque_50",
+   "hilos": 10,
+   "hikPend": 0,
+   "hikAct": 5,
+   "heapMB": 518,
+   "cpuPct": 39,
+   "retrasoGeneradorMs": 23
+  },
+  {
+   "t": 65,
+   "cpuBackend": 749,
+   "cpuH2": 21,
+   "etapa": "ataque_100",
+   "hilos": 30,
+   "hikPend": 18,
+   "hikAct": 9,
+   "heapMB": 113,
+   "cpuPct": 63,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 70,
+   "cpuBackend": 806,
+   "cpuH2": 21,
+   "etapa": "ataque_100",
+   "hilos": 13,
+   "hikPend": 2,
+   "hikAct": 10,
+   "heapMB": 298,
+   "cpuPct": 68,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 75,
+   "cpuBackend": 808,
+   "cpuH2": 25,
+   "etapa": "ataque_100",
+   "hilos": 23,
+   "hikPend": 12,
+   "hikAct": 10,
+   "heapMB": 481,
+   "cpuPct": 68,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 80,
+   "cpuBackend": 743,
+   "cpuH2": 20,
+   "etapa": "ataque_100",
+   "hilos": 15,
+   "hikPend": 4,
+   "hikAct": 8,
+   "heapMB": 660,
+   "cpuPct": 63,
+   "retrasoGeneradorMs": 24
+  },
+  {
+   "t": 85,
+   "cpuBackend": 784,
+   "cpuH2": 20,
+   "etapa": "ataque_100",
+   "hilos": 8,
+   "hikPend": 0,
+   "hikAct": 7,
+   "heapMB": 256,
+   "cpuPct": 66,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 90,
+   "cpuBackend": 784,
+   "cpuH2": 23,
+   "etapa": "ataque_100",
+   "hilos": 16,
+   "hikPend": 2,
+   "hikAct": 10,
+   "heapMB": 434,
+   "cpuPct": 66,
+   "retrasoGeneradorMs": 25
+  },
+  {
+   "t": 102,
+   "cpuBackend": 856,
+   "cpuH2": 18,
+   "etapa": "ataque_200",
+   "hilos": 200,
+   "hikPend": 190,
+   "hikAct": 9,
+   "heapMB": 213,
+   "cpuPct": 71,
+   "retrasoGeneradorMs": 30
+  },
+  {
+   "t": 110,
+   "cpuBackend": 844,
+   "cpuH2": 17,
+   "etapa": "ataque_200",
+   "hilos": 200,
+   "hikPend": 189,
+   "hikAct": 9,
+   "heapMB": 483,
+   "cpuPct": 71,
+   "retrasoGeneradorMs": 32
+  },
+  {
+   "t": 115,
+   "cpuBackend": 877,
+   "cpuH2": 16,
+   "etapa": "ataque_200",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 30
+  },
+  {
+   "t": 120,
+   "cpuBackend": 875,
+   "cpuH2": 15,
+   "etapa": "ataque_200",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 32
+  },
+  {
+   "t": 125,
+   "cpuBackend": 881,
+   "cpuH2": 16,
+   "etapa": "ataque_200",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 26
+  },
+  {
+   "t": 130,
+   "cpuBackend": 877,
+   "cpuH2": 15,
+   "etapa": "ataque_200",
+   "hilos": null,
+   "hikPend": null,
+   "hikAct": null,
+   "heapMB": null,
+   "cpuPct": null,
+   "retrasoGeneradorMs": 24
+  }
+ ]
+}
